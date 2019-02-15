@@ -2,6 +2,7 @@
 
 export(read_bismark)
 exportClasses(methrix)
+exportMethods(getMethylationMatrix)
 import(SummarizedExperiment)
 import(data.table)
 import(parallel)
