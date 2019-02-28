@@ -10,5 +10,20 @@ setGeneric(name = "getMethylationMatrix", function(x) standardGeneric("getMethyl
 #' @rdname getMethylationMatrix
 #' @aliases getMethylationMatrix
 setMethod(f = "getMethylationMatrix", signature = "methrix", function(x){
-  assay(x@SE)
+  SummarizedExperiment::assay(x = x@SE, i = 1)
+})
+
+#' extract methylation matrix
+#' @name getCoverageMatrix
+#' @rdname getCoverageMatrix
+#' @param x An object of class methrix
+#' @return coverage methrix
+#' @exportMethod getCoverageMatrix
+setGeneric(name = "getCoverageMatrix", function(x) standardGeneric("getCoverageMatrix"))
+
+## Accessor methods
+#' @rdname getCoverageMatrix
+#' @aliases getCoverageMatrix
+setMethod(f = "getCoverageMatrix", signature = "methrix", function(x){
+  SummarizedExperiment::assay(x = x@SE, i = 2)
 })
