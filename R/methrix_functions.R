@@ -25,9 +25,9 @@ methrix.subset <- function(obj=NULL, based_on=c("sd", "random",  "region", "no z
     stop("You have to specified the number of sites to include", call. = F)
   if (based_on %in% c( "region") & !is.null(count))
     warning(paste0("You are filtering based on: ", based_on, ". The number of sites to included won't be used."))
-  if (based_on=="region" & !is.null(regions))
+  if (based_on=="region" & is.null(regions))
     stop("You have to define the regions.")
-  if (!is.null(regions) && class(regions)!=GRanges)
+  if (!is.null(regions) && class(regions)!="GRanges")
     stop("The regions must be in GRanges format.")
   ##add more
 #browser()
@@ -68,8 +68,11 @@ metrix.filter <- function(obj=NULL, based_on=c("vector", "not covered", "region"
     stop("Input must be a bsseq object.", call. = F)
   if (!(based_on %in% c("vector", "not covered", "region")))
     stop("Filtering should be based on sd, random, not covered or region", call. = F)
-  if (!is.null(regions) && class(regions)!=GRanges)
+  if (based_on=="region" & is.null(regions))
+    stop("You have to define the regions.")
+  if (!is.null(regions) && class(regions)!="GRanges")
     stop("The regions must be in GRanges format.")
+
   if (!isTRUE(all(vector == floor(vector)))) stop("The supplied vector  must only contain integer values")
 
 
