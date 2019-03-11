@@ -27,3 +27,18 @@ setGeneric(name = "getCoverageMatrix", function(x) standardGeneric("getCoverageM
 setMethod(f = "getCoverageMatrix", signature = "methrix", function(x){
   SummarizedExperiment::assay(x = x@SE, i = 2)
 })
+
+#' extract CpG Loci
+#' @name getCpgLoci
+#' @rdname getCpgLoci
+#' @param x An object of class methrix
+#' @return An object of class DataFrame
+#' @exportMethod getCpgLoci
+setGeneric(name = "getCpgLoci", function(x) standardGeneric("getCpgLoci"))
+
+## Accessor methods
+#' @rdname getCpgLoci
+#' @aliases getCpgLoci
+setMethod(f = "getCpgLoci", signature = "methrix", function(x){
+  SummarizedExperiment::rowData(x = x@SE)
+})
