@@ -4,16 +4,23 @@
 \alias{read_bedgraphs}
 \title{Versatile BedGraph reader.}
 \usage{
-read_bedgraphs(files = NULL, pipeline = NULL, ideal = FALSE,
-  vect = TRUE, vect_batch_size = NULL, coldata = NULL,
-  chr_idx = NULL, start_idx = NULL, end_idx = NULL,
-  beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL,
-  cov_idx = NULL, h5 = FALSE, h5_dir = NULL, verbose = TRUE)
+read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
+  genome = NULL, contigs = NULL, ideal = FALSE, vect = TRUE,
+  vect_batch_size = NULL, coldata = NULL, chr_idx = NULL,
+  start_idx = NULL, end_idx = NULL, beta_idx = NULL, M_idx = NULL,
+  U_idx = NULL, strand_idx = NULL, cov_idx = NULL, h5 = FALSE,
+  h5_dir = NULL, verbose = TRUE, bored = TRUE)
 }
 \arguments{
 \item{files}{bedgraph files.}
 
 \item{pipeline}{Default NULL. Can be "Bismark" or "MethylDeckal". If not known use idx arguments for manual column assignments.}
+
+\item{zero_based}{Are bedgraph regions zero based ? Default TRUE}
+
+\item{genome}{BSgenome object or name of the installed BSgenome package. Example: BSgenome.Hsapiens.UCSC.hg19}
+
+\item{contigs}{contigs to restrict genomic CpGs to. Default all autosomes and allosomes - ignoring extra contigs.}
 
 \item{ideal}{If all bedgraphs contain same number of CpG's and in same order. If TRUE instead of merging tables, matrices are crated by simply cbinding which is significantly faster.}
 
@@ -44,6 +51,8 @@ read_bedgraphs(files = NULL, pipeline = NULL, ideal = FALSE,
 \item{h5_dir}{directory to store H5 based object}
 
 \item{verbose}{Be little chatty ? Default TRUE.}
+
+\item{bored}{Tell me a Chuck Norris joke while I wait for my CpG extraction. Default TRUE. jokes can be very explicit! you have been warned!}
 }
 \description{
 Versatile BedGraph reader.

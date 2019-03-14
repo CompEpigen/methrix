@@ -3,6 +3,9 @@
 #' @param files bedgraph files.
 #' @param pipeline Default NULL. Can be "Bismark" or "MethylDeckal". If not known use idx arguments for manual column assignments.
 #' @param ideal If all bedgraphs contain same number of CpG's and in same order. If TRUE instead of merging tables, matrices are crated by simply cbinding which is significantly faster.
+#' @param genome BSgenome object or name of the installed BSgenome package. Example: BSgenome.Hsapiens.UCSC.hg19
+#' @param contigs contigs to restrict genomic CpGs to. Default all autosomes and allosomes - ignoring extra contigs.
+#' @param zero_based Are bedgraph regions zero based ? Default TRUE
 #' @param vect To use vectorized code. Default TRUE, memory intese. Set to FALSE if you have large number of BedGraph files.
 #' @param vect_batch_size Default NULL. Process samples in batches. Applicable only when vect = TRUE
 #' @param coldata An optional DataFrame describing the samples. Row names, if present, become the column names of the matrix. If NULL, then a DataFrame will be created with basename of files used as the row names.
@@ -17,17 +20,48 @@
 #' @param h5 Should the coverage and methylation matrices be stored as "HDF5Array"
 #' @param h5_dir directory to store H5 based object
 #' @param verbose Be little chatty ? Default TRUE.
+#' @param bored Tell me a Chuck Norris joke while I wait for my CpG extraction. Default TRUE. jokes can be very explicit! you have been warned!
 #' @export
 #' @import data.table
 #' @import parallel
 #' @import SummarizedExperiment
 #'
-read_bedgraphs = function(files = NULL, pipeline = NULL, ideal = FALSE, vect = TRUE, vect_batch_size = NULL, coldata = NULL, chr_idx = NULL,
+read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, genome = NULL, contigs = NULL, ideal = FALSE, vect = TRUE, vect_batch_size = NULL, coldata = NULL, chr_idx = NULL,
                           start_idx = NULL, end_idx = NULL, beta_idx = NULL,
-                          M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL, h5 = FALSE, h5_dir = NULL, verbose = TRUE){
+                          M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL, h5 = FALSE, h5_dir = NULL, verbose = TRUE, bored = TRUE){
 
   if(is.null(files)){
     stop("Missing input files.", call. = FALSE)
+  }
+
+  #Extract CpG's
+  if(!is.null(genome)){
+    genome = extract_CPGs(ref_genome = genome, bored = bored)
+    if(zero_based){
+      genome[, start := start - 1][, end := end - 1]
+    }
+
+    if(is.null(contigs)){
+      #Work with only main contrigs (either with chr prefix - UCSC style, or ensemble style)
+      contigs = c(paste0("chr", c(1:22, "X", "Y", "M")), 1:22, "X", "Y", "MT")
+    }
+
+    genome_contigs = genome[,.N,chr][,chr]
+    genome = genome[chr %in% as.character(contigs)]
+    if(nrow(genome) == 0){
+      message("No more CpG's left after subsetting for contigs. It appears provided contig names do not match to the BSgenome.")
+      message("Contigs provied:")
+      print(contigs)
+      message("Contigs from BSGenome:")
+      print(genome_contigs)
+      stop(call. = FALSE)
+    }
+    if(verbose){
+      message(paste0("Retained ", nrow(genome), " CpGs after filtering for contigs"))
+    }
+
+    #If genomic CpGs are being used all bedgraphs would be in same order (IDEAL). Force set ideal = TRUE!
+    ideal = TRUE
   }
 
   #Set colData
@@ -59,15 +93,13 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, ideal = FALSE, vect = T
   #Summarize bedgraphs and create a matrix
   if(vect){
     if(is.null(vect_batch_size)){
-      mat_list = .vect_code(files = files, col_idx = col_idx, col_data = coldata, ideal = ideal)
+      mat_list = .vect_code(files = files, col_idx = col_idx, col_data = coldata, ideal = ideal, genome = genome)
     }else{
-      mat_list = .vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size, col_data = coldata, ideal = ideal)
+      mat_list = .vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size, col_data = coldata, ideal = ideal, genome = genome)
     }
   }else{
-    mat_list = .non_vect_code(files = files, col_idx = col_idx, coldata = coldata, verbose = verbose, ideal = ideal)
+    mat_list = .non_vect_code(files = files, col_idx = col_idx, coldata = coldata, verbose = verbose, ideal = ideal, genome = genome)
   }
-
-  print(data.table:::timetaken(started.at = start_proc_time))
 
   if(nrow(mat_list$beta_matrix) != nrow(mat_list$cov_matrix)){
     stop("Discrepancies in dimensions of coverage and beta value matrices.")
@@ -86,6 +118,8 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, ideal = FALSE, vect = T
                  CpGs = nrow(mat_list$cov_matrix), samples = nrow(coldata), h5 = as.logical(h5))
   }
 
+  cat(data.table:::timetaken(started.at = start_proc_time), sep = "\n")
+
   return(se)
 }
 
@@ -93,7 +127,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, ideal = FALSE, vect = T
 #Bismark and methyldackel have same output formal
 .get_source_idx = function(){
   return(list(col_idx = c(chr = 1, start = 2, end = 3, beta = 4, M = 5, U = 6),
-              col_classes = c("character", "integer", "integer", "numeric", "integer", "integer"),
+              col_classes = c("character", "numeric", "numeric", "numeric", "integer", "integer"),
               fix_missing = c("cov := M+U", "strand := '.'")))
 }
 
@@ -168,7 +202,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, ideal = FALSE, vect = T
     }
   }else{
     if(verbose){
-      message("All fields are present..\nNice. You are the best.")
+      message("All fields are present. Nice.")
     }
 
     return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
@@ -178,7 +212,8 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, ideal = FALSE, vect = T
 }
 
 #Read bedgraphs, and add missing info
-.read_bdg = function(bdg, col_list = NULL){
+.read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE){
+
   bdg_dat = data.table::fread(file = bdg, sep = "\t", colClasses = col_list$col_classes)
   colnames(bdg_dat)[col_list$col_idx] = names(col_list$col_idx)
 
@@ -189,13 +224,37 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, ideal = FALSE, vect = T
   }
 
   bdg_dat = bdg_dat[,.(chr, start, beta, cov, strand)]
+  bdg_dat[, chr := as.character(chr)][, start := as.integer(start)]
+  data.table::setkey(x = bdg_dat, "chr", "start")
+
+  if(!is.null(genome)){
+    if(!"chr" %in% head(bdg_dat)[,chr]){
+      #warning("Dynamically determined that input bedgraph do not contain `chr` prefix. Will add it for convenience.", immediate. = TRUE)
+      #Not very efficient way to do it! Might cause an issue. Check later and keep and eye.
+      #Since data.table changes values in place wihout making copies, running gsub second time would be unnecessary. Check before gsub
+      if((as.character(head(genome)[,chr]) %like% "chr")[1]){
+        genome[, chr := gsub(pattern = "chr", replacement = "", x = chr, fixed = TRUE)]
+      }
+    }
+
+    missing_cpgs = genome[!bdg_dat[,list(chr, start)], on = c("chr", "start")]
+    if(verbose){
+      message(paste0("Missing ", nrow(missing_cpgs), " from: ", basename(bdg)))
+    }
+    if(nrow(missing_cpgs)>0){
+      missing_cpgs[, width := NULL][, end := NULL][, beta := NA][, cov := 0]
+      bdg_dat = data.table::rbindlist(list(bdg_dat, missing_cpgs), use.names = TRUE)
+    }
+    data.table::setkey(x = bdg_dat, "chr", "start")
+  }
+
   return(bdg_dat)
 }
 
 
 #Process all samples in one go (ideal for few number of samples)
-.vect_code = function(files, col_idx, col_data, ideal = FALSE){
-  bdgs = lapply(files, .read_bdg, col_list = col_idx)
+.vect_code = function(files, col_idx, col_data, ideal = FALSE, genome = NULL){
+  bdgs = lapply(files, .read_bdg, col_list = col_idx, genome = genome)
   names(bdgs) = rownames(col_data)
   if(ideal){
     cov_mat = data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE)
@@ -212,7 +271,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, ideal = FALSE, vect = T
 }
 
 #Process samples in batches. Batches are processed in vectorized manner (ideal for large number of samples)
-.vect_code_batch = function(files, col_idx, batch_size, ideal = FALSE, col_data = NULL){
+.vect_code_batch = function(files, col_idx, batch_size, ideal = FALSE, col_data = NULL, genome = NULL){
   batches = split(files, ceiling(seq_along(files)/batch_size))
   batches_samp_names = split(rownames(col_data), ceiling(seq_along(rownames(col_data))/batch_size))
 
@@ -223,13 +282,15 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, ideal = FALSE, vect = T
     message(paste0("Processing batch ",  i , " of ", length(batches)))
     batch_files = batches[[i]]
     samp_names = batches_samp_names[[i]]
-    bdgs = lapply(batch_files, .read_bdg, col_list = col_idx)
+    bdgs = lapply(batch_files, .read_bdg, col_list = col_idx, genome = genome)
     names(bdgs) = samp_names
     if(ideal){
       if(i == 1){
-        cov_mat_final = data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE)
-        beta_mat_final = data.frame(lapply(bdgs, function(x) x[,.(beta)]), stringsAsFactors = FALSE)
-        colnames(cov_mat_final) = colnames(beta_mat_final) = samp_names
+        cov_mat_final = cbind(bdgs[[1]][,.(chr, start)],
+                              data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE))
+        beta_mat_final = cbind(bdgs[[1]][,.(chr, start)],
+                               data.frame(lapply(bdgs, function(x) x[,.(beta)]), stringsAsFactors = FALSE))
+        colnames(cov_mat_final) = colnames(beta_mat_final) = c("chr", "start", samp_names)
       }else{
         cov_mat = data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE)
         beta_mat = data.frame(lapply(bdgs, function(x) x[,.(beta)]), stringsAsFactors = FALSE)
@@ -239,32 +300,31 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, ideal = FALSE, vect = T
       }
     }else{
       bdgs = data.table::rbindlist(l = bdgs, idcol = "sample")
-      bdgs[, id := paste0(chr, ":", start)]
       if(i == 1){
-        beta_mat_final = data.table::dcast(bdgs, id ~ sample, value.var = "beta")
-        cov_mat_final = data.table::dcast(bdgs, id ~ sample, value.var = "cov", fill = 0)
+        beta_mat_final = data.table::dcast(bdgs, chr + start ~ sample, value.var = "beta")
+        cov_mat_final = data.table::dcast(bdgs, chr + start ~ sample, value.var = "cov", fill = 0)
       }else{
         beta_mat_final = merge(beta_mat_final,
-                               data.table::dcast(bdgs, id ~ sample, value.var = "beta"),
-                               by = "id", all = TRUE)
+                               data.table::dcast(bdgs, chr + start ~ sample, value.var = "beta"),
+                               by = c("chr", "start"), all = TRUE)
         cov_mat_final = merge(cov_mat_final,
-                              data.table::dcast(bdgs, id ~ sample, value.var = "cov", fill = 0),
-                              by = "id", all = TRUE)
+                              data.table::dcast(bdgs, chr + start ~ sample, value.var = "cov", fill = 0),
+                              by = c("chr", "start"), all = TRUE)
       }
     }
   }
 
-  if(!ideal){
-    loci_dt = data.table::data.table(chr = data.table::tstrsplit(x = beta_mat_final$id, split = ':')[[1]],
-                                     start = data.table::tstrsplit(x = beta_mat_final$id, split = ':')[[2]])
-    cov_mat_final = cbind(loci_dat, cov_mat_final[,2:ncol(cov_mat_final)])
-    beta_mat_final = cbind(loci_dat, beta_mat_final[,2:ncol(beta_mat_final)])
-  }
+  # if(!ideal){
+  #   loci_dt = data.table::data.table(chr = data.table::tstrsplit(x = beta_mat_final$id, split = ':')[[1]],
+  #                                    start = data.table::tstrsplit(x = beta_mat_final$id, split = ':')[[2]])
+  #   cov_mat_final = cbind(loci_dt, cov_mat_final[,2:ncol(cov_mat_final)])
+  #   beta_mat_final = cbind(loci_dt, beta_mat_final[,2:ncol(beta_mat_final)])
+  # }
   return(list(beta_matrix = data.table::setDT(beta_mat_final), cov_matrix = data.table::setDT(cov_mat_final)))
 }
 
 #Use for loop for sample-by-sample processing. (Slow af!)
-.non_vect_code = function(files, col_idx, coldata, verbose = TRUE, ideal = FALSE){
+.non_vect_code = function(files, col_idx, coldata, verbose = TRUE, ideal = FALSE, genome = NULL){
   beta_mat = data.table::data.table()
   cov_mat = data.table::data.table()
 
@@ -274,27 +334,27 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, ideal = FALSE, vect = T
     }
     if(ideal){
       if(i == 1){
-        b = .read_bdg(bdg = files[i], col_list = col_idx)
+        b = .read_bdg(bdg = files[i], col_list = col_idx, genome = genome)
         beta_mat = b[,.(chr, start, beta)]
         cov_mat = b[,.(chr, start, cov)]
       }else{
-        b = .read_bdg(bdg = files[i], col_list = col_idx)
+        b = .read_bdg(bdg = files[i], col_list = col_idx, genome = genome)
         beta_mat = cbind(beta_mat, b[,.(beta)])
-        cov_mat = cbind(beta_mat, b[,.(cov)])
+        cov_mat = cbind(cov_mat, b[,.(cov)])
       }
       colnames(beta_mat)[ncol(beta_mat)] = colnames(cov_mat)[ncol(cov_mat)] = rownames(coldata)[i]
     }else{
       if(i == 1){
-        b = .read_bdg(bdg = files[i], col_list = col_idx)
-        b[, id := paste0(chr, ":", start)]
-        beta_mat = b[,.(id, beta)]
-        cov_mat = b[,.(id, beta)]
+        b = .read_bdg(bdg = files[i], col_list = col_idx, genome = genome)
+        #b[, id := paste0(chr, ":", start)]
+        beta_mat = b[,.(chr, start, beta)]
+        cov_mat = b[,.(chr, start, cov)]
         colnames(beta_mat)[ncol(beta_mat)] = colnames(cov_mat)[ncol(cov_mat)] = rownames(coldata)[i]
       }else{
-        b = .read_bdg(bdg = files[i], col_list = col_idx)
-        b[, id := paste0(chr, ":", start)]
-        beta_mat = merge(beta_mat, b[,.(id, beta)], by = "id", all = TRUE)
-        cov_mat = merge(cov_mat, b[,.(id, beta)], by = "id", all = TRUE)
+        b = .read_bdg(bdg = files[i], col_list = col_idx, genome = genome)
+        #b[, id := paste0(chr, ":", start)]
+        beta_mat = merge(beta_mat, b[,.(chr, start, beta)], by = c("chr", "start"), all = TRUE)
+        cov_mat = merge(cov_mat, b[,.(chr, start, cov)], by = c("chr", "start"), all = TRUE)
         colnames(beta_mat)[ncol(beta_mat)] = colnames(cov_mat)[ncol(cov_mat)] = rownames(coldata)[i]
       }
     }

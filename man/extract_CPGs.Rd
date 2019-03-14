@@ -4,10 +4,12 @@
 \alias{extract_CPGs}
 \title{Extracts all CpGs from a genome}
 \usage{
-extract_CPGs(ref_genome = NULL)
+extract_CPGs(ref_genome = NULL, bored = TRUE)
 }
 \arguments{
 \item{ref_genome}{BSgenome object or name of the installed BSgenome package. Example: BSgenome.Hsapiens.UCSC.hg19}
+
+\item{bored}{Tell me a Chuck Norris joke while I wait for my CpG extraction. Default TRUE. jokes can be very explicit! you have been warned!}
 }
 \value{
 a data.table of CpG's
