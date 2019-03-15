@@ -26,13 +26,17 @@
 #' @import parallel
 #' @import SummarizedExperiment
 #'
+#'
+
+#one has to check if it works correctly with Bismark and MethylDackel data.
 read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, genome = NULL, contigs = NULL, ideal = FALSE, vect = TRUE, vect_batch_size = NULL, coldata = NULL, chr_idx = NULL,
-                          start_idx = NULL, end_idx = NULL, beta_idx = NULL,
+                          start_idx = NULL, end_idx = NULL, beta_idx = NULL, stranded = T,
                           M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL, h5 = FALSE, h5_dir = NULL, verbose = TRUE, bored = TRUE){
 
   if(is.null(files)){
     stop("Missing input files.", call. = FALSE)
   }
+  #Rprof(tf <- "rprof.log", memory.profiling=TRUE)
 
   #Extract CpG's
   if(!is.null(genome)){
@@ -40,14 +44,25 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
     if(zero_based){
       genome[, start := start - 1][, end := end - 1]
     }
+    if (stranded){
+      genome_plus <- copy(genome)
+      genome_plus[, strand := "+"]
+      genome[, start := start + 1]
+      genome[, strand := "-"]
+      genome <- rbindlist(list(genome, genome_plus), use.names = T)
+      setkeyv(genome, cols=c("chr", "start"))
+      message(paste0("Splitted into  ", nrow(genome), " CpGs with strand information"))
+    }
 
     if(is.null(contigs)){
       #Work with only main contrigs (either with chr prefix - UCSC style, or ensemble style)
+      ####it should work more generally
       contigs = c(paste0("chr", c(1:22, "X", "Y", "M")), 1:22, "X", "Y", "MT")
     }
 
     genome_contigs = genome[,.N,chr][,chr]
     genome = genome[chr %in% as.character(contigs)]
+
     if(nrow(genome) == 0){
       message("No more CpG's left after subsetting for contigs. It appears provided contig names do not match to the BSgenome.")
       message("Contigs provied:")
@@ -57,6 +72,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
       stop(call. = FALSE)
     }
     if(verbose){
+
       message(paste0("Retained ", nrow(genome), " CpGs after filtering for contigs"))
     }
 
@@ -121,6 +137,8 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
   cat(data.table:::timetaken(started.at = start_proc_time), sep = "\n")
 
   return(se)
+  #Rprof(NULL)
+   #summaryRprof(tf)
 }
 
 
@@ -151,7 +169,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
   }else{
     cov_scale = 100
   }
-
+  fix_missing = vector()
   if(is.null(strand)){
     fix_missing = "strand := '*'"
   }
@@ -226,14 +244,16 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
   bdg_dat = bdg_dat[,.(chr, start, beta, cov, strand)]
   bdg_dat[, chr := as.character(chr)][, start := as.integer(start)]
   data.table::setkey(x = bdg_dat, "chr", "start")
-
+#browser()
   if(!is.null(genome)){
-    if(!"chr" %in% head(bdg_dat)[,chr]){
+    if(!grepl("chr", bdg_dat[1,chr])){
       #warning("Dynamically determined that input bedgraph do not contain `chr` prefix. Will add it for convenience.", immediate. = TRUE)
       #Not very efficient way to do it! Might cause an issue. Check later and keep and eye.
       #Since data.table changes values in place wihout making copies, running gsub second time would be unnecessary. Check before gsub
-      if((as.character(head(genome)[,chr]) %like% "chr")[1]){
-        genome[, chr := gsub(pattern = "chr", replacement = "", x = chr, fixed = TRUE)]
+      bdg_dat[, chr := paste0("chr", chr)]
+
+      if(!grepl("chr", bdg_dat[1,chr])){
+        bdg_dat[, chr := paste0("chr", chr)]
       }
     }
 
@@ -256,6 +276,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
 .vect_code = function(files, col_idx, col_data, ideal = FALSE, genome = NULL){
   bdgs = lapply(files, .read_bdg, col_list = col_idx, genome = genome)
   names(bdgs) = rownames(col_data)
+  gc()
   if(ideal){
     cov_mat = data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE)
     beta_mat = data.frame(lapply(bdgs, function(x) x[,.(beta)]), stringsAsFactors = FALSE)
@@ -279,6 +300,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
   cov_mat_final = data.table::data.table()
 
   for(i in seq_along(batches)){
+    #browser()
     message(paste0("Processing batch ",  i , " of ", length(batches)))
     batch_files = batches[[i]]
     samp_names = batches_samp_names[[i]]
@@ -312,6 +334,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
                               by = c("chr", "start"), all = TRUE)
       }
     }
+    gc()
   }
 
   # if(!ideal){
@@ -358,6 +381,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
         colnames(beta_mat)[ncol(beta_mat)] = colnames(cov_mat)[ncol(cov_mat)] = rownames(coldata)[i]
       }
     }
+    gc()
   }
   mat_list = list(beta_matrix = beta_mat, cov_matrix = cov_mat)
 }
