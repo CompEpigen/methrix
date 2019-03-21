@@ -29,21 +29,36 @@
 #'
 
 #one has to check if it works correctly with Bismark and MethylDackel data.
-read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, genome = NULL, contigs = NULL, ideal = FALSE, vect = TRUE, vect_batch_size = NULL, coldata = NULL, chr_idx = NULL,
-                          start_idx = NULL, end_idx = NULL, beta_idx = NULL, stranded = T,
+
+read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, genome_ob=NULL, genome_name = NULL, contigs = NULL, vect = T, vect_batch_size = NULL, coldata = NULL, chr_idx = NULL,
+                          start_idx = NULL, end_idx = NULL, beta_idx = NULL, stranded = T, h5temp=NULL,
                           M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL, h5 = FALSE, h5_dir = NULL, verbose = TRUE, bored = TRUE){
 
   if(is.null(files)){
     stop("Missing input files.", call. = FALSE)
   }
-  #Rprof(tf <- "rprof.log", memory.profiling=TRUE)
+  if(is.null(genome)){
+    stop("Missing genome. Please provide a valid genome name", .call = F)
+  }
+  if (vect && is.null(vect_batch_size)){
+    vect_batch_size <- length(files)
+  }
+
+
 
   #Extract CpG's
-  if(!is.null(genome)){
-    genome = extract_CPGs(ref_genome = genome, bored = bored)
+  if(is.null(genome_ob)){
+    genome = extract_CPGs(ref_genome = genome_name, bored = bored)
+  } else {
+    message(paste0("Using the provided genome object with ", nrow(genome), "CpG sites."))
+      genome <- copy(genome_ob)
+      rm(genome_ob)
+    }
+
     if(zero_based){
       genome[, start := start - 1][, end := end - 1]
     }
+    #check it with the strand column
     if (stranded){
       genome_plus <- copy(genome)
       genome_plus[, strand := "+"]
@@ -52,6 +67,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
       genome <- rbindlist(list(genome, genome_plus), use.names = T)
       setkeyv(genome, cols=c("chr", "start"))
       message(paste0("Splitted into  ", nrow(genome), " CpGs with strand information"))
+      rm(genome_plus)
     }
 
     if(is.null(contigs)){
@@ -76,9 +92,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
       message(paste0("Retained ", nrow(genome), " CpGs after filtering for contigs"))
     }
 
-    #If genomic CpGs are being used all bedgraphs would be in same order (IDEAL). Force set ideal = TRUE!
-    ideal = TRUE
-  }
+
 
   #Set colData
   if(is.null(coldata)){
@@ -107,42 +121,60 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
   }
 
   #Summarize bedgraphs and create a matrix
+
   if(vect){
-    if(is.null(vect_batch_size)){
-      mat_list = .vect_code(files = files, col_idx = col_idx, col_data = coldata, ideal = ideal, genome = genome)
-    }else{
-      mat_list = .vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size, col_data = coldata, ideal = ideal, genome = genome)
-    }
-  }else{
-    mat_list = .non_vect_code(files = files, col_idx = col_idx, coldata = coldata, verbose = verbose, ideal = ideal, genome = genome)
+    mat_list = .vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size, col_data = coldata,  genome = genome)
+  } else {
+    mat_list = .non_vect_code(files = files, col_idx = col_idx, coldata = coldata, verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp)
   }
 
   if(nrow(mat_list$beta_matrix) != nrow(mat_list$cov_matrix)){
     stop("Discrepancies in dimensions of coverage and beta value matrices.")
   }
 
-  if(h5){
-    se = methrix(SE = SummarizedExperiment::SummarizedExperiment(assays = list(methylation_matrix = DelayedArray::DelayedArray(mat_list$beta_matrix[,3:ncol(mat_list$beta_matrix)]),
-                                                                               coverage_matrix = DelayedArray::DelayedArray(mat_list$cov_matrix[,3:ncol(mat_list$cov_matrix)]))),
-                 CpGs = nrow(mat_list$cov_matrix), samples = nrow(coldata), h5 = as.logical(h5))
+  if(vect && h5){
+    #se = methrix(SE = SummarizedExperiment::SummarizedExperiment(assays = list(methylation_matrix = DelayedArray::DelayedArray(mat_list$beta_matrix[,which(!(colnames(mat_list$beta_matrix) %in% c("chr", "start")))]),
+    #                                                                           coverage_matrix = DelayedArray::DelayedArray(mat_list$cov_matrix[,which(!(colnames(mat_list$cov_matrix) %in% c("chr", "start")))]))),
+    #             CpGs = nrow(mat_list$cov_matrix), samples = nrow(coldata), h5 = as.logical(h5), genome = genome)
+    se <-  methrix(beta=  as(mat_list$beta_matrix, "HDF5Array"),
+                    cov= as(mat_list$cov_matrix, "HDF5Array"),
+                    position=genome[,.(chr, start, strand)],
+                    is.HDF5 = T, genome=genome_name, sample_annotation=coldata)
+    rm(mat_list)
+    gc()
     if(!is.null(h5_dir)){
-      HDF5Array::saveHDF5SummarizedExperiment(x = se@SE, dir = h5_dir, replace = TRUE)
+      tryCatch(HDF5Array::saveHDF5SummarizedExperiment(x = se, dir = h5_dir, replace = TRUE),  error = function(e) message("The dataset is not saved."))
     }
-  }else{
-    se = methrix(SE = SummarizedExperiment::SummarizedExperiment(assays = list(methylation_matrix = mat_list$beta_matrix[,3:ncol(mat_list$beta_matrix)],
-                                                                               coverage_matrix = mat_list$cov_matrix[,3:ncol(mat_list$cov_matrix)]), rowData = mat_list$beta_matrix[,1:2]),
-                 CpGs = nrow(mat_list$cov_matrix), samples = nrow(coldata), h5 = as.logical(h5))
+  }else if (!h5) {
+    #se = methrix(SE = SummarizedExperiment::SummarizedExperiment(assays = list(methylation_matrix = mat_list$beta_matrix[,which(!(colnames(mat_list$beta_matrix) %in% c("chr", "start")))],
+    #                                                                           coverage_matrix = mat_list$cov_matrix[,which(!(colnames(mat_list$cov_matrix) %in% c("chr", "start")))]), rowData = mat_list$beta_matrix[,1:2]),
+    #             CpGs = nrow(mat_list$cov_matrix), samples = nrow(coldata), h5 = as.logical(h5), genome = genome)
+
+    se <-  methrix(beta= mat_list$beta_matrix,
+                    cov= mat_list$cov_matrix,
+                    position=genome[,.(chr, start, strand)],
+                    is.HDF5 = F, genome=genome_name, sample_annotation=coldata)
+  } else if (!vect && h5){
+
+    se <-  methrix(beta= mat_list$beta_matrix,
+                    cov= mat_list$cov_matrix,
+                    position=genome[,.(chr, start, strand)],
+                    is.HDF5 = T, genome=genome_name, sample_annotation=coldata)
+
+    if(!is.null(h5_dir)){
+      tryCatch(
+      HDF5Array::saveHDF5SummarizedExperiment(x = se, dir = h5_dir, replace = TRUE),  error = function(e) message("The dataset is not saved."))
+    }
   }
 
   cat(data.table:::timetaken(started.at = start_proc_time), sep = "\n")
 
   return(se)
-  #Rprof(NULL)
-   #summaryRprof(tf)
+
 }
 
 
-#Bismark and methyldackel have same output formal
+#Bismark and methyldackel have same output format
 .get_source_idx = function(){
   return(list(col_idx = c(chr = 1, start = 2, end = 3, beta = 4, M = 5, U = 6),
               col_classes = c("character", "numeric", "numeric", "numeric", "integer", "integer"),
@@ -267,32 +299,29 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
     }
     data.table::setkey(x = bdg_dat, "chr", "start")
   }
-
-  return(bdg_dat)
+if(identical(bdg_dat[,list(chr, start)], genome[,list(chr, start)])){
+  return(bdg_dat)}
+  else{
+    stop("Something went wrong with filling up the not covered CpG sites.")
+  }
 }
 
 
 #Process all samples in one go (ideal for few number of samples)
-.vect_code = function(files, col_idx, col_data, ideal = FALSE, genome = NULL){
-  bdgs = lapply(files, .read_bdg, col_list = col_idx, genome = genome)
-  names(bdgs) = rownames(col_data)
-  gc()
-  if(ideal){
-    cov_mat = data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE)
-    beta_mat = data.frame(lapply(bdgs, function(x) x[,.(beta)]), stringsAsFactors = FALSE)
-    colnames(cov_mat) = colnames(beta_mat) = rownames(col_data)
-    cov_mat = cbind(bdgs[[1]][,.(chr, start)], cov_mat)
-    beta_mat = cbind(bdgs[[1]][,.(chr, start)], beta_mat)
-  }else{
-    bdgs = data.table::rbindlist(l = bdgs, idcol = "sample")
-    beta_mat = data.table::dcast(bdgs, chr + start ~ sample, value.var = "beta")
-    cov_mat = data.table::dcast(bdgs, chr + start ~ sample, value.var = "cov", fill = 0)
-  }
-  return(list(beta_matrix = beta_mat, cov_matrix = cov_mat))
-}
+# .vect_code = function(files, col_idx, col_data, ideal = FALSE, genome = NULL){
+#   bdgs = lapply(files, .read_bdg, col_list = col_idx, genome = genome)
+#   names(bdgs) = rownames(col_data)
+#   gc()
+#   cov_mat = data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE)
+#   beta_mat = data.frame(lapply(bdgs, function(x) x[,.(beta)]), stringsAsFactors = FALSE)
+#   colnames(cov_mat) = colnames(beta_mat) = rownames(col_data)
+#   cov_mat = cbind(bdgs[[1]][,.(chr, start)], cov_mat)
+#   beta_mat = cbind(bdgs[[1]][,.(chr, start)], beta_mat)
+#   return(list(beta_matrix = beta_mat, cov_matrix = cov_mat))
+# }
 
 #Process samples in batches. Batches are processed in vectorized manner (ideal for large number of samples)
-.vect_code_batch = function(files, col_idx, batch_size, ideal = FALSE, col_data = NULL, genome = NULL){
+.vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome = NULL){
   batches = split(files, ceiling(seq_along(files)/batch_size))
   batches_samp_names = split(rownames(col_data), ceiling(seq_along(rownames(col_data))/batch_size))
 
@@ -306,56 +335,78 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
     samp_names = batches_samp_names[[i]]
     bdgs = lapply(batch_files, .read_bdg, col_list = col_idx, genome = genome)
     names(bdgs) = samp_names
-    if(ideal){
-      if(i == 1){
-        cov_mat_final = cbind(bdgs[[1]][,.(chr, start)],
-                              data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE))
-        beta_mat_final = cbind(bdgs[[1]][,.(chr, start)],
-                               data.frame(lapply(bdgs, function(x) x[,.(beta)]), stringsAsFactors = FALSE))
-        colnames(cov_mat_final) = colnames(beta_mat_final) = c("chr", "start", samp_names)
-      }else{
-        cov_mat = data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE)
-        beta_mat = data.frame(lapply(bdgs, function(x) x[,.(beta)]), stringsAsFactors = FALSE)
-        colnames(cov_mat) = colnames(beta_mat) = samp_names
-        cov_mat_final = cbind(cov_mat_final, cov_mat)
-        beta_mat_final = cbind(beta_mat_final, beta_mat)
-      }
+
+    if(i == 1){
+      cov_mat_final = data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE)
+      beta_mat_final = data.frame(lapply(bdgs, function(x) x[,.(beta)]), stringsAsFactors = FALSE)
+      colnames(cov_mat_final) = colnames(beta_mat_final) = samp_names
     }else{
-      bdgs = data.table::rbindlist(l = bdgs, idcol = "sample")
-      if(i == 1){
-        beta_mat_final = data.table::dcast(bdgs, chr + start ~ sample, value.var = "beta")
-        cov_mat_final = data.table::dcast(bdgs, chr + start ~ sample, value.var = "cov", fill = 0)
-      }else{
-        beta_mat_final = merge(beta_mat_final,
-                               data.table::dcast(bdgs, chr + start ~ sample, value.var = "beta"),
-                               by = c("chr", "start"), all = TRUE)
-        cov_mat_final = merge(cov_mat_final,
-                              data.table::dcast(bdgs, chr + start ~ sample, value.var = "cov", fill = 0),
-                              by = c("chr", "start"), all = TRUE)
-      }
+      cov_mat = data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE)
+      beta_mat = data.frame(lapply(bdgs, function(x) x[,.(beta)]), stringsAsFactors = FALSE)
+      colnames(cov_mat) = colnames(beta_mat) = samp_names
+      cov_mat_final = cbind(cov_mat_final, cov_mat)
+      beta_mat_final = cbind(beta_mat_final, beta_mat)
+      rm(cov_mat)
+      rm(beta_mat)
+      gc()
     }
-    gc()
   }
 
-  # if(!ideal){
-  #   loci_dt = data.table::data.table(chr = data.table::tstrsplit(x = beta_mat_final$id, split = ':')[[1]],
-  #                                    start = data.table::tstrsplit(x = beta_mat_final$id, split = ':')[[2]])
-  #   cov_mat_final = cbind(loci_dt, cov_mat_final[,2:ncol(cov_mat_final)])
-  #   beta_mat_final = cbind(loci_dt, beta_mat_final[,2:ncol(beta_mat_final)])
-  # }
   return(list(beta_matrix = data.table::setDT(beta_mat_final), cov_matrix = data.table::setDT(cov_mat_final)))
 }
 
-#Use for loop for sample-by-sample processing. (Slow af!)
-.non_vect_code = function(files, col_idx, coldata, verbose = TRUE, ideal = FALSE, genome = NULL){
-  beta_mat = data.table::data.table()
-  cov_mat = data.table::data.table()
+#Use for loop for sample-by-sample processing, memory efficient, uses HDF5Array
+.non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL, h5temp=NULL, h5=NULL){
 
-  for(i in seq_along(files)){
-    if(verbose){
-      message("Processing: ", files[i])
+  if (h5){
+    if(is.null(h5temp)){
+      h5temp <- tempdir()}
+    sink_counter <- 1
+    while(any(c(paste0("M_sink_",sink_counter, ".h5"),
+             paste0("cov_sink_",sink_counter, ".h5")) %in%  dir(h5temp))){
+      sink_counter <- sink_counter+1
+
     }
-    if(ideal){
+    grid <- DelayedArray::RegularArrayGrid(
+      refdim = c(nrow(genome), length(files)),
+      spacings = c(nrow(genome), 1L))
+
+    M_sink <- HDF5Array::HDF5RealizationSink(
+      dim = c(nrow(genome), length(files)),
+      dimnames = NULL,
+      type = "double",
+      filepath = file.path(h5temp, paste0("M_sink_",sink_counter, ".h5")),
+      name = "M", chunkdim = HDF5Array::getHDF5DumpChunkDim(c(nrow(genome), length(files)), "double"),
+      level = 6)
+    cov_sink <- HDF5Array::HDF5RealizationSink(
+      dim = c(nrow(genome), length(files)),
+      dimnames = NULL,
+      type = "integer",
+      filepath = file.path(h5temp, paste0("cov_sink_",sink_counter, ".h5")),
+      name = "cov", chunkdim = HDF5Array::getHDF5DumpChunkDim(c(nrow(genome), length(files)), "integer"),
+      level = 6)
+  } else {
+    beta_mat = data.table::data.table()
+    cov_mat = data.table::data.table()
+  }
+  if(h5){
+    #browser()
+    for(i in seq_along(files)){
+      if(verbose){
+        message("Processing: ", files[i])
+      }
+      b = .read_bdg(bdg = files[i], col_list = col_idx, genome = genome)
+      DelayedArray::write_block_to_sink(block=as.matrix(b[, .(beta)]), viewport = grid[[i]], sink = M_sink)
+      DelayedArray::write_block_to_sink(block=as.matrix(b[, .(cov)]), viewport = grid[[i]], sink = cov_sink)
+      rm(b)
+      gc()
+    }
+    return(list(beta_matrix = as(M_sink, "HDF5Array"), cov_matrix = as(cov_sink, "HDF5Array")))
+  } else {
+    for(i in seq_along(files)){
+      if(verbose){
+        message("Processing: ", files[i])
+      }
       if(i == 1){
         b = .read_bdg(bdg = files[i], col_list = col_idx, genome = genome)
         beta_mat = b[,.(chr, start, beta)]
@@ -366,23 +417,9 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, geno
         cov_mat = cbind(cov_mat, b[,.(cov)])
       }
       colnames(beta_mat)[ncol(beta_mat)] = colnames(cov_mat)[ncol(cov_mat)] = rownames(coldata)[i]
-    }else{
-      if(i == 1){
-        b = .read_bdg(bdg = files[i], col_list = col_idx, genome = genome)
-        #b[, id := paste0(chr, ":", start)]
-        beta_mat = b[,.(chr, start, beta)]
-        cov_mat = b[,.(chr, start, cov)]
-        colnames(beta_mat)[ncol(beta_mat)] = colnames(cov_mat)[ncol(cov_mat)] = rownames(coldata)[i]
-      }else{
-        b = .read_bdg(bdg = files[i], col_list = col_idx, genome = genome)
-        #b[, id := paste0(chr, ":", start)]
-        beta_mat = merge(beta_mat, b[,.(chr, start, beta)], by = c("chr", "start"), all = TRUE)
-        cov_mat = merge(cov_mat, b[,.(chr, start, cov)], by = c("chr", "start"), all = TRUE)
-        colnames(beta_mat)[ncol(beta_mat)] = colnames(cov_mat)[ncol(cov_mat)] = rownames(coldata)[i]
-      }
     }
-    gc()
+    return(list(beta_matrix = beta_mat, cov_matrix = cov_mat))
+
   }
-  mat_list = list(beta_matrix = beta_mat, cov_matrix = cov_mat)
 }
 
