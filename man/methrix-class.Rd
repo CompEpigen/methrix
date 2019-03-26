@@ -11,12 +11,14 @@ S4 class Methrix
 \section{Slots}{
 
 \describe{
-\item{\code{SE}}{summarized experiment object}
+\item{\code{beta}}{beta matrix}
 
-\item{\code{CpGs}}{number of CpGs}
+\item{\code{cov}}{coverage matrix}
 
-\item{\code{samples}}{number of samples}
+\item{\code{metadata}}{genome: the name of the BSgenome that was used to extract CpGs, isHDF5: is it stored in HDF5 Array format}
 
-\item{\code{h5}}{are matrices are HDF5Array}
+\item{\code{sample_annotation}}{sample annotation data frame}
+
+\item{\code{position}}{chromosome, start and strand information in a data.table format}
 }}
 

@@ -5,24 +5,29 @@
 \title{Versatile BedGraph reader.}
 \usage{
 read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
-  genome = NULL, contigs = NULL, ideal = FALSE, vect = TRUE,
+  stranded = FALSE, collapse_starnds = FALSE, ref_cpgs = NULL,
+  ref_build = "Unknown", contigs = NULL, vect = TRUE,
   vect_batch_size = NULL, coldata = NULL, chr_idx = NULL,
   start_idx = NULL, end_idx = NULL, beta_idx = NULL, M_idx = NULL,
   U_idx = NULL, strand_idx = NULL, cov_idx = NULL, h5 = FALSE,
-  h5_dir = NULL, verbose = TRUE, bored = TRUE)
+  h5_dir = NULL, h5temp = NULL, verbose = TRUE, bored = TRUE)
 }
 \arguments{
 \item{files}{bedgraph files.}
 
-\item{pipeline}{Default NULL. Can be "Bismark" or "MethylDeckal". If not known use idx arguments for manual column assignments.}
+\item{pipeline}{Default NULL. Can be "Bismark" or "MethylDeckal" or "MethylcTools". If not known use idx arguments for manual column assignments.}
 
 \item{zero_based}{Are bedgraph regions zero based ? Default TRUE}
 
-\item{genome}{BSgenome object or name of the installed BSgenome package. Example: BSgenome.Hsapiens.UCSC.hg19}
+\item{stranded}{Default FALSE}
+
+\item{collapse_starnds}{If TRUE collapses CpGs on different crick strand into watson. Deafult FALSE}
+
+\item{ref_cpgs}{BSgenome object, or name of the installed BSgenome package, or an output from \code{\link{extract_CPGs}}. Example: BSgenome.Hsapiens.UCSC.hg19}
+
+\item{ref_build}{reference genome for bedgraphs. Default "hg19". Only used for additional details. Doesnt affect in any way.}
 
 \item{contigs}{contigs to restrict genomic CpGs to. Default all autosomes and allosomes - ignoring extra contigs.}
-
-\item{ideal}{If all bedgraphs contain same number of CpG's and in same order. If TRUE instead of merging tables, matrices are crated by simply cbinding which is significantly faster.}
 
 \item{vect}{To use vectorized code. Default TRUE, memory intese. Set to FALSE if you have large number of BedGraph files.}
 
@@ -49,6 +54,8 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 \item{h5}{Should the coverage and methylation matrices be stored as "HDF5Array"}
 
 \item{h5_dir}{directory to store H5 based object}
+
+\item{h5temp}{temporary directory to store hdf5}
 
 \item{verbose}{Be little chatty ? Default TRUE.}
 

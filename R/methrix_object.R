@@ -6,55 +6,44 @@
 #' @slot sample_annotation sample annotation data frame
 #' @slot position chromosome, start and strand information in a data.table format
 #' @exportClass methrix
-#' @import methods
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
 #'
 
+methrix <- setClass(Class = 'methrix', contains = "SummarizedExperiment")
 # we can include validity checks as well
 # we might need to keep track of the processing steps
 
-.methrix <- setClass("methrix", contains="SummarizedExperiment")
+setMethod(f = 'show', signature = 'methrix', definition = function(object){
+  cat(paste('An object of class ', class(object), "\n"))
+  print(object@metadata$summary)
+})
 
-methrix <- function(beta, cov, position, is.HDF5=NULL, genome, sample_annotation) {
+#Create methrix obj
+create_methrix = function(beta_mat = NULL, cov_mat = NULL, cpg_loci = NULL, is_hdf5 = FALSE,
+                          genome_name = "hg19", col_data = NULL, h5_dir = NULL){
 
-  se <- SummarizedExperiment(assays=list(beta=beta, cov=cov), metadata=list(genome=genome, is.HDF5=is.HDF5),
-                             colData= sample_annotation, rowData=position)
+  se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "Reference_Build", "is_H5"),
+                                      Summary = c(ncol(beta_mat), nrow(beta_mat), genome_name, is_hdf5))
 
-  .methrix(se)
+  if(is_hdf5){
+    se = SummarizedExperiment::SummarizedExperiment(assays = list(beta = as(beta_mat, "HDF5Array"), cov = as(cov_mat, "HDF5Array")),
+                                                    metadata = list(genome = genome_name, is_h5 = is_hdf5, summary = se_summary),
+                                                    colData = col_data, rowData = cpg_loci)
+    if(!is.null(h5_dir)){
+      tryCatch(HDF5Array::saveHDF5SummarizedExperiment(x = se, dir = h5_dir, replace = TRUE),
+               error = function(e) message("The dataset is not saved."))
+    }
+  }else{
+    se = SummarizedExperiment::SummarizedExperiment(assays = list(beta = data.table:::as.matrix.data.table(beta_mat),
+                                                                  cov = data.table:::as.matrix.data.table(cov_mat)),
+                                                    metadata = list(genome = genome_name, is_h5 = is_hdf5, summary = se_summary),
+                                                    colData = col_data, rowData = cpg_loci)
+  }
+
+  return(methrix(se))
 }
 
-
-
-# #' Class methrix
-# #' @description S4 class Methrix
-# #' @slot SE summarized experiment object
-# #' @slot CpGs number of CpGs
-# #' @slot samples number of samples
-# #' @slot h5 are matrices are HDF5Array
-# #' @exportClass methrix
-#
-# methrix <- setClass(Class = "methrix",
-#                        slots=c(SE = "SummarizedExperiment", CpGs = "numeric", samples = "numeric", h5 = "logical", genome = "character"))
-#
-# setMethod(f = 'show', signature(object = "methrix"), definition = function(object){
-#   cat(paste('An object of class ', class(object), "\n"))
-#   print(data.table::data.table(ID = c("n_CpGs", "n_samples", "is_HDF5"),
-#                                summary = c(object@CpGs, object@samples, as.logical(object@h5))))
-# })
-
-# #' Class methrixDT
-# #' @description S4 class Methrix
-# #' @slot betas data.table of beta values
-# #' @slot covs data.table of coverage values
-# #' @slot chr chr loci
-# #' @slot coldata pheno dtata
-# #' @exportClass methrixDT
-#
-# methrix <- setClass(Class = "methrixDT",
-#                     slots=c(betas = "data.table", covs = "data.table", chr = "data.table", coldata = "data.table"))
-#
-# setMethod(f = 'show', signature(object = "methrix"), definition = function(object){
-#   cat(paste('An object of class ', class(object), "\n"))
-#   print(data.table::data.table(ID = c("n_CpGs", "n_samples", "is_HDF5"),
-#                                summary = c(object@CpGs, object@samples, as.logical(object@h5))))
-# })
+#Tiny function to check if object is h5
+is_h5 = function(m){
+  return(m@metadata$is_h5)
+}

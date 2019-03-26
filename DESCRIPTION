@@ -1,6 +1,6 @@
 Package: methrix
 Title: HDF5 and data.table backend for faster proceesing of large methylation matrices
-Version: 0.9.5
+Version: 0.9.7
 Authors@R: 
     person(given = "First",
            family = "Last",
@@ -11,5 +11,5 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Depends: data.table, SummarizedExperiment
-Imports: DelayedArray, HDF5Array, BSgenome, rjson
-RoxygenNote: 6.1.0
+Imports: DelayedArray, HDF5Array, BSgenome, rjson, DelayedMatrixStats, methods
+RoxygenNote: 6.1.1
