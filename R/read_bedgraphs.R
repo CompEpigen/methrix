@@ -19,6 +19,7 @@
 #' @param U_idx column index for read counts supporting Un-methylation in bedgraph files
 #' @param strand_idx column index for strand information in bedgraph files
 #' @param cov_idx column index for total-coverage in bedgraph files
+#' @param n_threads number of threads to use. Default 1. Be-careful - there is a linear increase in memory usage with number of threads. This option is does not work with Windows OS.
 #' @param h5 Should the coverage and methylation matrices be stored as "HDF5Array"
 #' @param h5_dir directory to store H5 based object
 #' @param h5temp temporary directory to store hdf5
@@ -27,13 +28,13 @@
 #' @export
 #' @import data.table
 #' @import parallel
-#' @import SummarizedExperiment
+#' @import SummarizedExperiment DelayedArray HDF5Array
 #'
 #'
 read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stranded = FALSE, collapse_starnds = FALSE, ref_cpgs = NULL, ref_build = "Unknown", contigs = NULL, vect = TRUE,
                           vect_batch_size = NULL, coldata = NULL, chr_idx = NULL, start_idx = NULL, end_idx = NULL,
                           beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
-                          h5 = FALSE, h5_dir = NULL, h5temp=NULL,
+                          n_threads = 1, h5 = FALSE, h5_dir = NULL, h5temp=NULL,
                           verbose = TRUE, bored = TRUE){
 
   #To-do: One has to check if it works correctly with Bismark and MethylDackel data.
@@ -132,10 +133,10 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stra
   #Summarize bedgraphs and create a matrix
   if(vect){
     mat_list = vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size,
-                                col_data = coldata,  genome = genome, strand_collapse = collapse_starnds)
+                               col_data = coldata,  genome = genome, strand_collapse = collapse_starnds, thr = n_threads)
   } else {
     mat_list = non_vect_code(files = files, col_idx = col_idx, coldata = coldata, strand_collapse = collapse_starnds,
-                              verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp)
+                             verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, thr = n_threads)
   }
 
   if(nrow(mat_list$beta_matrix) != nrow(mat_list$cov_matrix)){
@@ -151,30 +152,4 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stra
 
   cat(data.table:::timetaken(started.at = start_proc_time), sep = "\n")
   return(m_obj)
-
-
-  # if(vect && h5){
-  #
-  #   m_obj =  create_methrix(beta_mat = as(mat_list$beta_matrix, "HDF5Array"), cov_mat = as(mat_list$cov_matrix, "HDF5Array"),
-  #                        cpg_loci = genome[,.(chr, start, strand)], is_hdf5 = TRUE, genome_name = ref_build, col_data = coldata, h5_dir = h5_dir)
-  #   rm(mat_list)
-  #   gc()
-  # }else if(!h5){
-  #   se =  methrix(beta = mat_list$beta_matrix,
-  #                   cov = mat_list$cov_matrix,
-  #                   position = genome[,.(chr, start, strand)],
-  #                   is.HDF5 = FALSE, genome = genome_name, sample_annotation = coldata)
-  # } else if(!vect && h5){
-  #   se =  methrix(beta = mat_list$beta_matrix,
-  #                   cov = mat_list$cov_matrix,
-  #                   position = genome[,.(chr, start, strand)],
-  #                   is.HDF5 = TRUE, genome = genome_name, sample_annotation = coldata)
-  #
-  #   if(!is.null(h5_dir)){
-  #     tryCatch(
-  #     HDF5Array::saveHDF5SummarizedExperiment(x = se, dir = h5_dir, replace = TRUE),
-  #     error = function(e) message("The dataset is not saved."))
-  #   }
-  # }
-
 }

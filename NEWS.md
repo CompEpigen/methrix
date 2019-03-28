@@ -1,3 +1,11 @@
+# methrix 0.9.8 [2019-03-28]
+
+* Updated `Methrix` object
+* Added `getChrSummary` method
+* Added `subset_methrix` function for various subset operations
+* Added `get_matrix` function for extracting methylation or coverage matrices
+* Added `methrix2bsseq` function for easy converting methrix to bsseq object
+
 # methrix 0.9.7 [2019-03-26]
 
 * Added `MethylcTools` to supposrted pipelines

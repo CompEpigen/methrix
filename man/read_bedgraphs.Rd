@@ -9,8 +9,9 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
   ref_build = "Unknown", contigs = NULL, vect = TRUE,
   vect_batch_size = NULL, coldata = NULL, chr_idx = NULL,
   start_idx = NULL, end_idx = NULL, beta_idx = NULL, M_idx = NULL,
-  U_idx = NULL, strand_idx = NULL, cov_idx = NULL, h5 = FALSE,
-  h5_dir = NULL, h5temp = NULL, verbose = TRUE, bored = TRUE)
+  U_idx = NULL, strand_idx = NULL, cov_idx = NULL, n_threads = 1,
+  h5 = FALSE, h5_dir = NULL, h5temp = NULL, verbose = TRUE,
+  bored = TRUE)
 }
 \arguments{
 \item{files}{bedgraph files.}
@@ -50,6 +51,8 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 \item{strand_idx}{column index for strand information in bedgraph files}
 
 \item{cov_idx}{column index for total-coverage in bedgraph files}
+
+\item{n_threads}{number of threads to use. Default 1. Be-careful - there is a linear increase in memory usage with number of threads. This option is does not work with Windows OS.}
 
 \item{h5}{Should the coverage and methylation matrices be stored as "HDF5Array"}
 

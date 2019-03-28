@@ -11,9 +11,11 @@ get_source_idx = function(protocol = NULL){
   }
 }
 
+#--------------------------------------------------------------------------------------------------------------------------
+
 #Parse custom indices and return missing info
 parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
-                             beta = NULL, n_meth = NULL, n_unmeth = NULL, cov = NULL, beta_fract = FALSE, verbose = TRUE){
+                            beta = NULL, n_meth = NULL, n_unmeth = NULL, cov = NULL, beta_fract = FALSE, verbose = TRUE){
 
   #mandatory chr and start field
   if(is.null(chr) | is.null(start)){
@@ -91,10 +93,12 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
   }
 }
 
+#--------------------------------------------------------------------------------------------------------------------------
+
 #Read bedgraphs, and add missing info
 read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_collapse = FALSE){
 
-  bdg_dat = data.table::fread(file = bdg, sep = "\t", colClasses = col_list$col_classes, verbose = FALSE)
+  bdg_dat = data.table::fread(file = bdg, sep = "\t", colClasses = col_list$col_classes, verbose = FALSE, showProgress = FALSE)
   colnames(bdg_dat)[col_list$col_idx] = names(col_list$col_idx)
 
   if(!is.null(col_list$fix_missing)){
@@ -125,7 +129,6 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
 
   #Check for contig prefixes and add them if necessary
   if(grepl(pattern = "chr", x = genome[1, chr]) != grepl(pattern = "chr", x = bdg_dat[1, chr])){
-    message("I am fixing prefixes!")
     if(grepl(pattern = "chr", x = genome[1, chr])){
       bdg_dat[, chr := paste0("chr", chr)]
     }else if(grepl(pattern = "chr", x = bdg_dat[1, chr])){
@@ -137,7 +140,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
 
   missing_cpgs = genome[!bdg_dat[,list(chr, start)], on = c("chr", "start")]
   if(verbose){
-    message(paste0("Missing ", nrow(missing_cpgs), " from: ", basename(bdg)))
+    message(paste0("Missing ", nrow(missing_cpgs), " reference CpGs from: ", basename(bdg)))
   }
   if(nrow(missing_cpgs)>0){
     missing_cpgs[, width := NULL][, end := NULL][, beta := NA][, cov := 0]
@@ -156,8 +159,10 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
   }
 }
 
+#--------------------------------------------------------------------------------------------------------------------------
+
 #Process samples in batches. Batches are processed in vectorized manner (ideal for large number of samples)
-vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome = NULL, strand_collapse = FALSE){
+vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome = NULL, strand_collapse = FALSE, thr = 1){
   batches = split(files, ceiling(seq_along(files)/batch_size))
   batches_samp_names = split(rownames(col_data), ceiling(seq_along(rownames(col_data))/batch_size))
 
@@ -169,7 +174,7 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
     message(paste0("Processing batch ",  i , " of ", length(batches)))
     batch_files = batches[[i]]
     samp_names = batches_samp_names[[i]]
-    bdgs = lapply(batch_files, read_bdg, col_list = col_idx, genome = genome, strand_collapse = strand_collapse)
+    bdgs = parallel::mclapply(batch_files, read_bdg, col_list = col_idx, genome = genome, strand_collapse = strand_collapse, mc.cores = thr)
     names(bdgs) = samp_names
 
     if(i == 1){
@@ -190,6 +195,8 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
 
   return(list(beta_matrix = data.table::setDT(beta_mat_final), cov_matrix = data.table::setDT(cov_mat_final)))
 }
+
+#--------------------------------------------------------------------------------------------------------------------------
 
 #Use for loop for sample-by-sample processing, memory efficient, uses HDF5Array
 non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL, h5temp = NULL, h5 = FALSE, strand_collapse = FALSE){
@@ -212,14 +219,14 @@ non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL
       dimnames = NULL,
       type = "double",
       filepath = file.path(h5temp, paste0("M_sink_",sink_counter, ".h5")),
-      name = "M", chunkdim = HDF5Array::getHDF5DumpChunkDim(c(nrow(genome), length(files)), "double"),
+      name = "M", chunkdim = HDF5Array::getHDF5DumpChunkDim(c(nrow(genome), length(files))),
       level = 6)
     cov_sink <- HDF5Array::HDF5RealizationSink(
       dim = c(nrow(genome), length(files)),
       dimnames = NULL,
       type = "integer",
       filepath = file.path(h5temp, paste0("cov_sink_",sink_counter, ".h5")),
-      name = "cov", chunkdim = HDF5Array::getHDF5DumpChunkDim(c(nrow(genome), length(files)), "integer"),
+      name = "cov", chunkdim = HDF5Array::getHDF5DumpChunkDim(c(nrow(genome), length(files))),
       level = 6)
   } else {
     beta_mat = data.table::data.table()
@@ -232,8 +239,8 @@ non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL
         message("Processing: ", files[i])
       }
       b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse)
-      DelayedArray::write_block_to_sink(block=as.matrix(b[, .(beta)]), viewport = grid[[i]], sink = M_sink)
-      DelayedArray::write_block_to_sink(block=as.matrix(b[, .(cov)]), viewport = grid[[i]], sink = cov_sink)
+      DelayedArray::write_block(block=as.matrix(b[, .(beta)]), viewport = grid[[i]], sink = M_sink)
+      DelayedArray::write_block(block=as.matrix(b[, .(cov)]), viewport = grid[[i]], sink = cov_sink)
       rm(b)
       gc()
     }
