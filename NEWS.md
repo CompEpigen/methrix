@@ -1,3 +1,10 @@
+# methrix 0.9.85 [in progress]
+
+* Bug fix: Replaced NaN's caused by 0/0 to NA's
+* Bug fix: `methrix2bsseq` error fix due to NA's
+* Add `Tutorial` vignette
+
+
 # methrix 0.9.8 [2019-03-28]
 
 * Updated `Methrix` object

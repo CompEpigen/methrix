@@ -36,8 +36,20 @@ setMethod(f = 'show', signature = 'methrix', definition = function(object){
 create_methrix = function(beta_mat = NULL, cov_mat = NULL, cpg_loci = NULL, is_hdf5 = FALSE,
                           genome_name = "hg19", col_data = NULL, h5_dir = NULL){
 
-  se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_chromosomes", "Reference_Build", "is_H5"),
-                                      Summary = c(ncol(beta_mat), nrow(beta_mat), nrow(cpg_loci[,.N,chr]), genome_name, is_hdf5))
+
+  if(is_hdf5){
+    n_non_covered = NA
+  }else{
+    beta_mat = data.table:::as.matrix.data.table(beta_mat)
+    cov_mat = data.table:::as.matrix.data.table(cov_mat)
+    n_non_covered = length(which(matrixStats::rowSums2(x = cov_mat) == 0))
+    n_non_covered = paste0(n_non_covered, " [", round(n_non_covered/nrow(cov_mat) * 100, digits = 2), "%]")
+  }
+
+
+  se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
+                                      Summary = c(ncol(beta_mat), format(nrow(beta_mat), big.mark = ","),
+                                                  n_non_covered, nrow(cpg_loci[,.N,chr]), genome_name, is_hdf5))
 
   chr_summary = cpg_loci[,.N,chr]
 
@@ -50,8 +62,7 @@ create_methrix = function(beta_mat = NULL, cov_mat = NULL, cpg_loci = NULL, is_h
                error = function(e) message("The dataset is not saved."))
     }
   }else{
-    se = SummarizedExperiment::SummarizedExperiment(assays = list(beta = data.table:::as.matrix.data.table(beta_mat),
-                                                                  cov = data.table:::as.matrix.data.table(cov_mat)),
+    se = SummarizedExperiment::SummarizedExperiment(assays = list(beta = beta_mat, cov = cov_mat),
                                                     metadata = list(genome = genome_name, is_h5 = is_hdf5, summary = se_summary, chr_summary = chr_summary),
                                                     colData = col_data, rowData = cpg_loci)
   }

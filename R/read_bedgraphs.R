@@ -62,7 +62,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stra
   }else{
     pipeline = match.arg(arg = pipeline, choices = c("Bismark_cov", "MethylDackel", "MethylcTools"))
     if(verbose){
-      message(paste0("Using ", pipeline, " as a preset.."))
+      message(paste0("Using ", pipeline, " as a preset"))
     }
     col_idx = get_source_idx(protocol = pipeline)
   }
@@ -117,7 +117,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stra
   }
 
   if(verbose){
-    message(paste0("Retained ", nrow(genome), " CpGs after filtering for contigs"))
+    message(paste0("Retained ", format(nrow(genome), big.mark = ","), " CpGs after filtering for contigs"))
   }
 
   #Set colData
@@ -142,6 +142,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stra
   if(nrow(mat_list$beta_matrix) != nrow(mat_list$cov_matrix)){
     stop("Discrepancies in dimensions of coverage and beta value matrices.")
   }
+
 
   m_obj =  create_methrix(beta_mat = mat_list$beta_mat, cov_mat = mat_list$cov_matrix,
                           cpg_loci = genome[,.(chr, start, strand)], is_hdf5 = h5, genome_name = ref_build,

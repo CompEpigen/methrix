@@ -26,26 +26,53 @@ vect_batch_size = 3 -> Prcess 3 files in a batch
 Test data is 3 stranded WGBS bedgraphs from MethylcTools
 
 ```r
-> x0 = methrix::read_bedgraphs(files = bdg_files[1:3], pipeline = "MethylcTools", collapse_starnds = TRUE, vect_batch_size = 3, ref_build = "Hs37d5", ref_cpgs = hs37d5_cpgs, verbose = FALSE)
+# > meth = methrix::read_bedgraphs(files = bdg_files[1:3], pipeline = "MethylcTools", collapse_starnds = TRUE, vect_batch_size = 3, ref_build = "Hs37d5", ref_cpgs = hs37d5_cpgs)
+# Using MethylcTools as a preset
+# Retained 28,162,972 CpGs after filtering for contigs
 # Processing batch 1 of 1
-# |--------------------------------------------------|
-# |==================================================|
-# Missing 0 from: tumor00_JMMLC_D117.CG.bed.gz
-# |--------------------------------------------------|
-# |==================================================|
-# Missing 0 from: tumor00_JMMLC_D123.CG.bed.gz
-# |--------------------------------------------------|
-# |==================================================|
-# Missing 0 from: tumor00_JMMLC_D124.CG.bed.gz
-# 00:01:13 elapsed (00:02:58 cpu)
+# Missing 0 reference CpGs from: tumor00_JMMLC_D117.CG.bed.gz
+# Missing 0 reference CpGs from: tumor00_JMMLC_D123.CG.bed.gz
+# Missing 0 reference CpGs from: tumor00_JMMLC_D124.CG.bed.gz
+# 00:02:14 elapsed (00:07:09 cpu)
 
-> x0
-# An object of class  methrix 
-#                 ID  Summary
-# 1:       n_samples        3
-# 2:          n_CpGs 28162972
-# 3: Reference_Build   Hs37d5
-# 4:           is_H5    FALSE
+> meth
+An object of class  methrix 
+                ID        Summary
+1:       n_samples              3
+2:          n_CpGs     28,162,972
+3:     n_uncovered 2337368 [8.3%]
+4:   n_chromosomes             25
+5: Reference_Build         Hs37d5
+6:           is_H5          FALSE
+
+> getChrSummary(x = meth)
+#     chr       N
+#  1:   1 2284470
+#  2:  10 1351291
+#  3:  11 1289987
+#  4:  12 1277218
+#  5:  13  803708
+#  6:  14  859779
+#  7:  15  873464
+#  8:  16 1097776
+#  9:  17 1155600
+# 10:  18  677214
+# 11:  19 1057376
+# 12:   2 2164335
+# 13:  20  717722
+# 14:  21  380444
+# 15:  22  578097
+# 16:   3 1623646
+# 17:   4 1473930
+# 18:   5 1506454
+# 19:   6 1475569
+# 20:   7 1568666
+# 21:   8 1309135
+# 22:   9 1226821
+# 23:  MT     435
+# 24:   X 1246401
+# 25:   Y  163434
+#     chr       N
 ```
 
 #### Filter matrices based on coverage statistics (e.g: at-least two samples should have a loci covered by 4 reads)

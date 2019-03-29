@@ -7,10 +7,10 @@ order_by_sd = function(m){
   if(is_h5(m)){
     stop("This function only supports non HDF5 matrices for now.")
   }else{
-    row_order = order(matrixStats::rowSds(x = assay(x, 1)), decreasing = TRUE)
+    row_order = order(matrixStats::rowSds(x = get_matrix(m = m, type = "M"), na.rm = TRUE), decreasing = TRUE)
     assay(m, i = 1) = assay(m, i = 1)[row_order,, drop = FALSE]
     assay(m, i = 2) = assay(m, i = 2)[row_order,, drop = FALSE]
-    rowData(x = m) = S4Vectors::DataFrame(as.data.frame(x = rowData(x = x))[row_order,, drop = FALSE])
+    rowData(x = m) = S4Vectors::DataFrame(as.data.frame(x = rowData(x = m))[row_order,, drop = FALSE])
   }
   m
 }
@@ -120,12 +120,13 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
 #' @param min_samples At-least these many samples should have a loci with coverage >= \code{cov_thr}
 #' @param n_threads number of threads to use. Default 4.
 #' @export
-filter_methrix = function(m, cov_thr = 1, min_samples = 1, n_threads = 4){
+coverage_filter = function(m, cov_thr = 1, min_samples = 1, n_threads = 4){
 
   if(is_h5(m)){
     stop("This function only supports non HDF5 matrices for now.")
   }else{
-    cov_dat = assay(x = m, i = 2)
+
+    cov_dat = get_matrix(m = m, type = "C")
 
     row_idx = parallel::mclapply(X = seq_len(nrow(cov_dat)), function(i){
       x = cov_dat[i,]
@@ -135,13 +136,14 @@ filter_methrix = function(m, cov_thr = 1, min_samples = 1, n_threads = 4){
     row_idx = unlist(row_idx)
     row_idx = row_idx >= min_samples
 
-    message(paste0("Retained ", length(row_idx[row_idx]), " of ", nrow(cov_dat), " sites"))
+    message(paste0("Retained ", format(length(row_idx[row_idx]), big.mark = ","), " of ", format(nrow(cov_dat), big.mark = ","), " sites"))
 
     rm(cov_dat)
+    gc()
 
     m = create_methrix(beta_mat = assay(m, i = 1)[row_idx,, drop = FALSE],
                        cov_mat = assay(m, i = 2)[row_idx,, drop = FALSE],
-                       cpg_loci = S4Vectors::DataFrame(as.data.frame(x = rowData(x = m))[row_idx,, drop = FALSE]),
+                       cpg_loci = data.table::as.data.table(as.data.frame(x = rowData(x = m))[row_idx,, drop = FALSE]),
                        is_hdf5 = is_h5(m), genome_name = m@metadata$genome,
                        col_data = colData(m), h5_dir = NULL)
 
@@ -190,8 +192,45 @@ methrix2bsseq = function(m){
     stop("This function only supports non HDF5 matrices for now.")
   }
 
-  b = bsseq::BSseq(M = get_matrix(m), Cov = get_matrix(m, type = "C"),
-                   pData = colData(x = m), pos = rowData(x = m)[,"start"], chr = rowData(x = m)[,"chr"],
-                   sampleNames = rownames(m@colData))
+  n_samps = as.numeric(m@metadata$summary[1, Summary])
+  warning("BSseq does not allow any uncovered loci (NA's). This will filter out all uncovered loci ", immediate. = TRUE)
+  m_clean = methrix::coverage_filter(m = m, cov_thr = 1, min_samples = n_samps)
+
+
+  b = bsseq::BSseq(M = get_matrix(m_clean), Cov = get_matrix(m_clean, type = "C"),
+                   pData = colData(x = m_clean), pos = rowData(x = m_clean)[,"start"], chr = rowData(x = m_clean)[,"chr"],
+                   sampleNames = rownames(m_clean@colData))
   b
+}
+
+#--------------------------------------------------------------------------------------------------------------------------
+
+#' Remove loci that are uncovered across all samples
+#' @details Takes \code{\link{methrix}} object and removes loci that are uncovered across all samples
+#' @param m \code{\link{methrix}} object
+#' @export
+#'
+remove_uncovered = function(m){
+
+  if(is_h5(m)){
+    stop("This function only supports non HDF5 matrices for now.")
+  }
+
+  cov_dat = get_matrix(m = m, type = "C")
+
+  row_idx = which(matrixStats::rowSums2(x = cov_dat) == 0)
+
+  message(paste0("Removed ", format(length(row_idx), big.mark = ","),
+                 " [", round(length(row_idx)/nrow(cov_dat) * 100, digits = 2), "%] uncovered loci of ",
+                 format(nrow(cov_dat), big.mark = ","), " sites"))
+
+  rm(cov_dat)
+  gc()
+
+  m = create_methrix(beta_mat = assay(m, i = 1)[-row_idx,, drop = FALSE],
+                     cov_mat = assay(m, i = 2)[-row_idx,, drop = FALSE],
+                     cpg_loci = data.table::as.data.table(as.data.frame(x = rowData(x = m))[-row_idx,, drop = FALSE]),
+                     is_hdf5 = is_h5(m), genome_name = m@metadata$genome,
+                     col_data = colData(m), h5_dir = NULL)
+  m
 }

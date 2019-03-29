@@ -122,7 +122,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
   }
 
   #Handle NaNs (resulting from 0/0)
-  bdg_dat$beta = replace(x = bdg_dat$beta, list = is.nan(bdg_dat$beta), values = 0)
+  bdg_dat$beta = replace(x = bdg_dat$beta, list = is.nan(bdg_dat$beta), values = NA)
   bdg_dat = bdg_dat[,.(chr, start, beta, cov, strand)]
   bdg_dat[, chr := as.character(chr)]
   bdg_dat[, start := as.integer(start)]

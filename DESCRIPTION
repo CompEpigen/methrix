@@ -1,6 +1,6 @@
 Package: methrix
 Title: HDF5 and data.table backend for faster proceesing of large methylation matrices
-Version: 0.9.8
+Version: 0.9.85
 Authors@R: 
     person(given = "First",
            family = "Last",
