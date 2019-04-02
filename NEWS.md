@@ -3,7 +3,7 @@
 * Bug fix: Replaced NaN's caused by 0/0 to NA's
 * Bug fix: `methrix2bsseq` error fix due to NA's
 * Add `Tutorial` vignette
-
+* Bug fix: Fixed M values passed to BSseq object creation
 
 # methrix 0.9.8 [2019-03-28]
 

@@ -197,7 +197,9 @@ methrix2bsseq = function(m){
   m_clean = methrix::coverage_filter(m = m, cov_thr = 1, min_samples = n_samps)
 
 
-  b = bsseq::BSseq(M = get_matrix(m_clean), Cov = get_matrix(m_clean, type = "C"),
+  #Thanks to Maxi for pointing out the bug related to M estimation
+  #To-do: Find solution to avoid matrix multiplication (for small datasets it shouldn't affect)
+  b = bsseq::BSseq(M = get_matrix(m_clean) * get_matrix(m_clean, type = "C"), Cov = get_matrix(m_clean, type = "C"),
                    pData = colData(x = m_clean), pos = rowData(x = m_clean)[,"start"], chr = rowData(x = m_clean)[,"chr"],
                    sampleNames = rownames(m_clean@colData))
   b
