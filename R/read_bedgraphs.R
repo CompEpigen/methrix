@@ -11,6 +11,8 @@
 #' @param vect To use vectorized code. Default TRUE, memory intese. Set to FALSE if you have large number of BedGraph files.
 #' @param vect_batch_size Default NULL. Process samples in batches. Applicable only when vect = TRUE
 #' @param coldata An optional DataFrame describing the samples. Row names, if present, become the column names of the matrix. If NULL, then a DataFrame will be created with basename of files used as the row names.
+#' @param fill_CpGs Fill missing CpGs from reference genome. Default TRUE, if FALSE merges bedgraphs.
+#' @param ideal Default FALSE. Are the all the rows in bedgraphs are in same order? Default FALSE. If TRUE matrix is created by simply binding columns rather than merging, which is way much faster. Only applicable when \{code{fill_CpGs}} is TRUE
 #' @param chr_idx column index for chromosome in bedgraph files
 #' @param start_idx column index for start position in bedgraph files
 #' @param end_idx column index for end position in bedgraph files
@@ -31,10 +33,10 @@
 #' @import SummarizedExperiment DelayedArray HDF5Array
 #'
 #'
-read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stranded = FALSE, collapse_starnds = FALSE, ref_cpgs = NULL, ref_build = "Unknown", contigs = NULL, vect = TRUE,
+read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill_CpGs = TRUE, stranded = FALSE, collapse_starnds = FALSE, ref_cpgs = NULL, ref_build = "Unknown", contigs = NULL, vect = TRUE,
                           vect_batch_size = NULL, coldata = NULL, chr_idx = NULL, start_idx = NULL, end_idx = NULL,
                           beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
-                          n_threads = 1, h5 = FALSE, h5_dir = NULL, h5temp=NULL,
+                          n_threads = 1, ideal = FALSE, h5 = FALSE, h5_dir = NULL, h5temp=NULL,
                           verbose = TRUE, bored = TRUE){
 
   #To-do: One has to check if it works correctly with Bismark and MethylDackel data.
@@ -47,6 +49,12 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stra
     stop("Missing genome. Please provide a valid genome name", call. = FALSE)
   }
 
+  if(collapse_starnds){
+    if(!stranded){
+      stop("collapse_strands works only when stranded = TRUE ")
+    }
+  }
+
   if(vect && is.null(vect_batch_size)){
     vect_batch_size <- length(files)
   }
@@ -56,7 +64,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stra
   #Final aim is to bring input data to the following order:
   ##chr start end beta cov starnd <rest..>
   if(is.null(pipeline)){
-    col_idx = .parse_source_idx(chr = chr_idx, start = start_idx, end = end_idx, beta = beta_idx,
+    col_idx = parse_source_idx(chr = chr_idx, start = start_idx, end = end_idx, beta = beta_idx,
                                 cov = cov_idx, strand = strand_idx, n_meth = M_idx, n_unmeth = U_idx, verbose = verbose)
     col_idx$col_classes = NULL
   }else{
@@ -84,27 +92,12 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stra
     genome[, end := end - 1]
   }
 
-  #check it with the strand column
-  if(stranded){
-    if(!collapse_starnds){
-      genome_plus <- data.table::copy(genome)
-      genome_plus[, strand := "+"]
-      genome[, start := start + 1]
-      genome[, strand := "-"]
-      genome <- data.table::rbindlist(list(genome, genome_plus), use.names = TRUE)
-      data.table::setkeyv(genome, cols = c("chr", "start"))
-      message(paste0("Splitted into  ", nrow(genome), " CpGs with strand information"))
-      rm(genome_plus)
-    }
-  }
-
   if(is.null(contigs)) {
     #Work with only main contrigs (either with chr prefix - UCSC style, or ensemble style)
     #it should work more generally
     contigs = c(paste0("chr", c(1:22, "X", "Y", "M")), 1:22, "X", "Y", "MT")
   }
 
-  genome_contigs = genome[, .N, chr][, chr]
   genome = genome[chr %in% as.character(contigs)]
 
   if(nrow(genome) == 0) {
@@ -118,6 +111,18 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stra
 
   if(verbose){
     message(paste0("Retained ", format(nrow(genome), big.mark = ","), " CpGs after filtering for contigs"))
+  }
+
+  #check it with the strand column
+  if(stranded){
+    genome_plus <- data.table::copy(genome)
+    genome_plus[, strand := "+"]
+    genome[, start := start + 1]
+    genome[, strand := "-"]
+    genome <- data.table::rbindlist(list(genome, genome_plus), use.names = TRUE)
+    data.table::setkeyv(genome, cols = c("chr", "start"))
+    message(paste0("Splitted into ", format(nrow(genome), big.mark = ","), " CpGs with strand information"))
+    rm(genome_plus)
   }
 
   #Set colData
@@ -143,10 +148,17 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stra
     stop("Discrepancies in dimensions of coverage and beta value matrices.")
   }
 
+  #Finally collapse ref CpGs strands
+  if(collapse_starnds){
+    genome = genome[strand %in% '+']
+    genome[,strand := "*"]
+  }
+
+  #return(list(mat_list, genome))
 
   m_obj =  create_methrix(beta_mat = mat_list$beta_mat, cov_mat = mat_list$cov_matrix,
                           cpg_loci = genome[,.(chr, start, strand)], is_hdf5 = h5, genome_name = ref_build,
-                          col_data = coldata, h5_dir = h5_dir)
+                          col_data = coldata, h5_dir = h5_dir, ref_cpg_dt = ref_cpgs_chr)
 
   rm(genome)
   gc()

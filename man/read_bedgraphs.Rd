@@ -5,13 +5,13 @@
 \title{Versatile BedGraph reader.}
 \usage{
 read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
-  stranded = FALSE, collapse_starnds = FALSE, ref_cpgs = NULL,
-  ref_build = "Unknown", contigs = NULL, vect = TRUE,
-  vect_batch_size = NULL, coldata = NULL, chr_idx = NULL,
-  start_idx = NULL, end_idx = NULL, beta_idx = NULL, M_idx = NULL,
-  U_idx = NULL, strand_idx = NULL, cov_idx = NULL, n_threads = 1,
-  h5 = FALSE, h5_dir = NULL, h5temp = NULL, verbose = TRUE,
-  bored = TRUE)
+  fill_CpGs = TRUE, stranded = FALSE, collapse_starnds = FALSE,
+  ref_cpgs = NULL, ref_build = "Unknown", contigs = NULL,
+  vect = TRUE, vect_batch_size = NULL, coldata = NULL,
+  chr_idx = NULL, start_idx = NULL, end_idx = NULL,
+  beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL,
+  cov_idx = NULL, n_threads = 1, ideal = FALSE, h5 = FALSE,
+  h5_dir = NULL, h5temp = NULL, verbose = TRUE, bored = TRUE)
 }
 \arguments{
 \item{files}{bedgraph files.}
@@ -19,6 +19,8 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 \item{pipeline}{Default NULL. Can be "Bismark" or "MethylDeckal" or "MethylcTools". If not known use idx arguments for manual column assignments.}
 
 \item{zero_based}{Are bedgraph regions zero based ? Default TRUE}
+
+\item{fill_CpGs}{Fill missing CpGs from reference genome. Default TRUE, if FALSE merges bedgraphs.}
 
 \item{stranded}{Default FALSE}
 

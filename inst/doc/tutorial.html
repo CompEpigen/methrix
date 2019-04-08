@@ -11,7 +11,7 @@
 
 <meta name="author" content="CompEpigen" />
 
-<meta name="date" content="2019-03-29" />
+<meta name="date" content="2019-04-08" />
 
 <title>Methrix tutorial</title>
 
@@ -339,7 +339,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Methrix tutorial</h1>
 <h4 class="author">CompEpigen</h4>
-<h4 class="date">2019-03-29</h4>
+<h4 class="date">2019-04-08</h4>
 
 </div>
 
@@ -376,17 +376,19 @@ hs37d5_cpgs =<span class="st"> </span>methrix<span class="op">::</span><span cla
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#Read the files</span>
 meth =<span class="st"> </span>methrix<span class="op">::</span><span class="kw">read_bedgraphs</span>(<span class="dt">files =</span> bed_files, 
                                <span class="dt">pipeline =</span> <span class="st">&quot;MethylcTools&quot;</span>,
+                               <span class="dt">stranded =</span> <span class="ot">TRUE</span>,
                                <span class="dt">collapse_starnds =</span> <span class="ot">TRUE</span>, 
                                <span class="dt">ref_build =</span> <span class="st">&quot;Hs37d5&quot;</span>, 
                                <span class="dt">vect_batch_size =</span> <span class="dv">3</span>, 
                                <span class="dt">ref_cpgs =</span> hs37d5_cpgs)
 <span class="co">#&gt; Using MethylcTools as a preset</span>
 <span class="co">#&gt; Retained 28,162,972 CpGs after filtering for contigs</span>
+<span class="co">#&gt; Splitted into 56,325,944 CpGs with strand information</span>
 <span class="co">#&gt; Processing batch 1 of 1</span>
 <span class="co">#&gt; Missing 0 reference CpGs from: tumor00_JMMLC_D117.CG.bed.gz</span>
 <span class="co">#&gt; Missing 0 reference CpGs from: tumor00_JMMLC_D123.CG.bed.gz</span>
 <span class="co">#&gt; Missing 0 reference CpGs from: tumor00_JMMLC_D124.CG.bed.gz</span>
-<span class="co">#&gt; 00:01:09 elapsed (00:03:00 cpu)</span></code></pre></div>
+<span class="co">#&gt; 00:01:40 elapsed (00:02:35 cpu)</span></code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#Typing meth shows basic summary.</span>
 meth
 <span class="co">#&gt; An object of class  methrix </span>
@@ -619,7 +621,7 @@ bs_seq
 <span class="co">#&gt;  [4] rtracklayer_1.42.2                         </span>
 <span class="co">#&gt;  [5] Biostrings_2.50.2                          </span>
 <span class="co">#&gt;  [6] XVector_0.22.0                             </span>
-<span class="co">#&gt;  [7] methrix_0.9.8                              </span>
+<span class="co">#&gt;  [7] methrix_0.9.85                             </span>
 <span class="co">#&gt;  [8] SummarizedExperiment_1.12.0                </span>
 <span class="co">#&gt;  [9] DelayedArray_0.8.0                         </span>
 <span class="co">#&gt; [10] BiocParallel_1.16.6                        </span>
@@ -630,7 +632,7 @@ bs_seq
 <span class="co">#&gt; [15] IRanges_2.16.0                             </span>
 <span class="co">#&gt; [16] S4Vectors_0.20.1                           </span>
 <span class="co">#&gt; [17] BiocGenerics_0.28.0                        </span>
-<span class="co">#&gt; [18] data.table_1.12.0                          </span>
+<span class="co">#&gt; [18] data.table_1.12.2                          </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; loaded via a namespace (and not attached):</span>
 <span class="co">#&gt;  [1] locfit_1.5-9.1           Rcpp_1.0.1              </span>
@@ -640,7 +642,7 @@ bs_seq
 <span class="co">#&gt;  [9] rprojroot_1.3-2          digest_0.6.18           </span>
 <span class="co">#&gt; [11] R6_2.4.0                 backports_1.1.3         </span>
 <span class="co">#&gt; [13] evaluate_0.13            zlibbioc_1.28.0         </span>
-<span class="co">#&gt; [15] rlang_0.3.2              rstudioapi_0.10         </span>
+<span class="co">#&gt; [15] rlang_0.3.3              rstudioapi_0.10         </span>
 <span class="co">#&gt; [17] callr_3.2.0              R.oo_1.22.0             </span>
 <span class="co">#&gt; [19] R.utils_2.8.0            Matrix_1.2-16           </span>
 <span class="co">#&gt; [21] rmarkdown_1.12           desc_1.2.0              </span>

@@ -60,6 +60,7 @@ hs37d5_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.1000genomes.
 #Read the files
 meth = methrix::read_bedgraphs(files = bed_files, 
                                pipeline = "MethylcTools",
+                               stranded = TRUE,
                                collapse_starnds = TRUE, 
                                ref_build = "Hs37d5", 
                                vect_batch_size = 3, 

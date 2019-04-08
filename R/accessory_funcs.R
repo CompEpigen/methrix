@@ -96,7 +96,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
 #--------------------------------------------------------------------------------------------------------------------------
 
 #Read bedgraphs, and add missing info
-read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_collapse = FALSE){
+read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_collapse = FALSE, fill_cpgs = TRUE){
 
   bdg_dat = data.table::fread(file = bdg, sep = "\t", colClasses = col_list$col_classes, verbose = FALSE, showProgress = FALSE)
   colnames(bdg_dat)[col_list$col_idx] = names(col_list$col_idx)
@@ -107,23 +107,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
     }
   }
 
-  if(strand_collapse){
-    #If strand information needs to collapsed, bring start position of crick strand to previous base (on watson base)
-    #and estimate new M, U and beta values
-    if(!all(c("M", "U") %in% names(bdg_dat))){
-      stop("strand_collapse works only when M and U are available!")
-    }
-
-    bdg_dat[,start := ifelse(strand == '-', yes = start - 1, no = start)]
-    bdg_dat = bdg_dat[, .(M = sum(M), U = sum(U)), .(chr, start)]
-    bdg_dat[,cov := M + U]
-    bdg_dat[,beta := M/cov]
-    bdg_dat[,strand := "*"]
-  }
-
   #Handle NaNs (resulting from 0/0)
-  bdg_dat$beta = replace(x = bdg_dat$beta, list = is.nan(bdg_dat$beta), values = NA)
-  bdg_dat = bdg_dat[,.(chr, start, beta, cov, strand)]
   bdg_dat[, chr := as.character(chr)]
   bdg_dat[, start := as.integer(start)]
 
@@ -138,25 +122,52 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
     }
   }
 
-  missing_cpgs = genome[!bdg_dat[,list(chr, start)], on = c("chr", "start")]
-  if(verbose){
-    message(paste0("Missing ", nrow(missing_cpgs), " reference CpGs from: ", basename(bdg)))
-  }
-  if(nrow(missing_cpgs)>0){
-    missing_cpgs[, width := NULL][, end := NULL][, beta := NA][, cov := 0]
-    bdg_dat = data.table::rbindlist(list(bdg_dat, missing_cpgs), use.names = TRUE)
-  }
   data.table::setkey(x = bdg_dat, "chr", "start")
-  data.table::setkey(x = genome, "chr", "start")
 
-  #Better than identical(); seems to take couple of seconds but this is crucial to make sure everything is in order
-  if(data.table:::all.equal.data.table(target = bdg_dat[,.(chr, start)],
-                                       current = genome[,.(chr, start)],
-                                       ignore.row.order = FALSE)){
-    return(bdg_dat)
-  }else{
-    stop("Something went wrong with filling up the non-covered CpG sites.")
+  if(fill_cpgs){
+
+    data.table::setkey(x = genome, "chr", "start")
+    missing_cpgs = genome[!bdg_dat[,list(chr, start)], on = c("chr", "start")]
+
+    if(verbose){
+      message(paste0("Missing ", format(nrow(missing_cpgs), big.mark = ","), " reference CpGs from: ", basename(bdg)))
+    }
+    if(nrow(missing_cpgs)>0){
+      missing_cpgs[, width := NULL][, beta := NA][, cov := 0][,M := 0][,U := 0]
+      bdg_dat = data.table::rbindlist(list(bdg_dat, missing_cpgs), use.names = TRUE)
+    }
+    data.table::setkey(x = bdg_dat, "chr", "start")
+
+    #Better than identical(); seems to take couple of seconds but this is crucial to make sure everything is in order
+    is_identical = data.table:::all.equal.data.table(target = bdg_dat[,.(chr, start)],
+                                                     current = genome[,.(chr, start)],
+                                                     ignore.row.order = FALSE)
+
+    if(class(is_identical) == 'character'){
+      stop("Something went wrong with filling up of non-covered CpG sites.")
+    }
+    #Re-assign strand info from genome (since some bedgraphs have no strand info, yet cover CpGs from both strands. i,e MethylDackel)
+    bdg_dat[,strand := genome$strand]
+
+    if(strand_collapse){
+      #If strand information needs to collapsed, bring start position of crick strand to previous base (on watson base)
+      #and estimate new M, U and beta values
+      if(!all(c("M", "U") %in% names(bdg_dat))){
+        stop("strand_collapse works only when M and U are available!")
+      }
+
+      bdg_dat[,start := ifelse(strand == '-', yes = start - 1, no = start)]
+      bdg_dat = bdg_dat[, .(M = sum(M), U = sum(U)), .(chr, start)]
+      bdg_dat[,cov := M + U]
+      bdg_dat[,beta := M/cov]
+      bdg_dat[,strand := "*"]
+    }
   }
+
+  bdg_dat$beta = replace(x = bdg_dat$beta, list = is.nan(bdg_dat$beta), values = NA)
+  bdg_dat = bdg_dat[,.(chr, start, beta, cov, strand)]
+
+  return(bdg_dat)
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
