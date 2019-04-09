@@ -55,15 +55,15 @@ create_methrix = function(beta_mat = NULL, cov_mat = NULL, cpg_loci = NULL, is_h
 
   if(is_hdf5){
     se = SummarizedExperiment::SummarizedExperiment(assays = list(beta = as(beta_mat, "HDF5Array"), cov = as(cov_mat, "HDF5Array")),
-                                                    metadata = list(genome = genome_name, is_h5 = is_hdf5, summary = se_summary, chr_summary = chr_summary),
-                                                    colData = col_data, rowData = cpg_loci, ref_CpG = ref_cpg_dt)
+                                                    metadata = list(genome = genome_name, is_h5 = is_hdf5, summary = se_summary, chr_summary = chr_summary, ref_CpG = ref_cpg_dt),
+                                                    colData = col_data, rowData = cpg_loci)
     if(!is.null(h5_dir)){
       tryCatch(HDF5Array::saveHDF5SummarizedExperiment(x = se, dir = h5_dir, replace = TRUE),
                error = function(e) message("The dataset is not saved."))
     }
   }else{
     se = SummarizedExperiment::SummarizedExperiment(assays = list(beta = beta_mat, cov = cov_mat),
-                                                    metadata = list(genome = genome_name, is_h5 = is_hdf5, summary = se_summary, chr_summary = chr_summary),
+                                                    metadata = list(genome = genome_name, is_h5 = is_hdf5, summary = se_summary, chr_summary = chr_summary, ref_CpG = ref_cpg_dt),
                                                     colData = col_data, rowData = cpg_loci)
   }
 
