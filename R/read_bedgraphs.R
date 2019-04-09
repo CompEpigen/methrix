@@ -154,7 +154,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
     genome[,strand := "*"]
   }
 
-  #return(list(mat_list, genome))
+  ref_cpgs_chr = genome[, .N, chr]
 
   m_obj =  create_methrix(beta_mat = mat_list$beta_mat, cov_mat = mat_list$cov_matrix,
                           cpg_loci = genome[,.(chr, start, strand)], is_hdf5 = h5, genome_name = ref_build,

@@ -1,0 +1,175 @@
+---
+title: "Methrix Summary"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    self_contained: yes
+    css: custom.css
+    theme: sandstone
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+
+```{r}
+library(ggplot2)
+library(plotly)
+library(data.table)
+```
+
+## Reference CpGs covered {.tabset}
+### Raw
+```{r}
+n_covered = data.table::fread(input = "n_covered_per_chr.tsv")
+n_covered = data.table::melt(data = n_covered, id.vars = c('chr', 'total_CpGs'))
+colnames(n_covered) = c("chr", "total_CpGs", "Sample_Name", "n_CpG")
+n_covered[, fraction := n_CpG/total_CpGs]
+
+p = ggplot(data = n_covered, aes(x = chr, y = n_CpG, label = Sample_Name))+geom_boxplot()+geom_jitter(size = 0.6)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+plotly::ggplotly(p = p)
+```
+
+### Fraction
+```{r}
+p = ggplot(data = n_covered, aes(x = chr, y = fraction, label = Sample_Name))+geom_boxplot()+geom_jitter(size = 0.6)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+plotly::ggplotly(p = p)
+```
+Number of reference CpGs covered by each sample in each chromosome
+
+
+## Reference CpGs covered by all {.tabset}
+### Raw
+```{r}
+n_covered_all = data.table::fread(input = "n_covered_by_all_samples.tsv")
+
+p = ggplot(data = n_covered_all, aes(x = chr, y = n_CpG, label = n_CpG))+geom_bar(stat = 'identity')+coord_flip()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+theme_minimal()
+plotly::ggplotly(p = p)
+```
+
+### Fraction
+```{r}
+p = ggplot(data = n_covered_all, aes(x = chr, y = fract_CpG, label = fract_CpG))+geom_bar(stat = 'identity')+coord_flip()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+ylim(0, 1)+theme_minimal()
+plotly::ggplotly(p = p)
+```
+Number of reference CpGs covered by all samples
+
+
+## Chromosome-wise Methylation {.tabset}
+### Mean
+```{r}
+m_stat = data.table::fread(input = "m_per_chr.tsv")
+mean_m = m_stat[stat %in% "mean"]
+mean_m[,stat := NULL]
+mean_m = data.table::melt(data = mean_m, id.vars = 'chr')
+colnames(mean_m) = c("chr", "Sample_Name", "Beta")
+
+p = ggplot(data = mean_m, aes(x = Beta, y = Sample_Name, color = chr, label = Sample_Name))+geom_point()+xlim(0, 1)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+plotly::ggplotly(p = p)
+```
+
+### Median
+```{r}
+median_m = m_stat[stat %in% "median"]
+median_m[,stat := NULL]
+median_m = data.table::melt(data = median_m, id.vars = 'chr')
+colnames(median_m) = c("chr", "Sample_Name", "Beta")
+
+p = ggplot(data = median_m, aes(x = Beta, y = Sample_Name, color = chr, label = Sample_Name))+geom_point()+xlim(0, 1)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+plotly::ggplotly(p = p)
+```
+
+## Chromosome-wise depth of coverage {.tabset}
+### Mean
+```{r}
+c_stat = data.table::fread(input = "c_per_chr.tsv")
+mean_c = c_stat[stat %in% "mean"]
+mean_c[,stat := NULL]
+mean_c = data.table::melt(data = mean_c, id.vars = 'chr')
+colnames(mean_c) = c("chr", "Sample_Name", "Coverage")
+
+p = ggplot(data = mean_c, aes(x = Coverage, y = Sample_Name, color = chr, label = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+plotly::ggplotly(p = p)
+```
+
+### Median
+```{r}
+median_c = c_stat[stat %in% "median"]
+median_c[,stat := NULL]
+median_c = data.table::melt(data = median_c, id.vars = 'chr')
+colnames(median_c) = c("chr", "Sample_Name", "Coverage")
+
+p = ggplot(data = median_c, aes(x = Coverage, y = Sample_Name, color = chr, label = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+plotly::ggplotly(p = p)
+```
+
+
+## Genome-wide Methylation {.tabset}
+### Mean
+```{r}
+global_meth = data.table::fread(input = "global_meth_per_samp.tsv")
+p = ggplot(data = global_meth, aes(x = mean, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)
+
+plotly::ggplotly(p = p)
+```
+
+### Median
+```{r}
+p = ggplot(data = global_meth, aes(x = median, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)
+
+plotly::ggplotly(p = p)
+```
+
+## Genome-wide depth of coverage {.tabset}
+### Mean
+```{r}
+global_cov = data.table::fread(input = "global_cov_per_samp.tsv")
+p = ggplot(data = global_cov, aes(x = mean, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+plotly::ggplotly(p = p)
+```
+
+### Median
+```{r}
+p = ggplot(data = global_cov, aes(x = median, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+plotly::ggplotly(p = p)
+```
+
+## Beta value distribution
+```{r}
+dens_files = list.files(pattern = "*_density\\.tsv$")
+dens_files = normalizePath(path = dens_files)
+
+if(length(dens_files) > 0){
+  
+  if(length(dens_files) <= 12){
+    cols = c("#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#FDB462", 
+            "#B3DE69", "#FCCDE5", "#D9D9D9", "#BC80BD", "#CCEBC5", "#FFED6F")
+  }else{
+    cols = sample(x = colors(), size = length(dens_files), replace = FALSE)
+  }
+  
+  dens_dat = lapply(dens_files, data.table::fread)
+  names(dens_dat) = gsub(pattern = "_density.tsv", replacement = "", x = basename(dens_files))
+  max_y = max(unlist(lapply(X = dens_dat, function(x) max(x[,y]))))
+
+  plot(x = NA, y = NA, xlim = c(0, 1), ylim = c(0, max_y), axes = FALSE, xlab = NA, ylab = NA)
+  lapply(seq_len(length(dens_dat)), function(i){
+    points(x = dens_dat[[i]], type = 'l', col = cols[i], lwd = 1.2)
+  })
+  axis(side = 1, at = seq(0, 1, 0.25))
+  axis(side = 2, at = c(0, round(max_y, digits = 2)), las = 2)
+  legend(x = 0.25, y = max_y, legend = names(dens_dat), col = cols, adj = 0, bty = 'n', cex = 0.7, lty = 1)
+}
+```
+

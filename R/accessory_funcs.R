@@ -98,7 +98,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
 #Read bedgraphs, and add missing info
 read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_collapse = FALSE, fill_cpgs = TRUE){
 
-  bdg_dat = data.table::fread(file = bdg, sep = "\t", colClasses = col_list$col_classes, verbose = FALSE, showProgress = FALSE)
+  bdg_dat = suppressWarnings(data.table::fread(file = bdg, sep = "\t", colClasses = col_list$col_classes, verbose = FALSE, showProgress = FALSE))
   colnames(bdg_dat)[col_list$col_idx] = names(col_list$col_idx)
 
   if(!is.null(col_list$fix_missing)){

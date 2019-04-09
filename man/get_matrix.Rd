@@ -4,7 +4,7 @@
 \alias{get_matrix}
 \title{Extract methylation or coverage matrices}
 \usage{
-get_matrix(m, type = "M", add_lcoi = FALSE)
+get_matrix(m, type = "M", add_loci = FALSE)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}

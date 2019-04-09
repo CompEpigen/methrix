@@ -30,8 +30,8 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
     stop("This function only supports non HDF5 matrices for now.")
   }
 
-  m_dat = get_matrix(m = m, type = "M", add_lcoi = TRUE)
-  c_dat = get_matrix(m = m, type = "C", add_lcoi = TRUE)
+  m_dat = get_matrix(m = m, type = "M", add_loci = TRUE)
+  c_dat = get_matrix(m = m, type = "C", add_loci = TRUE)
 
   if(!is.null(regions)){
     message("Subsetting by genomic regions..")
@@ -105,8 +105,7 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
     is_hdf5 = is_h5(m),
     genome_name = m@metadata$genome,
     col_data = colData(m)[samp_names,, drop = FALSE],
-    h5_dir = NULL
-  )
+    h5_dir = NULL, ref_cpg_dt = m@metadata$ref_CpG)
 
   return(m)
 }
@@ -145,7 +144,7 @@ coverage_filter = function(m, cov_thr = 1, min_samples = 1, n_threads = 4){
                        cov_mat = assay(m, i = 2)[row_idx,, drop = FALSE],
                        cpg_loci = data.table::as.data.table(as.data.frame(x = rowData(x = m))[row_idx,, drop = FALSE]),
                        is_hdf5 = is_h5(m), genome_name = m@metadata$genome,
-                       col_data = colData(m), h5_dir = NULL)
+                       col_data = colData(m), h5_dir = NULL, ref_cpg_dt = m@metadata$ref_CpG)
 
     return(m)
   }
@@ -160,7 +159,7 @@ coverage_filter = function(m, cov_thr = 1, min_samples = 1, n_threads = 4){
 #' @param add_loci Default FALSE. If TRUE adds CpG position info to the matrix and returns as a data.table
 #' @export
 #'
-get_matrix= function(m, type = "M", add_lcoi = FALSE){
+get_matrix= function(m, type = "M", add_loci = FALSE){
 
   type = match.arg(arg = type, choices = c("M", "C"))
 
@@ -170,7 +169,7 @@ get_matrix= function(m, type = "M", add_lcoi = FALSE){
     d = SummarizedExperiment::assay(x = m, i = 2)
   }
 
-  if(add_lcoi){
+  if(add_loci){
     d = as.data.frame(cbind(SummarizedExperiment::rowData(x = m), d))
     data.table::setDT(x = d)
   }
@@ -233,6 +232,6 @@ remove_uncovered = function(m){
                      cov_mat = assay(m, i = 2)[-row_idx,, drop = FALSE],
                      cpg_loci = data.table::as.data.table(as.data.frame(x = rowData(x = m))[-row_idx,, drop = FALSE]),
                      is_hdf5 = is_h5(m), genome_name = m@metadata$genome,
-                     col_data = colData(m), h5_dir = NULL)
+                     col_data = colData(m), h5_dir = NULL, ref_cpg_dt = m@metadata$ref_CpG)
   m
 }
