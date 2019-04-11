@@ -1,3 +1,72 @@
+# Extracts methylation of regions of interest
+get_region_summary = function(m, regions = NULL, type = NULL, how = NULL){
+  if(is_h5(m)){
+    stop("This function only supports non HDF5 matrices for now.")
+  }
+
+  if(is.null(type)){
+    stop("Please specify if you want to summarize methylation (meth) or coverage (cov).")
+  }else if (type == "meth") {
+    message("Summarize methylation.")
+    dat = get_matrix(m = m, type = "M", add_loci = TRUE)
+  }else if (type == "cov") {
+    message("Summarize coverage.")
+    dat = get_matrix(m = m, type = "C", add_loci = TRUE)
+  }else{
+      stop("Invalid input for summarization of regions.")
+    }
+
+  if(!is.null(regions)){
+    message("Subsetting by genomic regions..")
+
+    if(class(regions)[1] == "GRanges"){
+      regions = as.data.frame(regions)
+      colnames(regions)[1:3] = c("chr", "start", "end")
+      regions$chr = as.character(regions$chr)
+      data.table::setDT(x = regions, key = c("chr", "start", "end"))
+      regions = regions[,.(chr, start, end)]
+    }else if(class(regions)[1] == "data.table"){
+      colnames(regions)[1:3] = c("chr", "start", "end")
+      regions = regions[,.(chr, start, end)]
+      regions[, chr := as.character(chr)]
+      regions[, start := as.numeric(start)]
+      regions[, end := as.numeric(end)]
+      regions$name <- paste0("chr",regions$chr, ".",regions$start, ".",regions$end)
+      data.table::setDT(x = regions, key = c("chr", "start", "end"))
+    }else{
+      stop("Invalid input class for regions. Must be a data.table or GRanges object")
+    }
+
+    dat[,end := start+1]
+    overlap = data.table::foverlaps(x = dat, y = regions, type = "within", nomatch = NULL)
+
+    if(nrow(overlap) == 0){
+      stop("Subsetting resulted in zero entries")
+    }
+    if(is.null(how)) {
+      stop("Please specify how regions should be specified.")
+    }else if (how=="mean") {
+      message("Summarizing by average..")
+      output = overlap[, lapply(.SD, mean, na.rm=TRUE), by=name, .SDcols=rownames(colData(m))]
+    }else if (how=="max") {
+      message("Summarizing by maximum..")
+      output = overlap[, lapply(.SD, max, na.rm=TRUE), by=name, .SDcols=rownames(colData(m))]
+    }else if (how=="min") {
+      message("Summarizing by minimum..")
+      output = overlap[, lapply(.SD, min, na.rm=TRUE), by=name, .SDcols=rownames(colData(m))]
+    }else if (how=="sum") {
+      message("Summarizing by sum..")
+      output = overlap[, lapply(.SD, sum, na.rm=TRUE), by=name, .SDcols=rownames(colData(m))]
+    }else{
+      stop("Invalid input for region summarization.")
+    }
+    
+  output = cbind(regions[,c("chr", "start", "end"), with=F], mean[,rownames(colData(m)), with=F])
+
+  return(output)
+}
+}
+
 #' Order mathrix object by SD
 #' @details Takes \code{\link{methrix}} object and reorganizes the data by standard deviation
 #' @param m \code{\link{methrix}} object
@@ -235,3 +304,4 @@ remove_uncovered = function(m){
                      col_data = colData(m), h5_dir = NULL, ref_cpg_dt = m@metadata$ref_CpG)
   m
 }
+
