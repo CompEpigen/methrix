@@ -3,6 +3,7 @@
 export(coverage_filter)
 export(extract_CPGs)
 export(get_matrix)
+export(get_region_summary)
 export(methrix2bsseq)
 export(methrix_report)
 export(order_by_sd)

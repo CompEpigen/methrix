@@ -1,4 +1,9 @@
-# Extracts methylation of regions of interest
+#' Extracts methylation of regions of interest
+#' @details Takes \code{\link{methrix}} object and summarizes regions
+#' @param regions genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
+#' @param type data that should be summarized. Coule be methylation or coverage.
+#' @param how mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min
+#' @export
 get_region_summary = function(m, regions = NULL, type = NULL, how = NULL){
   if(is_h5(m)){
     stop("This function only supports non HDF5 matrices for now.")
@@ -6,10 +11,10 @@ get_region_summary = function(m, regions = NULL, type = NULL, how = NULL){
 
   if(is.null(type)){
     stop("Please specify if you want to summarize methylation (meth) or coverage (cov).")
-  }else if (type == "meth") {
+  }else if (type == "M") {
     message("Summarize methylation.")
     dat = get_matrix(m = m, type = "M", add_loci = TRUE)
-  }else if (type == "cov") {
+  }else if (type == "C") {
     message("Summarize coverage.")
     dat = get_matrix(m = m, type = "C", add_loci = TRUE)
   }else{
