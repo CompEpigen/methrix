@@ -2,17 +2,27 @@
 % Please edit documentation in R/write_bedgraphs.R
 \name{write_bedgraphs}
 \alias{write_bedgraphs}
-\title{Creates a detailed interative html summary report from Methrix object}
+\title{Writes bedGraphs from methrix object}
 \usage{
-write_bedgraphs(m)
+write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, n_thr = 4,
+  make_BigWig = FALSE, bedtools_path = NULL,
+  bedGraphToBigWig_path = NULL, bedClip_path = NULL)
 }
 \arguments{
-\item{meth}{\code{\link{methrix}} object}
-
 \item{output_dir}{Output directory name where the files should be saved. If \code{NULL} creats a \code{tempdir}}
 
 \item{n_thr}{Default 4. Only used if \code{plot_beta_dist} is TRUE}
+
+\item{bedtools_path}{Default NULL. Path to bedtools. Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE}
+
+\item{bedGraphToBigWig_path}{Default NULL. Path to bedGraphToBigWig Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE}
+
+\item{bedClip_path}{Default NULL. Path to bedClip Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE}
+
+\item{meth}{\code{\link{methrix}} object}
+
+\item{make_bigWig}{Default FALSE. Whether to convert bedGraph to BigWig}
 }
 \description{
-Creates a detailed interative html summary report from Methrix object
+Writes bedGraphs from methrix object
 }

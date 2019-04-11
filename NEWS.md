@@ -3,6 +3,7 @@
 Significant user level improvements:
 * `stranded` and `collapse_strands` now works with bedgraphs without strand info (such as from MethylDackel)
 * Added `methrix_report` function: one click function to generate comprehensive interactive html report from methrix object
+* Added `write_bedgraphs` function: [Still needs some fixes from data.table]
 
 * Bug fix: Replaced NaN's caused by 0/0 to NA's
 * Bug fix: `methrix2bsseq` error fix due to NA's
