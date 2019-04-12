@@ -75,27 +75,31 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
     col_idx = get_source_idx(protocol = pipeline)
   }
 
+  if(is.null(contigs)) {
+    #Work with only main contrigs (either with chr prefix - UCSC style, or ensemble style)
+    #it should work more generally
+    contigs = c(paste0("chr", c(1:22, "X", "Y", "M")), 1:22, "X", "Y", "MT")
+  }
+
   #Extract CpG's
-  if(!is.null(ref_cpgs)){
-    if(any(class(ref_cpgs)[1] == "character") || any(class(ref_cpgs)[1] == "BSgenome")){
+  conig_lens = NA
+  if(class(ref_cpgs) == 'list' & all(names(ref_cpgs) == c('cpgs', 'contig_lens'))){
+    conig_lens =  ref_cpgs$contig_lens[contig %in% contigs]
+    genome = data.table::copy(x = ref_cpgs$cpgs)
+  }else if(any(class(ref_cpgs)[1] == "character") || any(class(ref_cpgs)[1] == "BSgenome")){
       genome = extract_CPGs(ref_genome = ref_cpgs)
+      conig_lens = genome$contig_lens
+      genome = genome$cpgs
     }else if(class(ref_cpgs)[1] == "data.table"){
       genome = data.table::copy(x = ref_cpgs)
       data.table::setkey(x = genome, chr, start)
     }else{
       stop("Could not figure out the genome class.")
     }
-  }
 
   if(zero_based) {
     genome[, start := start - 1]
     genome[, end := end - 1]
-  }
-
-  if(is.null(contigs)) {
-    #Work with only main contrigs (either with chr prefix - UCSC style, or ensemble style)
-    #it should work more generally
-    contigs = c(paste0("chr", c(1:22, "X", "Y", "M")), 1:22, "X", "Y", "MT")
   }
 
   genome = genome[chr %in% as.character(contigs)]
@@ -123,6 +127,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
     data.table::setkeyv(genome, cols = c("chr", "start"))
     message(paste0("Splitted into ", format(nrow(genome), big.mark = ","), " CpGs with strand information"))
     rm(genome_plus)
+    gc()
   }
 
   #Set colData
@@ -138,10 +143,10 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
   #Summarize bedgraphs and create a matrix
   if(vect){
     mat_list = vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size,
-                               col_data = coldata,  genome = genome, strand_collapse = collapse_strands, thr = n_threads, contigs=contigs)
+                               col_data = coldata,  genome = genome, strand_collapse = collapse_strands, thr = n_threads, contigs = contigs)
   } else {
     mat_list = non_vect_code(files = files, col_idx = col_idx, coldata = coldata, strand_collapse = collapse_strands,
-                             verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, thr = n_threads)
+                             verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, thr = n_threads, contigs = contigs)
   }
 
   if(nrow(mat_list$beta_matrix) != nrow(mat_list$cov_matrix)){
@@ -158,7 +163,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
 
   m_obj =  create_methrix(beta_mat = mat_list$beta_mat, cov_mat = mat_list$cov_matrix,
                           cpg_loci = genome[,.(chr, start, strand)], is_hdf5 = h5, genome_name = ref_build,
-                          col_data = coldata, h5_dir = h5_dir, ref_cpg_dt = ref_cpgs_chr)
+                          col_data = coldata, h5_dir = h5_dir, ref_cpg_dt = ref_cpgs_chr, chrom_sizes = conig_lens)
 
   rm(genome)
   gc()

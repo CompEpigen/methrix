@@ -12,7 +12,7 @@ extract_CPGs(ref_genome = NULL, bored = TRUE)
 \item{bored}{Tell me a Chuck Norris joke while I wait for my CpG extraction. Default TRUE. jokes can be very explicit! you have been warned!}
 }
 \value{
-a data.table of CpG's
+a list of data.table containing number of CpG's and contig lengths
 }
 \description{
 Extracts all CpGs from a genome

@@ -4,7 +4,7 @@
 #' @importFrom BSgenome installed.genomes getBSgenome seqnames
 #' @importFrom rjson fromJSON
 #' @export
-#' @return a data.table of CpG's
+#' @return a list of data.table containing number of CpG's and contig lengths
 
 extract_CPGs = function(ref_genome = NULL, bored = TRUE){
 
@@ -44,6 +44,7 @@ extract_CPGs = function(ref_genome = NULL, bored = TRUE){
   }
 
   ref_genome = BSgenome::getBSgenome(genome = ref_genome)
+  chrom_sizes = data.table::data.table(contig = names(seqlengths(x = ref_genome)), length = seqlengths(x = ref_genome))
   chrs = names(ref_genome)
 
   #Code borrwed from from: https://support.bioconductor.org/p/95239/
@@ -62,5 +63,5 @@ extract_CPGs = function(ref_genome = NULL, bored = TRUE){
   data.table::setkey(x = cpgs, "chr", "start")
   message(paste0("Done.\nExtracted ", nrow(cpgs), " from ", length(chrs), " contigs."))
 
-  return(cpgs)
+  return(list(cpgs = cpgs, contig_lens = chrom_sizes))
 }

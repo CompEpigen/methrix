@@ -346,7 +346,7 @@ region_filter = function(m, regions){
     current_regions <-  as.data.table(m@elementMetadata)
     current_regions[,end := start+1]
     data.table::setDT(x = current_regions, key = c("chr", "start", "end"))
-    overlap = data.table::foverlaps(x = current_regions, y = regions, type = "within", nomatch = NULL, which = T)
+    overlap = data.table::foverlaps(x = current_regions, y = regions, type = "within", nomatch = NULL, which = TRUE)
 
     if(nrow(overlap) == 0){
       stop("Subsetting resulted in zero entries")

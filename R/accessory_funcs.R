@@ -96,7 +96,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
 #--------------------------------------------------------------------------------------------------------------------------
 
 #Read bedgraphs, and add missing info
-read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_collapse = FALSE, fill_cpgs = TRUE, contigs=contigs){
+read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_collapse = FALSE, fill_cpgs = TRUE, contigs = contigs){
 
   bdg_dat = suppressWarnings(data.table::fread(file = bdg, sep = "\t", colClasses = col_list$col_classes, verbose = FALSE, showProgress = FALSE))
   colnames(bdg_dat)[col_list$col_idx] = names(col_list$col_idx)
@@ -122,8 +122,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
     }
   }
 
-  if (!is.null(contigs)){
-
+  if(!is.null(contigs)){
     bdg_dat = bdg_dat[chr %in% as.character(contigs)]
   }
 
@@ -139,7 +138,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
     }
     if(nrow(missing_cpgs)>0){
       missing_cpgs[, width := NULL][, beta := NA][, cov := 0][,M := 0][,U := 0]
-      bdg_dat = data.table::rbindlist(list(bdg_dat, missing_cpgs), use.names = TRUE)
+      bdg_dat = data.table::rbindlist(list(bdg_dat, missing_cpgs), use.names = TRUE, fill = TRUE)
     }
     data.table::setkey(x = bdg_dat, "chr", "start")
     #Better than identical(); seems to take couple of seconds but this is crucial to make sure everything is in order
@@ -177,7 +176,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
 #--------------------------------------------------------------------------------------------------------------------------
 
 #Process samples in batches. Batches are processed in vectorized manner (ideal for large number of samples)
-vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome = NULL, strand_collapse = FALSE, thr = 1, contigs=contigs){
+vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome = NULL, strand_collapse = FALSE, thr = 1, contigs = contigs){
   batches = split(files, ceiling(seq_along(files)/batch_size))
   batches_samp_names = split(rownames(col_data), ceiling(seq_along(rownames(col_data))/batch_size))
 
@@ -192,9 +191,9 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
       if (thr > 1){
         warning("Windows OS doesn't support parallel processing. Setting n_threads to 1.")
       }
-      bdgs = lapply(batch_files, read_bdg, col_list = col_idx, genome = genome, strand_collapse = strand_collapse, contigs=contigs)
+      bdgs = lapply(batch_files, read_bdg, col_list = col_idx, genome = genome, strand_collapse = strand_collapse, contigs = contigs)
     }else {
-      bdgs = parallel::mclapply(batch_files, read_bdg, col_list = col_idx, genome = genome, strand_collapse = strand_collapse, mc.cores = thr, contigs=contigs)}
+      bdgs = parallel::mclapply(batch_files, read_bdg, col_list = col_idx, genome = genome, strand_collapse = strand_collapse, mc.cores = thr, contigs = contigs)}
     names(bdgs) = samp_names
 
     if(i == 1){
@@ -219,7 +218,7 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
 #--------------------------------------------------------------------------------------------------------------------------
 
 #Use for loop for sample-by-sample processing, memory efficient, uses HDF5Array
-non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL, h5temp = NULL, h5 = FALSE, strand_collapse = FALSE){
+non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL, h5temp = NULL, h5 = FALSE, strand_collapse = FALSE, contigs = contigs){
 browser()
   if(h5){
     if(is.null(h5temp)){
@@ -258,7 +257,7 @@ browser()
       if(verbose){
         message("Processing: ", files[i])
       }
-      b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse, contigs=contigs)
+      b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse, contigs = contigs)
       DelayedArray::write_block(block=as.matrix(b[, .(beta)]), viewport = grid[[i]], x = M_sink)
       DelayedArray::write_block(block=as.matrix(b[, .(cov)]), viewport = grid[[i]], x = cov_sink)
       rm(b)
@@ -271,11 +270,11 @@ browser()
         message("Processing: ", files[i])
       }
       if(i == 1){
-        b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse, contigs=contigs)
+        b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse, contigs = contigs)
         beta_mat = b[,.(chr, start, beta)]
         cov_mat = b[,.(chr, start, cov)]
       }else{
-        b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse, contigs=contigs)
+        b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse, contigs = contigs)
         beta_mat = cbind(beta_mat, b[,.(beta)])
         cov_mat = cbind(cov_mat, b[,.(cov)])
       }

@@ -4,11 +4,13 @@
 \alias{write_bedgraphs}
 \title{Writes bedGraphs from methrix object}
 \usage{
-write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, n_thr = 4,
-  make_BigWig = FALSE, bedtools_path = NULL,
+write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
+  n_thr = 4, make_BigWig = FALSE, bedtools_path = NULL,
   bedGraphToBigWig_path = NULL, bedClip_path = NULL)
 }
 \arguments{
+\item{m}{\code{\link{methrix}} object}
+
 \item{output_dir}{Output directory name where the files should be saved. If \code{NULL} creats a \code{tempdir}}
 
 \item{n_thr}{Default 4. Only used if \code{plot_beta_dist} is TRUE}
@@ -18,8 +20,6 @@ write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, n_thr = 4,
 \item{bedGraphToBigWig_path}{Default NULL. Path to bedGraphToBigWig Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE}
 
 \item{bedClip_path}{Default NULL. Path to bedClip Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE}
-
-\item{meth}{\code{\link{methrix}} object}
 
 \item{make_bigWig}{Default FALSE. Whether to convert bedGraph to BigWig}
 }
