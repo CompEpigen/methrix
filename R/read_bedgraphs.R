@@ -4,7 +4,7 @@
 #' @param pipeline Default NULL. Can be "Bismark" or "MethylDeckal" or "MethylcTools". If not known use idx arguments for manual column assignments.
 #' @param zero_based Are bedgraph regions zero based ? Default TRUE
 #' @param stranded Default FALSE
-#' @param collapse_starnds If TRUE collapses CpGs on different crick strand into watson. Deafult FALSE
+#' @param collapse_strands If TRUE collapses CpGs on different crick strand into watson. Deafult FALSE
 #' @param ref_cpgs BSgenome object, or name of the installed BSgenome package, or an output from \code{\link{extract_CPGs}}. Example: BSgenome.Hsapiens.UCSC.hg19
 #' @param ref_build reference genome for bedgraphs. Default "hg19". Only used for additional details. Doesnt affect in any way.
 #' @param contigs contigs to restrict genomic CpGs to. Default all autosomes and allosomes - ignoring extra contigs.
@@ -33,7 +33,7 @@
 #' @import SummarizedExperiment DelayedArray HDF5Array
 #'
 #'
-read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill_CpGs = TRUE, stranded = FALSE, collapse_starnds = FALSE, ref_cpgs = NULL, ref_build = "Unknown", contigs = NULL, vect = TRUE,
+read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill_CpGs = TRUE, stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL, ref_build = "Unknown", contigs = NULL, vect = TRUE,
                           vect_batch_size = NULL, coldata = NULL, chr_idx = NULL, start_idx = NULL, end_idx = NULL,
                           beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
                           n_threads = 1, ideal = FALSE, h5 = FALSE, h5_dir = NULL, h5temp=NULL,
@@ -49,7 +49,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
     stop("Missing genome. Please provide a valid genome name", call. = FALSE)
   }
 
-  if(collapse_starnds){
+  if(collapse_strands){
     if(!stranded){
       stop("collapse_strands works only when stranded = TRUE ")
     }
@@ -138,9 +138,9 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
   #Summarize bedgraphs and create a matrix
   if(vect){
     mat_list = vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size,
-                               col_data = coldata,  genome = genome, strand_collapse = collapse_starnds, thr = n_threads)
+                               col_data = coldata,  genome = genome, strand_collapse = collapse_strands, thr = n_threads, contigs=contigs)
   } else {
-    mat_list = non_vect_code(files = files, col_idx = col_idx, coldata = coldata, strand_collapse = collapse_starnds,
+    mat_list = non_vect_code(files = files, col_idx = col_idx, coldata = coldata, strand_collapse = collapse_strands,
                              verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, thr = n_threads)
   }
 
@@ -149,7 +149,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
   }
 
   #Finally collapse ref CpGs strands
-  if(collapse_starnds){
+  if(collapse_strands){
     genome = genome[strand %in% '+']
     genome[,strand := "*"]
   }

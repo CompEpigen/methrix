@@ -65,7 +65,7 @@ get_region_summary = function(m, regions = NULL, type = NULL, how = NULL){
     }else{
       stop("Invalid input for region summarization.")
     }
-    
+
   output = cbind(regions[,c("chr", "start", "end"), with=F], mean[,rownames(colData(m)), with=F])
 
   return(output)
@@ -309,4 +309,59 @@ remove_uncovered = function(m){
                      col_data = colData(m), h5_dir = NULL, ref_cpg_dt = m@metadata$ref_CpG)
   m
 }
+
+#--------------------------------------------------------------------------------------------------------------------------
+
+#' Filter matrices by region
+#' @details Takes \code{\link{methrix}} object and filters CpGs based on supplied regions in data.table or GRanges format
+#' @param m \code{\link{methrix}} object
+#' @param regions genomic regions to subset by. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
+#' @export
+region_filter = function(m, regions){
+
+  if(is_h5(m)){
+    stop("This function only supports non HDF5 matrices for now.")
+  }else{
+
+
+    message("Filtering by genomic regions..")
+
+    if(class(regions)[1] == "GRanges"){
+      regions = as.data.frame(regions)
+      colnames(regions)[1:3] = c("chr", "start", "end")
+      regions$chr = as.character(regions$chr)
+      data.table::setDT(x = regions, key = c("chr", "start", "end"))
+      regions = regions[,.(chr, start, end)]
+    }else if(class(regions)[1] == "data.table"){
+      colnames(regions)[1:3] = c("chr", "start", "end")
+      regions = regions[,.(chr, start, end)]
+      regions[, chr := as.character(chr)]
+      regions[, start := as.numeric(start)]
+      regions[, end := as.numeric(end)]
+      data.table::setDT(x = regions, key = c("chr", "start", "end"))
+    }else{
+      stop("Invalid input class for regions. Must be a data.table or GRanges object")
+    }
+
+    current_regions <-  as.data.table(m@elementMetadata)
+    current_regions[,end := start+1]
+    data.table::setDT(x = current_regions, key = c("chr", "start", "end"))
+    overlap = data.table::foverlaps(x = current_regions, y = regions, type = "within", nomatch = NULL, which = T)
+
+    if(nrow(overlap) == 0){
+      stop("Subsetting resulted in zero entries")
+    }
+
+    m <- m[-overlap$xid,]
+    n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
+    se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
+                                        Summary = c(ncol(m), format(nrow(m), big.mark = ","),
+                                                    n_non_covered, nrow(current_regions[overlap$xid,.N,chr]), m@metadata$genome, m@metadata$is_h5))
+    m@metadata$summary <- se_summary
+    return(m)
+  }
+}
+
+#--------------------------------------------------------------------------------------------------------------------------
+
 

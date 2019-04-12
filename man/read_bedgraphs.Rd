@@ -5,7 +5,7 @@
 \title{Versatile BedGraph reader.}
 \usage{
 read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
-  fill_CpGs = TRUE, stranded = FALSE, collapse_starnds = FALSE,
+  fill_CpGs = TRUE, stranded = FALSE, collapse_strands = FALSE,
   ref_cpgs = NULL, ref_build = "Unknown", contigs = NULL,
   vect = TRUE, vect_batch_size = NULL, coldata = NULL,
   chr_idx = NULL, start_idx = NULL, end_idx = NULL,
@@ -24,7 +24,7 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 
 \item{stranded}{Default FALSE}
 
-\item{collapse_starnds}{If TRUE collapses CpGs on different crick strand into watson. Deafult FALSE}
+\item{collapse_strands}{If TRUE collapses CpGs on different crick strand into watson. Deafult FALSE}
 
 \item{ref_cpgs}{BSgenome object, or name of the installed BSgenome package, or an output from \code{\link{extract_CPGs}}. Example: BSgenome.Hsapiens.UCSC.hg19}
 
