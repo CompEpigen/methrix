@@ -200,11 +200,18 @@ coverage_filter = function(m, cov_thr = 1, min_samples = 1, n_threads = 4){
   }else{
 
     cov_dat = get_matrix(m = m, type = "C")
-
-    row_idx = parallel::mclapply(X = seq_len(nrow(cov_dat)), function(i){
-      x = cov_dat[i,]
-      length(x[x > cov_thr])
-    }, mc.cores = n_threads)
+    if (grepl("Windows", Sys.getenv("OS"))){
+      if (n_threads > 1){
+        warning("Windows OS doesn't support parallel processing. Setting n_threads to 1.")
+      }
+      row_idx = lapply(X = seq_len(nrow(cov_dat)), function(i){
+        x = cov_dat[i,]
+        length(x[x > cov_thr])
+      })} else {
+        row_idx = parallel::mclapply(X = seq_len(nrow(cov_dat)), function(i){
+          x = cov_dat[i,]
+          length(x[x > cov_thr])
+        }, mc.cores = n_threads)}
 
     row_idx = unlist(row_idx)
     row_idx = row_idx >= min_samples
@@ -363,5 +370,3 @@ region_filter = function(m, regions){
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
-
-
