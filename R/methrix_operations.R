@@ -5,21 +5,20 @@
 #' @param how mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min
 #' @export
 get_region_summary = function(m, regions = NULL, type = NULL, how = NULL){
+
   if(is_h5(m)){
     stop("This function only supports non HDF5 matrices for now.")
   }
 
-  if(is.null(type)){
-    stop("Please specify if you want to summarize methylation (meth) or coverage (cov).")
-  }else if (type == "M") {
+  type = match.arg(arg = type, choices = c('M', 'C'))
+
+  if (type == "M") {
     message("Summarize methylation.")
     dat = get_matrix(m = m, type = "M", add_loci = TRUE)
   }else if (type == "C") {
     message("Summarize coverage.")
     dat = get_matrix(m = m, type = "C", add_loci = TRUE)
-  }else{
-      stop("Invalid input for summarization of regions.")
-    }
+  }
 
   if(!is.null(regions)){
     message("Subsetting by genomic regions..")
