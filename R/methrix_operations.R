@@ -103,9 +103,9 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
     stop("This function only supports non HDF5 matrices for now.")
   }
 
-  m_dat = get_matrix(m = m, type = "M", add_loci = TRUE)
-  c_dat = get_matrix(m = m, type = "C", add_loci = TRUE)
-
+  #m_dat = get_matrix(m = m, type = "M", add_loci = TRUE)
+  #c_dat = get_matrix(m = m, type = "C", add_loci = TRUE)
+  r_dat <- as.data.table(m@elementMetadata)
   if(!is.null(regions)){
     message("Subsetting by genomic regions..")
 
@@ -126,59 +126,46 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
       stop("Invalid input class for regions. Must be a data.table or GRanges object")
     }
 
-    m_dat[,end := start+1]
-    m_dat = data.table::foverlaps(x = m_dat, y = regions, type = "within", nomatch = NULL)
+r_dat[,end := start+1]
+data.table::setDT(x = r_dat, key = c("chr", "start", "end"))
+overlaps = data.table::foverlaps(x = r_dat, y = regions, type = "within", nomatch = NULL, which = TRUE)
+if(nrow(overlaps) == 0){
+  stop("Subsetting resulted in zero entries")
+}
+m <- m[overlaps$xid,]
 
-    if(nrow(m_dat) == 0){
-      stop("Subsetting resulted in zero entries")
-    }
-
-    m_dat[,i.end := NULL]
-    m_dat[,i.start := NULL]
-
-    c_dat[,end := start+1]
-    c_dat = data.table::foverlaps(x = c_dat, y = regions, type = "within", nomatch = NULL)
-    c_dat[,i.end := NULL]
-    c_dat[,i.start := NULL]
   }
 
   if(!is.null(contigs)){
 
     message("Subsetting by contigs..")
+  selected_rows <- which(r_dat$chr %in% contigs)
 
-    m_dat = m_dat[chr %in% contigs]
-    if(nrow(m_dat) == 0){
+    if(length(selected_rows) == 0){
       stop("Subsetting resulted in zero entries")
     }
-    c_dat = c_dat[chr %in% contigs]
+  m <- m[selected_rows,]
   }
 
   if(!is.null(samples)){
 
     message("Subsetting by samples..")
 
-    samples = samples[samples %in% colnames(m_dat)]
+    samples = which(rownames(m@colData) %in% samples)
 
     if(length(samples) == 0){
       stop("None of the samples are present in the object")
     }
 
-    m_dat = m_dat[,c("chr", "start", "strand", samples), with = FALSE]
-    c_dat = c_dat[,c("chr", "start", "strand", samples), with = FALSE]
+    m <- m[,samples]
   }
 
+  n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
+  se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
+                                      Summary = c(ncol(m), format(nrow(m), big.mark = ","),
+                                                  n_non_covered, length(unique(m@elementMetadata$chr)), m@metadata$genome, m@metadata$is_h5))
+  m@metadata$summary <- se_summary
 
-  range_idx = colnames(m_dat)[colnames(m_dat) %in% c("chr", "start", "end", "strand")]
-  samp_names = colnames(m_dat)[!colnames(m_dat) %in% c("chr", "start", "end", "strand")]
-
-  m = create_methrix(
-    beta_mat = m_dat[,samp_names, with = FALSE],
-    cov_mat = c_dat[,samp_names, with = FALSE],
-    cpg_loci = m_dat[,range_idx, with = FALSE],
-    is_hdf5 = is_h5(m),
-    genome_name = m@metadata$genome,
-    col_data = colData(m)[samp_names,, drop = FALSE],
-    h5_dir = NULL, ref_cpg_dt = m@metadata$ref_CpG)
 
   return(m)
 }
@@ -354,9 +341,7 @@ region_filter = function(m, regions){
     data.table::setDT(x = current_regions, key = c("chr", "start", "end"))
     overlap = data.table::foverlaps(x = current_regions, y = regions, type = "within", nomatch = NULL, which = TRUE)
 
-    if(nrow(overlap) == 0){
-      stop("Subsetting resulted in zero entries")
-    }
+
 
     m <- m[-overlap$xid,]
     n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
