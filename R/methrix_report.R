@@ -47,12 +47,14 @@ methrix_report = function(meth, output_dir = NULL, plot_beta_dist = FALSE, n_thr
 
   #n CpGs covered per chromomse
   cat(paste0("Step 3 of 7\n"))
+  contig_nCpGs = meth@metadata$ref_CpG
+  colnames(contig_nCpGs) = c("chr", "total_CpGs")
   if(file.exists(paste0(output_dir, "/n_covered_per_chr.tsv"))){
     message("File already present. Skipping step 3..")
   }else{
     n_covered_chr = m_chr_summary[,c(1, 4:ncol(m_chr_summary)), with = FALSE][,lapply(.SD, function(x){length(x[!is.na(x)])}), chr]
-    contig_nCpGs = meth@metadata$ref_CpG
-    colnames(contig_nCpGs) = c("chr", "total_CpGs")
+    #contig_nCpGs = meth@metadata$ref_CpG
+    #colnames(contig_nCpGs) = c("chr", "total_CpGs")
     n_covered_chr = merge(n_covered_chr, contig_nCpGs, by = 'chr', all.x = TRUE)
     data.table::fwrite(x = n_covered_chr, file = paste0(output_dir, "/n_covered_per_chr.tsv"), sep = "\t")
   }
