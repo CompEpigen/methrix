@@ -220,6 +220,12 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
 #Use for loop for sample-by-sample processing, memory efficient, uses HDF5Array
 non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL, h5temp = NULL, h5 = FALSE, strand_collapse = FALSE, contigs = contigs){
 browser()
+  if ( strand_collapse){
+    dimension <- as.integer(nrow(genome)/2)
+  } else {
+    dimension <- as.integer(nrow(genome))
+  }
+
   if(h5){
     if(is.null(h5temp)){
       h5temp <- tempdir()}
@@ -230,22 +236,24 @@ browser()
 
     }
     grid <- DelayedArray::RegularArrayGrid(
-      refdim = c(nrow(genome), length(files)),
-      spacings = c(nrow(genome), 1L))
+      refdim = c(dimension, length(files)),
+      spacings = c(dimension, 1L))
 
     M_sink <- HDF5Array::HDF5RealizationSink(
-      dim = c(nrow(genome), length(files)),
+      dim = c(dimension, length(files)),
       dimnames = NULL,
       type = "double",
       filepath = file.path(h5temp, paste0("M_sink_",sink_counter, ".h5")),
-      name = "M", chunkdim = HDF5Array::getHDF5DumpChunkDim(c(nrow(genome), length(files))),
+      name = "M",
+      #chunkdim = c(dimension, length(files)),
       level = 6)
     cov_sink <- HDF5Array::HDF5RealizationSink(
-      dim = c(nrow(genome), length(files)),
+      dim = c(dimension, length(files)),
       dimnames = NULL,
       type = "integer",
       filepath = file.path(h5temp, paste0("cov_sink_",sink_counter, ".h5")),
-      name = "cov", chunkdim = HDF5Array::getHDF5DumpChunkDim(c(nrow(genome), length(files))),
+      name = "cov",
+      #chunkdim = HDF5Array::getHDF5DumpChunkDim(c(nrow(genome), length(files))),
       level = 6)
   } else {
     beta_mat = data.table::data.table()
