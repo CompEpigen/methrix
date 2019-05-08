@@ -10,6 +10,13 @@ output:
     css: custom.css
     theme: sandstone
     highlight: tango
+params:
+  n_covered_tsv: NULL
+  n_covered_by_all_samples_tsv: NULL
+  m_stat_tsv: NULL
+  c_stat_tsv: NULL
+  global_meth_per_samp_tsv: NULL
+  global_cov_per_samp_tsv: NULL
 ---
 
 ```{r setup, include=FALSE}
@@ -26,7 +33,8 @@ library(data.table)
 ## Reference CpGs covered {.tabset}
 ### Raw
 ```{r}
-n_covered = data.table::fread(input = "n_covered_per_chr.tsv")
+#n_covered = data.table::fread(input = "n_covered_per_chr.tsv")
+n_covered = data.table::fread(input = params$n_covered_tsv)
 n_covered = data.table::melt(data = n_covered, id.vars = c('chr', 'total_CpGs'))
 colnames(n_covered) = c("chr", "total_CpGs", "Sample_Name", "n_CpG")
 n_covered[, fraction := n_CpG/total_CpGs]
@@ -46,8 +54,8 @@ Number of reference CpGs covered by each sample in each chromosome
 ## Reference CpGs covered by all {.tabset}
 ### Raw
 ```{r}
-n_covered_all = data.table::fread(input = "n_covered_by_all_samples.tsv")
-
+#n_covered_all = data.table::fread(input = "n_covered_by_all_samples.tsv")
+n_covered_all = data.table::fread(input = params$n_covered_by_all_samples_tsv)
 p = ggplot(data = n_covered_all, aes(x = chr, y = n_CpG, label = n_CpG))+geom_bar(stat = 'identity')+coord_flip()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+theme_minimal()
 plotly::ggplotly(p = p)
 ```
@@ -63,7 +71,8 @@ Number of reference CpGs covered by all samples
 ## Chromosome-wise Methylation {.tabset}
 ### Mean
 ```{r}
-m_stat = data.table::fread(input = "m_per_chr.tsv")
+#m_stat = data.table::fread(input = "m_per_chr.tsv")
+m_stat = data.table::fread(input = params$m_stat_tsv)
 mean_m = m_stat[stat %in% "mean"]
 mean_m[,stat := NULL]
 mean_m = data.table::melt(data = mean_m, id.vars = 'chr')
@@ -89,7 +98,8 @@ plotly::ggplotly(p = p)
 ## Chromosome-wise depth of coverage {.tabset}
 ### Mean
 ```{r}
-c_stat = data.table::fread(input = "c_per_chr.tsv")
+#c_stat = data.table::fread(input = "c_per_chr.tsv")
+c_stat = data.table::fread(input = params$c_stat_tsv)
 mean_c = c_stat[stat %in% "mean"]
 mean_c[,stat := NULL]
 mean_c = data.table::melt(data = mean_c, id.vars = 'chr')
@@ -116,7 +126,8 @@ plotly::ggplotly(p = p)
 ## Genome-wide Methylation {.tabset}
 ### Mean
 ```{r}
-global_meth = data.table::fread(input = "global_meth_per_samp.tsv")
+#global_meth = data.table::fread(input = "global_meth_per_samp.tsv")
+global_meth = data.table::fread(input = params$global_meth_per_samp_tsv)
 p = ggplot(data = global_meth, aes(x = mean, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)
 
 plotly::ggplotly(p = p)
@@ -132,7 +143,8 @@ plotly::ggplotly(p = p)
 ## Genome-wide depth of coverage {.tabset}
 ### Mean
 ```{r}
-global_cov = data.table::fread(input = "global_cov_per_samp.tsv")
+#global_cov = data.table::fread(input = "global_cov_per_samp.tsv")
+global_cov = data.table::fread(input = params$global_cov_per_samp_tsv)
 p = ggplot(data = global_cov, aes(x = mean, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 
 plotly::ggplotly(p = p)
@@ -146,7 +158,7 @@ plotly::ggplotly(p = p)
 ```
 
 ## Beta value distribution
-```{r}
+```{r, eval=FALSE}
 dens_files = list.files(pattern = "*_density\\.tsv$")
 dens_files = normalizePath(path = dens_files)
 

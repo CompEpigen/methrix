@@ -44,7 +44,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
       stop("Missing beta or coverage values.\nU and M are not available either!", call. = FALSE)
     }else{
       if(verbose){
-        message("Missing beta and coverage info.\nEstimating them from M and U values.")
+        cat("--Missing beta and coverage info. Estimating them from M and U values\n")
       }
 
       return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
@@ -55,17 +55,17 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
     if(all(is.null(n_meth), is.null(n_unmeth))){
       stop("Missing beta values but coverage info available.\nEither U or M are required for estimating beta values!", call. = FALSE)
     }else if(all(!is.null(n_meth), !is.null(n_unmeth))){
-      message("Estimating beta values from M and U..")
+      cat("--Estimating beta values from M and U\n")
       return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
                               beta = beta, M = n_meth, U = n_unmeth, cov = cov),
                   fix_missing = c(fix_missing, "beta := M/(M+U")))
     }else if(!is.null(n_meth)){ #M available
-      message("Estimating beta values from M and coverage..")
+      cat("--Estimating beta values from M and coverage\n")
       return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
                               beta = beta, M = n_meth, U = n_unmeth, cov = cov),
                   fix_missing = c(fix_missing, "beta := M/cov")))
     }else if(!is.null(n_unmeth)){ #U available
-      message("Estimating beta values from U and coverage..")
+      cat("--Estimating beta values from U and coverage\n")
       return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
                               beta = beta, M = n_meth, U = n_unmeth, cov = cov),
                   fix_missing = c(fix_missing, paste0("beta := 1- (U/cov)"))))
@@ -75,7 +75,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
       stop("Missing coverage info but beta values are available.\nU and M are required for estimating coverage values!", call. = FALSE)
     }else{
       if(verbose){
-        message("Estimating coverage from M and U..")
+        cat("--Estimating coverage from M and U\n")
       }
 
       return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
@@ -84,7 +84,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
     }
   }else{
     if(verbose){
-      message("All fields are present. Nice.")
+      cat("--All fields are present. Nice.\n")
     }
 
     return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
@@ -134,7 +134,8 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
     missing_cpgs = genome[!bdg_dat[,list(chr, start)], on = c("chr", "start")]
 
     if(verbose){
-      message(paste0("Missing ", format(nrow(missing_cpgs), big.mark = ","), " reference CpGs from: ", basename(bdg)))
+      cat(paste0("-CpGs missing:  ", format(nrow(missing_cpgs), big.mark = ","), " ",basename(bdg),"\n"))
+      #message(paste0("Missing ", format(nrow(missing_cpgs), big.mark = ","), " reference CpGs from: ", basename(bdg)))
     }
     if(nrow(missing_cpgs)>0){
       missing_cpgs[, width := NULL][, beta := NA][, cov := 0][,M := 0][,U := 0]
@@ -147,7 +148,17 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
                                                      ignore.row.order = FALSE)
 
     if(class(is_identical) == 'character'){
-      stop("Something went wrong with filling up of non-covered CpG sites.")
+      #cat(paste0('--non reference CpGs found. Removing them\n'))
+      non_ref_cpgs = bdg_dat[!genome[,list(chr, start)], on = c("chr", "start")]
+      cat(paste0("-Non ref CpGs:  ", format(nrow(non_ref_cpgs), big.mark = ","), " [Removing them]\n"))
+      bdg_dat = bdg_dat[genome[,list(chr, start)], on = c("chr", "start")]
+      data.table::setkey(x = bdg_dat, "chr", "start")
+      is_identical = data.table:::all.equal.data.table(target = bdg_dat[,.(chr, start)],
+                                                       current = genome[,.(chr, start)],
+                                                       ignore.row.order = FALSE)
+      if(class(is_identical) == 'character'){
+        stop("Something went wrong with filling up of uncovered CpG sites.")
+      }
     }
     #Re-assign strand info from genome (since some bedgraphs have no strand info, yet cover CpGs from both strands. i,e MethylDackel)
     bdg_dat[,strand := genome$strand]
@@ -184,7 +195,7 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
   cov_mat_final = data.table::data.table()
   for(i in seq_along(batches)){
     #browser()
-    message(paste0("Processing batch ",  i , " of ", length(batches)))
+    cat(paste0("-Batch:         ",  i , "/", length(batches)), "\n")
     batch_files = batches[[i]]
     samp_names = batches_samp_names[[i]]
     if (grepl("Windows", Sys.getenv("OS"))){

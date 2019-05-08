@@ -47,21 +47,23 @@ extract_CPGs = function(ref_genome = NULL, bored = TRUE){
   chrom_sizes = data.table::data.table(contig = names(seqlengths(x = ref_genome)), length = seqlengths(x = ref_genome))
   chrs = names(ref_genome)
 
-  #Code borrwed from from: https://support.bioconductor.org/p/95239/
-  message("Extracting CpGs..")
+  cat("-Extracting CpGs\n")
   if(bored){
     if(joke$type == "success"){
-      message("Here is a Chuck Norris joke while you wait..")
+      cat("-Here is a Chuck Norris joke while you wait..\n")
+      cat("---------------------------------------------\n")
       cat(joke$value$joke, sep = "\n")
+      cat("---------------------------------------------\n")
     }
   }
-  cgs = lapply(chrs, function(x) start(matchPattern("CG", ref_genome[[x]])))
+  #Code borrwed from from: https://support.bioconductor.org/p/95239/
+  cgs = lapply(chrs, function(x) start(Biostrings::matchPattern("CG", ref_genome[[x]])))
   cpgs = do.call(c, lapply(seq_along(chrs), function(x) GRanges(names(ref_genome)[x], IRanges(cgs[[x]], width = 2))))
   cpgs = data.table::as.data.table(as.data.frame(cpgs, stringsAsFactors = FALSE))
   colnames(cpgs) = c("chr", "start", "end", "width", "strand")
   cpgs[, chr := as.character(chr)][, start := as.numeric(start)][, end := as.numeric(end)][, width := as.numeric(width)]
   data.table::setkey(x = cpgs, "chr", "start")
-  message(paste0("Done.\nExtracted ", nrow(cpgs), " from ", length(chrs), " contigs."))
+  cat(paste0("-Done. Extracted ", format(nrow(cpgs), big.mark = ','), " CpGs from ", length(chrs), " contigs.\n"))
 
   return(list(cpgs = cpgs, contig_lens = chrom_sizes))
 }

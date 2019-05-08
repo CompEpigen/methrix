@@ -1,76 +1,72 @@
-#' Extracts methylation of regions of interest
+#' Extract and summarize methylation or coverage info by regions of interest
 #' @details Takes \code{\link{methrix}} object and summarizes regions
 #' @param regions genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
-#' @param type data that should be summarized. Coule be methylation or coverage.
+#' @param type matrix which needs to be summarized. Coule be `M` or `C`
 #' @param how mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min
+#' @param na_rm Remove NA's ? Default \code{TRUE}
 #' @export
-get_region_summary = function(m, regions = NULL, type = NULL, how = NULL){
+get_region_summary = function(m, regions = NULL, type = NULL, how = NULL, na_rm = TRUE){
 
   if(is_h5(m)){
     stop("This function only supports non HDF5 matrices for now.")
   }
 
   type = match.arg(arg = type, choices = c('M', 'C'))
+  how = match.arg(arg = how, choices = c('mean', 'sum', 'max', 'min'))
+
+  if(class(regions)[1] == "GRanges"){
+    regions = as.data.frame(regions)
+    colnames(regions)[1:3] = c("chr", "start", "end")
+    regions$chr = as.character(regions$chr)
+    data.table::setDT(x = regions, key = c("chr", "start", "end"))
+    regions = regions[,.(chr, start, end)]
+  }else if(any(class(regions)[1] %in% c('data.frame', 'data.table'))){
+    data.table::setDT(x = regions)
+    colnames(regions)[1:3] = c("chr", "start", "end")
+    regions = regions[,.(chr, start, end)]
+    regions[, chr := as.character(chr)]
+    regions[, start := as.numeric(start)]
+    regions[, end := as.numeric(end)]
+  }else{
+    stop("Invalid input class for regions. Must be a data.table, data.frame or GRanges object")
+  }
+
+  regions[, id := paste0(chr, ":", start, "-", end)]
+  data.table::setDT(x = regions, key = c("chr", "start", "end"))
 
   if (type == "M") {
-    message("Summarize methylation.")
     dat = get_matrix(m = m, type = "M", add_loci = TRUE)
   }else if (type == "C") {
-    message("Summarize coverage.")
     dat = get_matrix(m = m, type = "C", add_loci = TRUE)
   }
 
-  if(!is.null(regions)){
-    message("Subsetting by genomic regions..")
+  dat[,end := start+1]
+  overlap = data.table::foverlaps(x = dat, y = regions, type = "within", nomatch = NULL)
 
-    if(class(regions)[1] == "GRanges"){
-      regions = as.data.frame(regions)
-      colnames(regions)[1:3] = c("chr", "start", "end")
-      regions$chr = as.character(regions$chr)
-      data.table::setDT(x = regions, key = c("chr", "start", "end"))
-      regions = regions[,.(chr, start, end)]
-    }else if(class(regions)[1] == "data.table"){
-      colnames(regions)[1:3] = c("chr", "start", "end")
-      regions = regions[,.(chr, start, end)]
-      regions[, chr := as.character(chr)]
-      regions[, start := as.numeric(start)]
-      regions[, end := as.numeric(end)]
-      regions$name <- paste0("chr",regions$chr, ".",regions$start, ".",regions$end)
-      data.table::setDT(x = regions, key = c("chr", "start", "end"))
-    }else{
-      stop("Invalid input class for regions. Must be a data.table or GRanges object")
-    }
+  if(nrow(overlap) == 0){
+    stop("Subsetting resulted in zero entries")
+  }
+  return(overlap)
 
-    dat[,end := start+1]
-    overlap = data.table::foverlaps(x = dat, y = regions, type = "within", nomatch = NULL)
+  if(how == "mean") {
+    cat("-Summarizing by average\n")
+    output = overlap[, lapply(.SD, mean, na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
+  }else if (how == "max") {
+    cat("-Summarizing by maximum\n")
+    output = overlap[, lapply(.SD, max, na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
+  }else if (how == "min") {
+    cat("-Summarizing by minimum\n")
+    output = overlap[, lapply(.SD, min, na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
+  }else if (how == "sum") {
+    cat("-Summarizing by sum\n")
+    output = overlap[, lapply(.SD, sum, na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
+  }
 
-    if(nrow(overlap) == 0){
-      stop("Subsetting resulted in zero entries")
-    }
-    if(is.null(how)) {
-      stop("Please specify how regions should be specified.")
-    }else if (how=="mean") {
-      message("Summarizing by average..")
-      output = overlap[, lapply(.SD, mean, na.rm=TRUE), by=name, .SDcols=rownames(colData(m))]
-    }else if (how=="max") {
-      message("Summarizing by maximum..")
-      output = overlap[, lapply(.SD, max, na.rm=TRUE), by=name, .SDcols=rownames(colData(m))]
-    }else if (how=="min") {
-      message("Summarizing by minimum..")
-      output = overlap[, lapply(.SD, min, na.rm=TRUE), by=name, .SDcols=rownames(colData(m))]
-    }else if (how=="sum") {
-      message("Summarizing by sum..")
-      output = overlap[, lapply(.SD, sum, na.rm=TRUE), by=name, .SDcols=rownames(colData(m))]
-    }else{
-      stop("Invalid input for region summarization.")
-    }
-
-  output = cbind(regions[,c("chr", "start", "end"), with=F], mean[,rownames(colData(m)), with=F])
-
+  #output = cbind(regions[,c("chr", "start", "end"), with = FALSE], mean[,rownames(colData(m)), with = FALSE])
   return(output)
 }
-}
 
+#--------------------------------------------------------------------------------------------------------------------------
 #' Order mathrix object by SD
 #' @details Takes \code{\link{methrix}} object and reorganizes the data by standard deviation
 #' @param m \code{\link{methrix}} object
@@ -81,9 +77,7 @@ order_by_sd = function(m){
     stop("This function only supports non HDF5 matrices for now.")
   }else{
     row_order = order(matrixStats::rowSds(x = get_matrix(m = m, type = "M"), na.rm = TRUE), decreasing = TRUE)
-    assay(m, i = 1) = assay(m, i = 1)[row_order,, drop = FALSE]
-    assay(m, i = 2) = assay(m, i = 2)[row_order,, drop = FALSE]
-    rowData(x = m) = S4Vectors::DataFrame(as.data.frame(x = rowData(x = m))[row_order,, drop = FALSE])
+    m = m[row_order,]
   }
   m
 }
@@ -107,7 +101,7 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
   #c_dat = get_matrix(m = m, type = "C", add_loci = TRUE)
   r_dat <- as.data.table(m@elementMetadata)
   if(!is.null(regions)){
-    message("Subsetting by genomic regions..")
+    cat("-Subsetting by genomic regions\n")
 
     if(class(regions)[1] == "GRanges"){
       regions = as.data.frame(regions)
@@ -126,38 +120,41 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
       stop("Invalid input class for regions. Must be a data.table or GRanges object")
     }
 
-r_dat[,end := start+1]
-data.table::setDT(x = r_dat, key = c("chr", "start", "end"))
-overlaps = data.table::foverlaps(x = r_dat, y = regions, type = "within", nomatch = NULL, which = TRUE)
-if(nrow(overlaps) == 0){
-  stop("Subsetting resulted in zero entries")
-}
-m <- m[overlaps$xid,]
-
-  }
-
-  if(!is.null(contigs)){
-
-    message("Subsetting by contigs..")
-  selected_rows <- which(r_dat$chr %in% contigs)
-
-    if(length(selected_rows) == 0){
+    r_dat[, end := start + 1]
+    data.table::setDT(x = r_dat, key = c("chr", "start", "end"))
+    overlaps = data.table::foverlaps(
+      x = r_dat,
+      y = regions,
+      type = "within",
+      nomatch = NULL,
+      which = TRUE
+    )
+    if (nrow(overlaps) == 0) {
       stop("Subsetting resulted in zero entries")
     }
-  m <- m[selected_rows,]
+
+    m <- m[overlaps$xid, ]
   }
 
-  if(!is.null(samples)){
+  if(!is.null(contigs)) {
+    cat("-Subsetting by contigs\n")
+    selected_rows <- which(r_dat$chr %in% contigs)
 
-    message("Subsetting by samples..")
+    if (length(selected_rows) == 0) {
+      stop("Subsetting resulted in zero entries")
+    }
+    m <- m[selected_rows, ]
+  }
+
+  if(!is.null(samples)) {
+    cat("Subsetting by samples\n")
 
     samples = which(rownames(m@colData) %in% samples)
-
-    if(length(samples) == 0){
+    if (length(samples) == 0) {
       stop("None of the samples are present in the object")
     }
 
-    m <- m[,samples]
+    m <- m[, samples]
   }
 
   n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
@@ -186,32 +183,37 @@ coverage_filter = function(m, cov_thr = 1, min_samples = 1, n_threads = 4){
   }else{
 
     cov_dat = get_matrix(m = m, type = "C")
-    if (grepl("Windows", Sys.getenv("OS"))){
-      if (n_threads > 1){
-        warning("Windows OS doesn't support parallel processing. Setting n_threads to 1.")
+
+    if (grepl("Windows", Sys.getenv("OS"))) {
+      if (n_threads > 1) {
+        warning("Windows doesn't support parallel processing. Setting n_threads to 1.")
       }
-      row_idx = lapply(X = seq_len(nrow(cov_dat)), function(i){
-        x = cov_dat[i,]
+      row_idx = lapply(X = seq_len(nrow(cov_dat)), function(i) {
+        x = cov_dat[i, ]
         length(x[x > cov_thr])
-      })} else {
-        row_idx = parallel::mclapply(X = seq_len(nrow(cov_dat)), function(i){
-          x = cov_dat[i,]
-          length(x[x > cov_thr])
-        }, mc.cores = n_threads)}
+      })
+    } else{
+      row_idx = parallel::mclapply(X = seq_len(nrow(cov_dat)), function(i) {
+        x = cov_dat[i, ]
+        length(x[x > cov_thr])
+      }, mc.cores = n_threads)
+    }
 
     row_idx = unlist(row_idx)
-    row_idx = row_idx >= min_samples
+    #row_idx = row_idx >= min_samples
+    row_idx = which(row_idx >= min_samples)
 
-    message(paste0("Retained ", format(length(row_idx[row_idx]), big.mark = ","), " of ", format(nrow(cov_dat), big.mark = ","), " sites"))
+    cat(paste0("-Retained ", format(length(row_idx[row_idx]), big.mark = ","), " of ", format(nrow(cov_dat), big.mark = ","), " sites\n"))
 
     rm(cov_dat)
     gc()
 
-    m = create_methrix(beta_mat = assay(m, i = 1)[row_idx,, drop = FALSE],
-                       cov_mat = assay(m, i = 2)[row_idx,, drop = FALSE],
-                       cpg_loci = data.table::as.data.table(as.data.frame(x = rowData(x = m))[row_idx,, drop = FALSE]),
-                       is_hdf5 = is_h5(m), genome_name = m@metadata$genome,
-                       col_data = colData(m), h5_dir = NULL, ref_cpg_dt = m@metadata$ref_CpG)
+    m = m[row_idx,]
+
+    n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
+    m@metadata$summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
+                                        Summary = c(ncol(m), format(nrow(m), big.mark = ","),
+                                                    n_non_covered, length(unique(m@elementMetadata$chr)), m@metadata$genome, m@metadata$is_h5))
 
     return(m)
   }
@@ -244,7 +246,6 @@ get_matrix= function(m, type = "M", add_loci = FALSE){
   d
 }
 
-
 #--------------------------------------------------------------------------------------------------------------------------
 
 #' Convert methrix to bsseq object
@@ -258,16 +259,21 @@ methrix2bsseq = function(m){
     stop("This function only supports non HDF5 matrices for now.")
   }
 
-  n_samps = as.numeric(m@metadata$summary[1, Summary])
+  n_samps = nrow(SummarizedExperiment::colData(x = m))
   warning("BSseq does not allow any uncovered loci (NA's). This will filter out all uncovered loci ", immediate. = TRUE)
   m_clean = methrix::coverage_filter(m = m, cov_thr = 1, min_samples = n_samps)
 
 
   #Thanks to Maxi for pointing out the bug related to M estimation
   #To-do: Find solution to avoid matrix multiplication (for small datasets it shouldn't affect)
-  b = bsseq::BSseq(M = get_matrix(m_clean) * get_matrix(m_clean, type = "C"), Cov = get_matrix(m_clean, type = "C"),
-                   pData = colData(x = m_clean), pos = rowData(x = m_clean)[,"start"], chr = rowData(x = m_clean)[,"chr"],
-                   sampleNames = rownames(m_clean@colData))
+  b = bsseq::BSseq(
+    M = get_matrix(m_clean) * get_matrix(m_clean, type = "C"),
+    Cov = get_matrix(m_clean, type = "C"),
+    pData = colData(x = m_clean),
+    pos = rowData(x = m_clean)[, "start"],
+    chr = rowData(x = m_clean)[, "chr"],
+    sampleNames = rownames(m_clean@colData)
+  )
   b
 }
 
@@ -288,18 +294,20 @@ remove_uncovered = function(m){
 
   row_idx = which(matrixStats::rowSums2(x = cov_dat) == 0)
 
-  message(paste0("Removed ", format(length(row_idx), big.mark = ","),
+  cat(paste0("-Removed ", format(length(row_idx), big.mark = ","),
                  " [", round(length(row_idx)/nrow(cov_dat) * 100, digits = 2), "%] uncovered loci of ",
-                 format(nrow(cov_dat), big.mark = ","), " sites"))
+                 format(nrow(cov_dat), big.mark = ","), " sites\n"))
 
   rm(cov_dat)
   gc()
 
-  m = create_methrix(beta_mat = assay(m, i = 1)[-row_idx,, drop = FALSE],
-                     cov_mat = assay(m, i = 2)[-row_idx,, drop = FALSE],
-                     cpg_loci = data.table::as.data.table(as.data.frame(x = rowData(x = m))[-row_idx,, drop = FALSE]),
-                     is_hdf5 = is_h5(m), genome_name = m@metadata$genome,
-                     col_data = colData(m), h5_dir = NULL, ref_cpg_dt = m@metadata$ref_CpG)
+  m = m[-row_idx,]
+
+  n_non_covered = length(row_idx)
+  m@metadata$summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
+                                              Summary = c(ncol(m), format(nrow(m), big.mark = ","),
+                                                          n_non_covered, length(unique(m@elementMetadata$chr)), m@metadata$genome, m@metadata$is_h5))
+
   m
 }
 
@@ -308,7 +316,7 @@ remove_uncovered = function(m){
 #' Filter matrices by region
 #' @details Takes \code{\link{methrix}} object and filters CpGs based on supplied regions in data.table or GRanges format
 #' @param m \code{\link{methrix}} object
-#' @param regions genomic regions to subset by. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
+#' @param regions genomic regions to filter-out. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
 #' @export
 region_filter = function(m, regions){
 
@@ -340,8 +348,6 @@ region_filter = function(m, regions){
     current_regions[,end := start+1]
     data.table::setDT(x = current_regions, key = c("chr", "start", "end"))
     overlap = data.table::foverlaps(x = current_regions, y = regions, type = "within", nomatch = NULL, which = TRUE)
-
-
 
     m <- m[-overlap$xid,]
     n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))

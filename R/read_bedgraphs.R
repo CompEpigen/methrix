@@ -63,16 +63,25 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
 
   #Final aim is to bring input data to the following order:
   ##chr start end beta cov starnd <rest..>
+  cat(paste0("----------------------------", "\n"))
   if(is.null(pipeline)){
+    cat(paste0("-Preset:        Custom \n"))
     col_idx = parse_source_idx(chr = chr_idx, start = start_idx, end = end_idx, beta = beta_idx,
                                 cov = cov_idx, strand = strand_idx, n_meth = M_idx, n_unmeth = U_idx, verbose = verbose)
     col_idx$col_classes = NULL
   }else{
     pipeline = match.arg(arg = pipeline, choices = c("Bismark_cov", "MethylDackel", "MethylcTools"))
     if(verbose){
-      message(paste0("Using ", pipeline, " as a preset"))
+      cat(paste0("-Preset:        ", pipeline, "\n"))
     }
+
     col_idx = get_source_idx(protocol = pipeline)
+
+    if(any(pipeline %in% c("Bismark_cov"))){
+      if(zero_based){
+        cat("*BismarkCov files are one based. You may want to re-run with zero_based=FALSE\n")
+      }
+    }
   }
 
   if(is.null(contigs)) {
@@ -102,6 +111,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
     genome[, end := end - 1]
   }
 
+  cat(paste0("-CpGs raw:      ", format(nrow(genome), big.mark = ","), "\n"))
   genome = genome[chr %in% as.character(contigs)]
 
   if(nrow(genome) == 0) {
@@ -114,7 +124,8 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
   }
 
   if(verbose){
-    message(paste0("Retained ", format(nrow(genome), big.mark = ","), " CpGs after filtering for contigs"))
+    cat(paste0("-CpGs filtered: ", format(nrow(genome), big.mark = ","), "\n"))
+    #cat(paste0("-Retained ", format(nrow(genome), big.mark = ","), " CpGs after filtering for contigs\n"))
   }
 
   #check it with the strand column
@@ -125,7 +136,8 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
     genome[, strand := "-"]
     genome <- data.table::rbindlist(list(genome, genome_plus), use.names = TRUE)
     data.table::setkeyv(genome, cols = c("chr", "start"))
-    message(paste0("Splitted into ", format(nrow(genome), big.mark = ","), " CpGs with strand information"))
+    cat(paste0("-CpGs stranded: ", format(nrow(genome), big.mark = ","), "\n"))
+    #message(paste0("Splitted into ", format(nrow(genome), big.mark = ","), " CpGs with strand information"))
     rm(genome_plus)
     gc()
   }
@@ -139,6 +151,8 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
       stop("Number of samples in coldata does not match the number of input files.")
     }
   }
+
+  cat(paste0("----------------------------", "\n"))
 
   #Summarize bedgraphs and create a matrix
   if(vect){
@@ -168,6 +182,6 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
   rm(genome)
   gc()
 
-  cat(data.table:::timetaken(started.at = start_proc_time), sep = "\n")
+  cat("-Finished in:  ",data.table::timetaken(start_proc_time),"\n")
   return(m_obj)
 }

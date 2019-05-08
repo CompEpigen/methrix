@@ -1,4 +1,13 @@
-# methrix 0.9.85 [in progress]
+# methrix 0.9.86 [in progress]
+
+* `methrixreport` works on Windows
+* Error handling when bedgraph file contains non-reference CpGs
+* Subsetting operation uses SE functions
+* Code-cleanup, improve log messages
+* Added example files for vignette creation
+* Update description file
+
+# methrix 0.9.85
 
 Significant user level improvements:
 * `stranded` and `collapse_strands` now works with bedgraphs without strand info (such as from MethylDackel)

@@ -28,7 +28,7 @@ setGeneric(name = "getChrSummary", function(x) standardGeneric("getChrSummary"))
 setMethod(f = "getChrSummary",signature = "methrix", function(x) x@metadata$chr_summary)
 
 setMethod(f = 'show', signature = 'methrix', definition = function(object){
-  cat(paste('An object of class ', class(object), "\n"))
+  cat(paste0('An object of class ', class(object), "\n"))
   print(object@metadata$summary)
 })
 

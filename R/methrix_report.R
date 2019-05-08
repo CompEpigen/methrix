@@ -24,45 +24,49 @@ methrix_report = function(meth, output_dir = NULL, plot_beta_dist = FALSE, n_thr
   #summarize matrix per chr
   ##Methylation
   cat(paste0("Step 1 of 7\n"))
-  if(file.exists(paste0(output_dir, "/m_per_chr.tsv"))){
+  of1 = normalizePath(paste0(output_dir, "/m_per_chr.tsv"))
+  if(file.exists(of1)){
     message("File already present. Skipping step 1..")
   }else{
     mean_meth_chr = m_chr_summary[,c(1, 4:ncol(m_chr_summary)), with = FALSE][,lapply(.SD, mean, na.rm = TRUE), chr]
     median_meth_chr = m_chr_summary[,c(1, 4:ncol(m_chr_summary)), with = FALSE][,lapply(.SD, median, na.rm = TRUE), chr]
     meth_per_chr_dt = data.table::rbindlist(l = list(mean = mean_meth_chr, median = median_meth_chr), idcol = "stat", use.names = TRUE)
-    data.table::fwrite(x = meth_per_chr_dt, file = paste0(output_dir, "/m_per_chr.tsv"), sep = "\t")
+    data.table::fwrite(x = meth_per_chr_dt, file = of1, sep = "\t")
   }
 
   ##Coverage
   cat(paste0("Step 2 of 7\n"))
-  if(file.exists(paste0(output_dir, "/c_per_chr.tsv"))){
+  of2 = normalizePath(paste0(output_dir, "/c_per_chr.tsv"))
+  if(file.exists(of2)){
     message("File already present. Skipping step 2..")
   }else{
     mean_cov_chr = c_chr_summary[,c(1, 4:ncol(c_chr_summary)), with = FALSE][,lapply(.SD, function(x){mean(x[!x == 0])}), chr]
     median_cov_chr = c_chr_summary[,c(1, 4:ncol(c_chr_summary)), with = FALSE][,lapply(.SD, function(x){median(x[!x == 0])}), chr]
     cov_per_chr_dt = data.table::rbindlist(l = list(mean = mean_cov_chr, median = median_cov_chr), idcol = "stat", use.names = TRUE)
-    data.table::fwrite(x = cov_per_chr_dt, file = paste0(output_dir, "/c_per_chr.tsv"), sep = "\t")
+    data.table::fwrite(x = cov_per_chr_dt, file = of2, sep = "\t")
   }
 
 
   #n CpGs covered per chromomse
   cat(paste0("Step 3 of 7\n"))
+  of3 = normalizePath(paste0(output_dir, "/n_covered_per_chr.tsv"))
   contig_nCpGs = meth@metadata$ref_CpG
   colnames(contig_nCpGs) = c("chr", "total_CpGs")
-  if(file.exists(paste0(output_dir, "/n_covered_per_chr.tsv"))){
+  if(file.exists(of3)){
     message("File already present. Skipping step 3..")
   }else{
     n_covered_chr = m_chr_summary[,c(1, 4:ncol(m_chr_summary)), with = FALSE][,lapply(.SD, function(x){length(x[!is.na(x)])}), chr]
     #contig_nCpGs = meth@metadata$ref_CpG
     #colnames(contig_nCpGs) = c("chr", "total_CpGs")
     n_covered_chr = merge(n_covered_chr, contig_nCpGs, by = 'chr', all.x = TRUE)
-    data.table::fwrite(x = n_covered_chr, file = paste0(output_dir, "/n_covered_per_chr.tsv"), sep = "\t")
+    data.table::fwrite(x = n_covered_chr, file = of3, sep = "\t")
   }
 
 
   #Common CpGs covered by all samples
   cat(paste0("Step 4 of 7\n"))
-  if(file.exists(paste0(output_dir, "/n_covered_by_all_samples.tsv"))){
+  of4 = normalizePath(paste0(output_dir, "/n_covered_by_all_samples.tsv"))
+  if(file.exists(of4)){
     message("File already present. Skipping step 4..")
   }else{
     mf = methrix::coverage_filter(m = meth, cov_thr = 1, min_samples = nrow(colData(meth)), n_threads = n_thr)
@@ -72,30 +76,32 @@ methrix_report = function(meth, output_dir = NULL, plot_beta_dist = FALSE, n_thr
     gc(verbose = FALSE)
     mf_chr_summary = merge(mf_chr_summary, contig_nCpGs, by = 'chr', all.x = TRUE)
     mf_chr_summary[, fract_CpG := n_CpG/total_CpGs]
-    data.table::fwrite(x = mf_chr_summary, file = paste0(output_dir, "/n_covered_by_all_samples.tsv"), sep = "\t")
+    data.table::fwrite(x = mf_chr_summary, file = of4, sep = "\t")
   }
 
   #Global methylation
   cat(paste0("Step 5 of 7\n"))
-  if(file.exists(paste0(output_dir, "/global_meth_per_samp.tsv"))){
+  of5 = normalizePath(paste0(output_dir, "/global_meth_per_samp.tsv"))
+  if(file.exists(of5)){
     message("File already present. Skipping step 5..")
   }else{
     mean_meth = apply(m_chr_summary[,4:ncol(m_chr_summary)], 2, mean, na.rm = TRUE)
     median_meth = apply(m_chr_summary[,4:ncol(m_chr_summary)], 2, median, na.rm = TRUE)
     global_meth = data.table::data.table(Sample_Name = names(mean_meth), mean = mean_meth, median = median_meth)
-    data.table::fwrite(x = global_meth, file = paste0(output_dir, "/global_meth_per_samp.tsv"), sep = "\t")
+    data.table::fwrite(x = global_meth, file = of5, sep = "\t")
   }
 
 
   #Global methylation
   cat(paste0("Step 6 of 7\n"))
-  if(file.exists(paste0(output_dir, "/global_cov_per_samp.tsv"))){
+  of6 = normalizePath(path = paste0(output_dir, "/global_cov_per_samp.tsv"))
+  if(file.exists(of6)){
     message("File already present. Skipping step 6..")
   }else{
     mean_cov = apply(c_chr_summary[,4:ncol(c_chr_summary)], 2, function(x){mean(x[!x == 0])})
     median_cov = apply(c_chr_summary[,4:ncol(c_chr_summary)], 2, function(x){median(x[!x == 0])})
     global_cov = data.table::data.table(Sample_Name = names(mean_cov), mean = mean_cov, median = median_cov)
-    data.table::fwrite(x = global_cov, file = paste0(output_dir, "/global_cov_per_samp.tsv"), sep = "\t")
+    data.table::fwrite(x = global_cov, file = of6, sep = "\t")
   }
 
   #Density plot data
@@ -117,14 +123,14 @@ methrix_report = function(meth, output_dir = NULL, plot_beta_dist = FALSE, n_thr
 
   cat(paste0("Knitting report\n"))
   md = system.file('extdata', 'summarize_methrix.Rmd', package = 'methrix')
-  md_css = system.file('extdata', 'custom.css', package = 'methrix')
-  system(command = paste0("cp ", md, " ", output_dir))
-  system(command = paste0("cp ", md_css, " ", output_dir))
 
-  rmarkdown::render(input = paste0(output_dir, "/summarize_methrix.Rmd"), output_file = "methrix_reports.html",
-                    output_dir = output_dir, clean = TRUE)
-  system(command = paste0("rm ", output_dir, "/", basename(md)))
-  system(command = paste0("rm ", output_dir, "/", basename(md_css)))
+  rmarkdown::render(input = md, output_file = "methrix_reports.html",
+                    output_dir = output_dir, clean = TRUE, params = list(n_covered_tsv = of3,
+                                                                         n_covered_by_all_samples_tsv = of4,
+                                                                         m_stat_tsv = of1,
+                                                                         c_stat_tsv = of2,
+                                                                         global_meth_per_samp_tsv = of5,
+                                                                         global_cov_per_samp_tsv = of6))
   browseURL(url = paste0(output_dir, "/methrix_reports.html"))
 
   cat(data.table:::timetaken(started.at = start_proc_time), sep = "\n")

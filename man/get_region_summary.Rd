@@ -2,19 +2,22 @@
 % Please edit documentation in R/methrix_operations.R
 \name{get_region_summary}
 \alias{get_region_summary}
-\title{Extracts methylation of regions of interest}
+\title{Extract and summarize methylation or coverage info by regions of interest}
 \usage{
-get_region_summary(m, regions = NULL, type = NULL, how = NULL)
+get_region_summary(m, regions = NULL, type = NULL, how = NULL,
+  na_rm = TRUE)
 }
 \arguments{
 \item{regions}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
 
-\item{type}{data that should be summarized. Coule be methylation or coverage.}
+\item{type}{matrix which needs to be summarized. Coule be `M` or `C`}
 
 \item{how}{mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min}
+
+\item{na_rm}{Remove NA's ? Default \code{TRUE}}
 }
 \description{
-Extracts methylation of regions of interest
+Extract and summarize methylation or coverage info by regions of interest
 }
 \details{
 Takes \code{\link{methrix}} object and summarizes regions
