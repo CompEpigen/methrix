@@ -11,7 +11,7 @@ files into methylation/coverage matrices.
 You guessed it - `Methrix` does this for you, including many other cool stuffs!
 
 <p align="center">
-<img src="https://github.com/CompEpigen/methrix/vignettes/overview.png">
+<img src="https://github.com/CompEpigen/methrix/blob/master/vignettes/overview.png">
 </p>
 
 ### Summary:
