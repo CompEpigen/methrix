@@ -7,6 +7,8 @@ Fast and efficient summarization of generic bedGraph files from Bisufite sequenc
 <!-- badges: start -->
 [![CRAN status](https://www.r-pkg.org/badges/version/methrix)](https://cran.r-project.org/package=methrix)
 [![Travis build status](https://travis-ci.org/CompEpigen/methrix.svg?branch=master)](https://travis-ci.org/CompEpigen/methrix)
+[![Lifecycle: maturing](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
+[![BioC status](http://www.bioconductor.org/shields/build/release/bioc/methrix.svg)](https://bioconductor.org/checkResults/release/bioc-LATEST/methrix)
 <!-- badges: end -->
 
 ### Introduction
@@ -87,24 +89,6 @@ write_bedgraphs() #Writes bedGraphs from methrix object (optionally convert to b
 order_by_sd() #rder methrix object by SD
 methrix_report() #Create a detailed interative html summary report from methrix object
 methrix2bsseq() #Convert methrix to bsseq object
-```
-
-#### Example
-
-Filter matrices based on coverage statistics (e.g: at-least two samples should have a loci covered by 4 reads)
-
-```r
-> x5 = methrix::filter_methrix(m = x0, cov_thr = 5, min_samples = 2, n_threads = 4)
-# Retained 8916847 of 28162972 sites
-
-#New filtered methrix object
->  x5
-# An object of class  methrix 
-#                 ID Summary
-# 1:       n_samples       3
-# 2:          n_CpGs 8916847
-# 3: Reference_Build  Hs37d5
-# 4:           is_H5   FALSE 
 ```
 
 ### Quick (and dirty) benchmark
