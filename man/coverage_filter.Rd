@@ -15,9 +15,17 @@ coverage_filter(m, cov_thr = 1, min_samples = 1, n_threads = 4)
 
 \item{n_threads}{number of threads to use. Default 4.}
 }
+\value{
+An object of class \code{\link{methrix}}
+}
 \description{
 Filter matrices by coverage
 }
 \details{
 Takes \code{\link{methrix}} object and filters CpGs based on coverage statistics
+}
+\examples{
+data("mm9_bsmap")
+#keep only CpGs which are covered by at-least 1 read across 3 samples
+coverage_filter(m = mm9_bsmap, cov_thr = 1, min_samples = 3, n_threads = 1)
 }

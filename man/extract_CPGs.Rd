@@ -17,3 +17,6 @@ a list of data.table containing number of CpG's and contig lengths
 \description{
 Extracts all CpGs from a genome
 }
+\examples{
+mm9_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Mmusculus.UCSC.mm9", bored = FALSE)
+}

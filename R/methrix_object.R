@@ -19,12 +19,14 @@ methrix <- setClass(Class = 'methrix', contains = "SummarizedExperiment")
 #' @param x An object of class methrix
 #' @return CpG per chromosome table
 #' @exportMethod getChrSummary
-#' @examples
 setGeneric(name = "getChrSummary", function(x) standardGeneric("getChrSummary"))
 
 ## Accessor methods
 #' @rdname getChrSummary
 #' @aliases getChrSummary
+#' @examples
+#' data("mm9_bsmap")
+#' getChrSummary(x = mm9_bsmap)
 setMethod(f = "getChrSummary",signature = "methrix", function(x) x@metadata$chr_summary)
 
 setMethod(f = 'show', signature = 'methrix', definition = function(object){
@@ -35,7 +37,6 @@ setMethod(f = 'show', signature = 'methrix', definition = function(object){
 #Create methrix obj
 create_methrix = function(beta_mat = NULL, cov_mat = NULL, cpg_loci = NULL, is_hdf5 = FALSE,
                           genome_name = "hg19", col_data = NULL, h5_dir = NULL, ref_cpg_dt = NULL, chrom_sizes = NULL){
-
 
   if(is_hdf5){
     n_non_covered = NA

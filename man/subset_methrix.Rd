@@ -15,9 +15,17 @@ subset_methrix(m, regions = NULL, contigs = NULL, samples = NULL)
 
 \item{samples}{sample names to subset by}
 }
+\value{
+An object of class \code{\link{methrix}}
+}
 \description{
 Subsets \code{\link{methrix}} object based on given conditions.
 }
 \details{
 Takes \code{\link{methrix}} object and filters CpGs based on coverage statistics
+}
+\examples{
+data("mm9_bsmap")
+#Subset to chromosome 1
+subset_methrix(mm9_bsmap, contigs = "chr1")
 }

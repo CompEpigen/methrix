@@ -6,6 +6,10 @@
 #' @param bedtools_path Default NULL. Path to bedtools. Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE
 #' @param bedGraphToBigWig_path Default NULL. Path to bedGraphToBigWig Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE
 #' @param bedClip_path Default NULL. Path to bedClip Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE
+#' @examples
+#' data("mm9_bsmap")
+#' write_bedgraphs(m = mm9_bsmap, output_dir = "./temp")
+#' @return writes bedgraph files to output
 #' @export
 
 write_bedgraphs = function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE, n_thr = 4, make_BigWig = FALSE,

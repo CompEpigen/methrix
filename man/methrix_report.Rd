@@ -16,7 +16,14 @@ methrix_report(meth, output_dir = NULL, plot_beta_dist = FALSE,
 
 \item{n_thr}{Default 4. Only used if \code{plot_beta_dist} is TRUE}
 }
+\value{
+an interactive html report
+}
 \description{
 Creates a detailed interative html summary report from Methrix object.
 If the directory contains required files (from previous run), it directly proceeds to generate html report.
+}
+\examples{
+data("mm9_bsmap")
+methrix::methrix_report(meth = mm9_bsmap)
 }

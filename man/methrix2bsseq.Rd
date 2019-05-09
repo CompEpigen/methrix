@@ -9,9 +9,18 @@ methrix2bsseq(m)
 \arguments{
 \item{m}{\code{\link{methrix}} object}
 }
+\value{
+An object of class \code{\link{BSseq}}
+}
 \description{
 Convert methrix to bsseq object
 }
 \details{
 Takes \code{\link{methrix}} object and returns a \code{\link{BSseq}} object
+}
+\examples{
+\dontrun{
+data("mm9_bsmap")
+methrix2bsseq(m = mm9_bsmap)
+}
 }

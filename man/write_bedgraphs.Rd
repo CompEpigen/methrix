@@ -23,6 +23,13 @@ write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
 
 \item{make_bigWig}{Default FALSE. Whether to convert bedGraph to BigWig}
 }
+\value{
+writes bedgraph files to output
+}
 \description{
 Writes bedGraphs from methrix object
+}
+\examples{
+data("mm9_bsmap")
+write_bedgraphs(m = mm9_bsmap, output_dir = "./temp")
 }

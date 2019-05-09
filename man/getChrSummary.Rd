@@ -19,3 +19,7 @@ CpG per chromosome table
 \description{
 extract CpGs per chromosome stats
 }
+\examples{
+data("mm9_bsmap")
+getChrSummary(x = mm9_bsmap)
+}

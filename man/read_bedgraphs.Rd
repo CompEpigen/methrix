@@ -20,8 +20,6 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 
 \item{zero_based}{Are bedgraph regions zero based ? Default TRUE}
 
-\item{fill_CpGs}{Fill missing CpGs from reference genome. Default TRUE, if FALSE merges bedgraphs.}
-
 \item{stranded}{Default FALSE}
 
 \item{collapse_strands}{If TRUE collapses CpGs on different crick strand into watson. Deafult FALSE}
@@ -64,11 +62,19 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 
 \item{verbose}{Be little chatty ? Default TRUE.}
 
-\item{bored}{Tell me a Chuck Norris joke while I wait for my CpG extraction. Default TRUE. jokes can be very explicit! you have been warned!}
+\item{bored}{Tell me a Chuck Norris joke while I wait for my CpG extraction. Default TRUE. jokes can be very explicit! you have been warned.}
+}
+\value{
+An object of class \code{\link{methrix}}
 }
 \description{
 Versatile BedGraph reader.
 }
 \details{
 Reads BedGraph files and generates methylation and coverage matrices. Optionally arrays can be serialized as on-disk HDFS5 arrays.
+}
+\examples{
+bdg_files = list.files(path = system.file('extdata', package = 'methrix'), pattern = "*bdg\\\\.gz$", full.names = TRUE)
+mm9_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Mmusculus.UCSC.mm9", bored = FALSE)
+meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = mm9_cpgs, chr_idx = 1, start_idx = 2, end_idx = 3, cov_idx = 4, beta_idx = 5, stranded = TRUE, zero_based = FALSE, collapse_strands = TRUE)
 }

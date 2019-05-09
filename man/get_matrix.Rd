@@ -13,9 +13,19 @@ get_matrix(m, type = "M", add_loci = FALSE)
 
 \item{add_loci}{Default FALSE. If TRUE adds CpG position info to the matrix and returns as a data.table}
 }
+\value{
+Coverage or Methylation matrix
+}
 \description{
 Extract methylation or coverage matrices
 }
 \details{
 Takes \code{\link{methrix}} object and returns user specified \code{methylation} or \code{coverage} matrix
+}
+\examples{
+data("mm9_bsmap")
+#Get methylation matrix
+get_matrix(m = mm9_bsmap, type = "M")
+#Get methylation matrix along with loci
+get_matrix(m = mm9_bsmap, type = "M", add_loci = TRUE)
 }

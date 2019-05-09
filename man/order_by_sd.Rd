@@ -9,9 +9,16 @@ order_by_sd(m)
 \arguments{
 \item{m}{\code{\link{methrix}} object}
 }
+\value{
+An object of class \code{\link{methrix}}
+}
 \description{
 Order mathrix object by SD
 }
 \details{
 Takes \code{\link{methrix}} object and reorganizes the data by standard deviation
+}
+\examples{
+data("mm9_bsmap")
+order_by_sd(m = mm9_bsmap)
 }

@@ -11,8 +11,6 @@
 #' @param vect To use vectorized code. Default TRUE, memory intese. Set to FALSE if you have large number of BedGraph files.
 #' @param vect_batch_size Default NULL. Process samples in batches. Applicable only when vect = TRUE
 #' @param coldata An optional DataFrame describing the samples. Row names, if present, become the column names of the matrix. If NULL, then a DataFrame will be created with basename of files used as the row names.
-#' @param fill_CpGs Fill missing CpGs from reference genome. Default TRUE, if FALSE merges bedgraphs.
-#' @param ideal Default FALSE. Are the all the rows in bedgraphs are in same order? Default FALSE. If TRUE matrix is created by simply binding columns rather than merging, which is way much faster. Only applicable when \{code{fill_CpGs}} is TRUE
 #' @param chr_idx column index for chromosome in bedgraph files
 #' @param start_idx column index for start position in bedgraph files
 #' @param end_idx column index for end position in bedgraph files
@@ -26,13 +24,18 @@
 #' @param h5_dir directory to store H5 based object
 #' @param h5temp temporary directory to store hdf5
 #' @param verbose Be little chatty ? Default TRUE.
-#' @param bored Tell me a Chuck Norris joke while I wait for my CpG extraction. Default TRUE. jokes can be very explicit! you have been warned!
+#' @param bored Tell me a Chuck Norris joke while I wait for my CpG extraction. Default TRUE. jokes can be very explicit! you have been warned.
 #' @export
-#' @import data.table
+#' @return An object of class \code{\link{methrix}}
+#' @rawNamespace import(data.table, except = c(shift, first, second))
 #' @import parallel
+#' @import DelayedMatrixStats
 #' @import SummarizedExperiment DelayedArray HDF5Array
-#'
-#'
+#' @examples
+#' bdg_files = list.files(path = system.file('extdata', package = 'methrix'), pattern = "*bdg\\.gz$", full.names = TRUE)
+#' mm9_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Mmusculus.UCSC.mm9", bored = FALSE)
+#' meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = mm9_cpgs, chr_idx = 1, start_idx = 2, end_idx = 3, cov_idx = 4, beta_idx = 5, stranded = TRUE, zero_based = FALSE, collapse_strands = TRUE)
+
 read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill_CpGs = TRUE, stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL, ref_build = "Unknown", contigs = NULL, vect = TRUE,
                           vect_batch_size = NULL, coldata = NULL, chr_idx = NULL, start_idx = NULL, end_idx = NULL,
                           beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
@@ -67,7 +70,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
   if(is.null(pipeline)){
     cat(paste0("-Preset:        Custom \n"))
     col_idx = parse_source_idx(chr = chr_idx, start = start_idx, end = end_idx, beta = beta_idx,
-                                cov = cov_idx, strand = strand_idx, n_meth = M_idx, n_unmeth = U_idx, verbose = verbose)
+                               cov = cov_idx, strand = strand_idx, n_meth = M_idx, n_unmeth = U_idx, verbose = verbose)
     col_idx$col_classes = NULL
   }else{
     pipeline = match.arg(arg = pipeline, choices = c("Bismark_cov", "MethylDackel", "MethylcTools"))
@@ -92,19 +95,19 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
 
   #Extract CpG's
   conig_lens = NA
-  if(class(ref_cpgs) == 'list' & all(names(ref_cpgs) == c('cpgs', 'contig_lens'))){
+  if(is(ref_cpgs, 'list') & all(names(ref_cpgs) == c('cpgs', 'contig_lens'))){
     conig_lens =  ref_cpgs$contig_lens[contig %in% contigs]
     genome = data.table::copy(x = ref_cpgs$cpgs)
-  }else if(any(class(ref_cpgs)[1] == "character") || any(class(ref_cpgs)[1] == "BSgenome")){
-      genome = extract_CPGs(ref_genome = ref_cpgs)
-      conig_lens = genome$contig_lens
-      genome = genome$cpgs
-    }else if(class(ref_cpgs)[1] == "data.table"){
-      genome = data.table::copy(x = ref_cpgs)
-      data.table::setkey(x = genome, chr, start)
-    }else{
-      stop("Could not figure out the genome class.")
-    }
+  }else if(any(is(ref_cpgs[1], "character"), is(ref_cpgs[1], "BSgenome"))){
+    genome = extract_CPGs(ref_genome = ref_cpgs)
+    conig_lens = genome$contig_lens
+    genome = genome$cpgs
+  }else if(is(ref_cpgs[1], "data.table")){
+    genome = data.table::copy(x = ref_cpgs)
+    data.table::setkey(x = genome, chr, start)
+  }else{
+    stop("Could not figure out the genome class.")
+  }
 
   if(zero_based) {
     genome[, start := start - 1]

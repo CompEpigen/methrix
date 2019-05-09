@@ -4,21 +4,28 @@
 \alias{get_region_summary}
 \title{Extract and summarize methylation or coverage info by regions of interest}
 \usage{
-get_region_summary(m, regions = NULL, type = NULL, how = NULL,
+get_region_summary(m, regions = NULL, type = "M", how = "mean",
   na_rm = TRUE)
 }
 \arguments{
 \item{regions}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
 
-\item{type}{matrix which needs to be summarized. Coule be `M` or `C`}
+\item{type}{matrix which needs to be summarized. Coule be `M` or `C`. Default "M"}
 
-\item{how}{mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min}
+\item{how}{mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min. Default "mean"}
 
 \item{na_rm}{Remove NA's ? Default \code{TRUE}}
+}
+\value{
+a coverage or methylation matrix
 }
 \description{
 Extract and summarize methylation or coverage info by regions of interest
 }
 \details{
 Takes \code{\link{methrix}} object and summarizes regions
+}
+\examples{
+data("mm9_bsmap")
+get_region_summary(m = mm9_bsmap, regions = data.table(chr = "chr1", start = 3020220, end = 3209171), type = "M", how = "mean")
 }

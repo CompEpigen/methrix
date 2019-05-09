@@ -5,6 +5,8 @@
 #' @importFrom rjson fromJSON
 #' @export
 #' @return a list of data.table containing number of CpG's and contig lengths
+#' @examples
+#' mm9_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Mmusculus.UCSC.mm9", bored = FALSE)
 
 extract_CPGs = function(ref_genome = NULL, bored = TRUE){
 
@@ -38,7 +40,7 @@ extract_CPGs = function(ref_genome = NULL, bored = TRUE){
     rec_url = paste("http://api.icndb.com/jokes/random/")
     #joke = rjson::fromJSON(file = rec_url)
     joke = suppressWarnings(try(expr = rjson::fromJSON(file = rec_url), silent = TRUE))
-    if(class(joke) == "try-error"){
+    if(is(joke, 'try-error')){
       joke = list(value = "fail")
     }
   }

@@ -9,9 +9,16 @@ remove_uncovered(m)
 \arguments{
 \item{m}{\code{\link{methrix}} object}
 }
+\value{
+An object of class \code{\link{methrix}}
+}
 \description{
 Remove loci that are uncovered across all samples
 }
 \details{
 Takes \code{\link{methrix}} object and removes loci that are uncovered across all samples
+}
+\examples{
+data("mm9_bsmap")
+remove_uncovered(m = mm9_bsmap)
 }

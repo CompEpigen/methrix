@@ -11,9 +11,16 @@ region_filter(m, regions)
 
 \item{regions}{genomic regions to filter-out. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
 }
+\value{
+An object of class \code{\link{methrix}}
+}
 \description{
 Filter matrices by region
 }
 \details{
 Takes \code{\link{methrix}} object and filters CpGs based on supplied regions in data.table or GRanges format
+}
+\examples{
+data("mm9_bsmap")
+region_filter(m = mm9_bsmap, regions = data.table(chr = "chr1", start = 3020220, end = 3209171))
 }

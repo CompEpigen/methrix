@@ -6,6 +6,11 @@
 * Code-cleanup, improve log messages
 * Added example files for vignette creation
 * Update description file
+* Added an example dataset
+* Added examples for all functions
+* Cleared BiocChecks
+
+* Bug fix: Fix NA's caused by `starnd_collapse` from bedgraph files with no M and U info
 
 # methrix 0.9.85
 

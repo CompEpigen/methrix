@@ -5,6 +5,10 @@
 #' @param output_dir Output directory name where the files should be saved. If \code{NULL} creats a \code{tempdir}
 #' @param plot_beta_dist Default FALSE. This is a time consuming and writes huge density files required for plotting.
 #' @param n_thr Default 4. Only used if \code{plot_beta_dist} is TRUE
+#' @return an interactive html report
+#' @examples
+#' data("mm9_bsmap")
+#' methrix::methrix_report(meth = mm9_bsmap)
 #' @export
 methrix_report = function(meth, output_dir = NULL, plot_beta_dist = FALSE, n_thr = 4){
 

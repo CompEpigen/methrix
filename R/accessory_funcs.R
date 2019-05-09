@@ -82,14 +82,24 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
                               beta = beta, M = n_meth, U = n_unmeth, cov = cov),
                   fix_missing = c(fix_missing, "cov := M+U")))
     }
-  }else{
-    if(verbose){
-      cat("--All fields are present. Nice.\n")
-    }
+  }else if(!is.null(beta) & !is.null(cov)){#If both present (case-3: beta and coverage available, but missing M and U)
+    if(all(is.null(n_meth), is.null(n_unmeth))){
+      if(verbose){
+        cat("--Estimating M and U from coverage and beta values\n")
+      }
 
-    return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
-                            beta = beta, cov = cov),
-                fix_missing = NULL))
+      return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
+                              beta = beta, cov = cov),
+                  fix_missing = c("M := as.integer(cov * beta)", "U = cov - M")))
+    }else{
+      if(verbose){
+        cat("--All fields are present. Nice.\n")
+      }
+
+      return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
+                              beta = beta, cov = cov),
+                  fix_missing = NULL))
+    }
   }
 }
 
@@ -107,7 +117,6 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
     }
   }
 
-  #Handle NaNs (resulting from 0/0)
   bdg_dat[, chr := as.character(chr)]
   bdg_dat[, start := as.integer(start)]
 
@@ -128,54 +137,51 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
 
   data.table::setkey(x = bdg_dat, "chr", "start")
 
-  if(fill_cpgs){
+  data.table::setkey(x = genome, "chr", "start")
+  missing_cpgs = genome[!bdg_dat[,list(chr, start)], on = c("chr", "start")]
 
-    data.table::setkey(x = genome, "chr", "start")
-    missing_cpgs = genome[!bdg_dat[,list(chr, start)], on = c("chr", "start")]
+  if(verbose){
+    cat(paste0("-CpGs missing:  ", format(nrow(missing_cpgs), big.mark = ","), " ",basename(bdg),"\n"))
+    #message(paste0("Missing ", format(nrow(missing_cpgs), big.mark = ","), " reference CpGs from: ", basename(bdg)))
+  }
+  if(nrow(missing_cpgs)>0){
+    missing_cpgs[, width := NULL][, beta := NA][, cov := 0][,M := 0][,U := 0]
+    bdg_dat = data.table::rbindlist(list(bdg_dat, missing_cpgs), use.names = TRUE, fill = TRUE)
+  }
+  data.table::setkey(x = bdg_dat, "chr", "start")
+  #Better than identical(); seems to take couple of seconds but this is crucial to make sure everything is in order
+  is_identical = data.table:::all.equal.data.table(target = bdg_dat[,.(chr, start)],
+                                                   current = genome[,.(chr, start)],
+                                                   ignore.row.order = FALSE)
 
-    if(verbose){
-      cat(paste0("-CpGs missing:  ", format(nrow(missing_cpgs), big.mark = ","), " ",basename(bdg),"\n"))
-      #message(paste0("Missing ", format(nrow(missing_cpgs), big.mark = ","), " reference CpGs from: ", basename(bdg)))
-    }
-    if(nrow(missing_cpgs)>0){
-      missing_cpgs[, width := NULL][, beta := NA][, cov := 0][,M := 0][,U := 0]
-      bdg_dat = data.table::rbindlist(list(bdg_dat, missing_cpgs), use.names = TRUE, fill = TRUE)
-    }
+  if(is(is_identical, 'character')){
+    #cat(paste0('--non reference CpGs found. Removing them\n'))
+    non_ref_cpgs = bdg_dat[!genome[,list(chr, start)], on = c("chr", "start")]
+    cat(paste0("-Non ref CpGs:  ", format(nrow(non_ref_cpgs), big.mark = ","), " [Removing them]\n"))
+    bdg_dat = bdg_dat[genome[,list(chr, start)], on = c("chr", "start")]
     data.table::setkey(x = bdg_dat, "chr", "start")
-    #Better than identical(); seems to take couple of seconds but this is crucial to make sure everything is in order
     is_identical = data.table:::all.equal.data.table(target = bdg_dat[,.(chr, start)],
                                                      current = genome[,.(chr, start)],
                                                      ignore.row.order = FALSE)
-
-    if(class(is_identical) == 'character'){
-      #cat(paste0('--non reference CpGs found. Removing them\n'))
-      non_ref_cpgs = bdg_dat[!genome[,list(chr, start)], on = c("chr", "start")]
-      cat(paste0("-Non ref CpGs:  ", format(nrow(non_ref_cpgs), big.mark = ","), " [Removing them]\n"))
-      bdg_dat = bdg_dat[genome[,list(chr, start)], on = c("chr", "start")]
-      data.table::setkey(x = bdg_dat, "chr", "start")
-      is_identical = data.table:::all.equal.data.table(target = bdg_dat[,.(chr, start)],
-                                                       current = genome[,.(chr, start)],
-                                                       ignore.row.order = FALSE)
-      if(class(is_identical) == 'character'){
-        stop("Something went wrong with filling up of uncovered CpG sites.")
-      }
+    if(is(is_identical, 'character')){
+      stop("Something went wrong with filling up of uncovered CpG sites.")
     }
-    #Re-assign strand info from genome (since some bedgraphs have no strand info, yet cover CpGs from both strands. i,e MethylDackel)
-    bdg_dat[,strand := genome$strand]
+  }
+  #Re-assign strand info from genome (since some bedgraphs have no strand info, yet cover CpGs from both strands. i,e MethylDackel)
+  bdg_dat[,strand := genome$strand]
 
-    if(strand_collapse){
-      #If strand information needs to collapsed, bring start position of crick strand to previous base (on watson base)
-      #and estimate new M, U and beta values
-      if(!all(c("M", "U") %in% names(bdg_dat))){
-        stop("strand_collapse works only when M and U are available!")
-      }
-
-      bdg_dat[,start := ifelse(strand == '-', yes = start - 1, no = start)]
-      bdg_dat = bdg_dat[, .(M = sum(M), U = sum(U)), .(chr, start)]
-      bdg_dat[,cov := M + U]
-      bdg_dat[,beta := M/cov]
-      bdg_dat[,strand := "*"]
+  if(strand_collapse){
+    #If strand information needs to collapsed, bring start position of crick strand to previous base (on watson base)
+    #and estimate new M, U and beta values
+    if(!all(c("M", "U") %in% names(bdg_dat))){
+      stop("strand_collapse works only when M and U are available!")
     }
+
+    bdg_dat[,start := ifelse(strand == '-', yes = start - 1, no = start)]
+    bdg_dat = bdg_dat[, .(M = sum(M, na.rm = TRUE), U = sum(U, na.rm = TRUE)), .(chr, start)]
+    bdg_dat[,cov := M + U]
+    bdg_dat[,beta := M/cov]
+    bdg_dat[,strand := "*"]
   }
 
   bdg_dat$beta = replace(x = bdg_dat$beta, list = is.nan(bdg_dat$beta), values = NA)
@@ -230,7 +236,6 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
 
 #Use for loop for sample-by-sample processing, memory efficient, uses HDF5Array
 non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL, h5temp = NULL, h5 = FALSE, strand_collapse = FALSE, contigs = contigs){
-browser()
   if ( strand_collapse){
     dimension <- as.integer(nrow(genome)/2)
   } else {
