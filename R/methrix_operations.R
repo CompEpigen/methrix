@@ -22,21 +22,23 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
     regions = as.data.frame(regions)
     colnames(regions)[1:3] = c("chr", "start", "end")
     regions$chr = as.character(regions$chr)
-    data.table::setDT(x = regions, key = c("chr", "start", "end"))
-    regions = regions[,.(chr, start, end)]
+    regions_work = data.table::copy(regions)
+    data.table::setDT(x = regions_work, key = c("chr", "start", "end"))
+    regions_work = regions_work[,.(chr, start, end)]
   }else if(is(regions[1], 'data.table')){
-    data.table::setDT(x = regions)
-    colnames(regions)[1:3] = c("chr", "start", "end")
-    regions = regions[,.(chr, start, end)]
-    regions[, chr := as.character(chr)]
-    regions[, start := as.numeric(start)]
-    regions[, end := as.numeric(end)]
+    regions_work = data.table::copy(regions)
+    data.table::setDT(x = regions_work)
+    colnames(regions_work)[1:3] = c("chr", "start", "end")
+    regions_work = regions_work[,.(chr, start, end)]
+    regions_work[, chr := as.character(chr)]
+    regions_work[, start := as.numeric(start)]
+    regions_work[, end := as.numeric(end)]
   }else{
     stop("Invalid input class for regions. Must be a data.table, data.frame or GRanges object")
   }
 
-  regions[, id := paste0(chr, ":", start, "-", end)]
-  data.table::setDT(x = regions, key = c("chr", "start", "end"))
+  regions_work[, id := paste0(chr, ":", start, "-", end)]
+  data.table::setDT(x = regions_work, key = c("chr", "start", "end"))
 
   if (type == "M") {
     dat = get_matrix(m = m, type = "M", add_loci = TRUE)
@@ -45,7 +47,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
   }
 
   dat[,end := start+1]
-  overlap = data.table::foverlaps(x = dat, y = regions, type = "within", nomatch = NULL)
+  overlap = data.table::foverlaps(x = dat, y = regions_work, type = "within", nomatch = NULL)
 
   if(nrow(overlap) == 0){
     stop("Subsetting resulted in zero entries")
