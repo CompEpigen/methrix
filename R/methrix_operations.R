@@ -1,7 +1,7 @@
 #' Extract and summarize methylation or coverage info by regions of interest
 #' @details Takes \code{\link{methrix}} object and summarizes regions
 #' @param regions genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
-#' @param type matrix which needs to be summarized. Coule be `M` or `C`. Default "M"
+#' @param type matrix which needs to be summarized. Coule be `M`, `MR`(Methylated Reads) or `C`. Default "M"
 #' @param how mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min. Default "mean"
 #' @param na_rm Remove NA's ? Default \code{TRUE}
 #' @return a coverage or methylation matrix
@@ -15,7 +15,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
     stop("This function only supports non HDF5 matrices for now.")
   }
 
-  type = match.arg(arg = type, choices = c('M', 'C'))
+  type = match.arg(arg = type, choices = c('M', 'C','MR'))
   how = match.arg(arg = how, choices = c('mean', 'sum', 'max', 'min'))
 
   if(is(regions[1], "GRanges")){
@@ -44,7 +44,12 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
     dat = get_matrix(m = m, type = "M", add_loci = TRUE)
   }else if (type == "C") {
     dat = get_matrix(m = m, type = "C", add_loci = TRUE)
-  }
+  }else if (type == "MR") {
+    dat_C = get_matrix(m = m, type = "C", add_loci = FALSE)
+    dat_M = get_matrix(m = m, type = "M", add_loci = FASLE)
+    reg = get_matrix(m = m, type = "M", add_loci = FASLE)[,1:3]
+    dat = cbind(reg,dat_C*dat_M)
+    }
 
   dat[,end := start+1]
   overlap = data.table::foverlaps(x = dat, y = regions_work, type = "within", nomatch = NULL)
