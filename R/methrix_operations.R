@@ -46,8 +46,8 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
     dat = get_matrix(m = m, type = "C", add_loci = TRUE)
   }else if (type == "MR") {
     dat_C = get_matrix(m = m, type = "C", add_loci = FALSE)
-    dat_M = get_matrix(m = m, type = "M", add_loci = FASLE)
-    reg = get_matrix(m = m, type = "M", add_loci = FASLE)[,1:3]
+    dat_M = get_matrix(m = m, type = "M", add_loci = FALSE)
+    reg = get_matrix(m = m, type = "M", add_loci = TRUE)[,1:3]
     dat = cbind(reg,dat_C*dat_M)
     }
 
