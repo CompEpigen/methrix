@@ -10,7 +10,7 @@ get_region_summary(m, regions = NULL, type = "M", how = "mean",
 \arguments{
 \item{regions}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
 
-\item{type}{matrix which needs to be summarized. Coule be `M` or `C`. Default "M"}
+\item{type}{matrix which needs to be summarized. Coule be `M`, `MR`(Methylated Reads) or `C`. Default "M"}
 
 \item{how}{mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min. Default "mean"}
 
