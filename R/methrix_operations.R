@@ -78,7 +78,10 @@ get_region_summary = function(m, regions = NULL, type = NULL, how = NULL){
 order_by_sd = function(m){
 
   if(is_h5(m)){
-    stop("This function only supports non HDF5 matrices for now.")
+    row_order = order(DelayedMatrixStats::rowSds(x = get_matrix(m = m, type = "M"), na.rm = TRUE), decreasing = TRUE)
+    assay(m, i = 1) = assay(m, i = 1)[row_order,, drop = FALSE]
+    assay(m, i = 2) = assay(m, i = 2)[row_order,, drop = FALSE]
+    rowData(x = m) = S4Vectors::DataFrame(as.data.frame(x = rowData(x = m))[row_order,, drop = FALSE])
   }else{
     row_order = order(matrixStats::rowSds(x = get_matrix(m = m, type = "M"), na.rm = TRUE), decreasing = TRUE)
     assay(m, i = 1) = assay(m, i = 1)[row_order,, drop = FALSE]

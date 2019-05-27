@@ -146,7 +146,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
                                col_data = coldata,  genome = genome, strand_collapse = collapse_strands, thr = n_threads, contigs = contigs)
   } else {
     mat_list = non_vect_code(files = files, col_idx = col_idx, coldata = coldata, strand_collapse = collapse_strands,
-                             verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, thr = n_threads, contigs = contigs)
+                             verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, contigs = contigs)
   }
 
   if(nrow(mat_list$beta_matrix) != nrow(mat_list$cov_matrix)){

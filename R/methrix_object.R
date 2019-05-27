@@ -58,7 +58,7 @@ create_methrix = function(beta_mat = NULL, cov_mat = NULL, cpg_loci = NULL, is_h
                                                     metadata = list(genome = genome_name, is_h5 = is_hdf5, summary = se_summary, chr_summary = chr_summary, ref_CpG = ref_cpg_dt, chrom_sizes = chrom_sizes),
                                                     colData = col_data, rowData = cpg_loci)
     if(!is.null(h5_dir)){
-      tryCatch(HDF5Array::saveHDF5SummarizedExperiment(x = se, dir = h5_dir, replace = TRUE),
+      tryCatch(HDF5Array::saveHDF5SummarizedExperiment(x = se, dir = h5_dir, replace = F),
                error = function(e) message("The dataset is not saved."))
     }
   }else{
