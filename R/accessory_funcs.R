@@ -219,7 +219,7 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
 
 #Use for loop for sample-by-sample processing, memory efficient, uses HDF5Array
 non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL, h5temp = NULL, h5 = FALSE, strand_collapse = FALSE, contigs = contigs){
-browser()
+#browser()
   if ( strand_collapse){
     dimension <- as.integer(nrow(genome)/2)
   } else {
