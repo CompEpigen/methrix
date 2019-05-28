@@ -4,7 +4,7 @@
 \alias{coverage_filter}
 \title{Filter matrices by coverage}
 \usage{
-coverage_filter(m, cov_thr = 1, min_samples = 1)
+coverage_filter(m, cov_thr = 1, min_samples = 1, n_threads = 4)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
@@ -12,6 +12,8 @@ coverage_filter(m, cov_thr = 1, min_samples = 1)
 \item{cov_thr}{minimum coverage required to call a loci covered}
 
 \item{min_samples}{At-least these many samples should have a loci with coverage >= \code{cov_thr}}
+
+\item{n_threads}{number of threads to use. Default 4.}
 }
 \value{
 An object of class \code{\link{methrix}}
