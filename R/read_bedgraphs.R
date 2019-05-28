@@ -153,6 +153,15 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
     if(length(files) != nrow(coldata)){
       stop("Number of samples in coldata does not match the number of input files.")
     }
+    if (any(make.names(rownames(sample_annotation), unique = TRUE)!=rownames(sample_annotation))){
+      modified <- which(make.names(rownames(sample_annotation), unique = TRUE)!=rownames(sample_annotation))
+      rownames(sample_annotation) <- make.names(rownames(sample_annotation), unique = TRUE)
+      warning("The sample names contained a non-valid character or were duplicated. The following changes were made:")
+      cat(paste(paste(rownames(sample_annotation)[modified],
+                      make.names(rownames(sample_annotation), unique = TRUE)[modified], sep=" => "), collapse = " \n "))
+
+    }
+
   }
 
   cat(paste0("----------------------------", "\n"))
@@ -163,7 +172,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
                                col_data = coldata,  genome = genome, strand_collapse = collapse_strands, thr = n_threads, contigs = contigs)
   } else {
     mat_list = non_vect_code(files = files, col_idx = col_idx, coldata = coldata, strand_collapse = collapse_strands,
-                             verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, thr = n_threads, contigs = contigs)
+                             verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, contigs = contigs)
   }
 
   if(nrow(mat_list$beta_matrix) != nrow(mat_list$cov_matrix)){

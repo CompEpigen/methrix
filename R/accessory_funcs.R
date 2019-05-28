@@ -305,6 +305,5 @@ non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL
       colnames(beta_mat)[ncol(beta_mat)] = colnames(cov_mat)[ncol(cov_mat)] = rownames(coldata)[i]
     }
     return(list(beta_matrix = beta_mat, cov_matrix = cov_mat))
-
   }
 }

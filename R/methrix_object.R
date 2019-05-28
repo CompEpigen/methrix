@@ -39,7 +39,8 @@ create_methrix = function(beta_mat = NULL, cov_mat = NULL, cpg_loci = NULL, is_h
                           genome_name = "hg19", col_data = NULL, h5_dir = NULL, ref_cpg_dt = NULL, chrom_sizes = NULL){
 
   if(is_hdf5){
-    n_non_covered = NA
+    n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = cov_mat) == 0))
+    n_non_covered = paste0(n_non_covered, " [", round(n_non_covered/nrow(cov_mat) * 100, digits = 2), "%]")
   }else{
     beta_mat = data.table:::as.matrix.data.table(beta_mat)
     cov_mat = data.table:::as.matrix.data.table(cov_mat)
@@ -60,7 +61,7 @@ create_methrix = function(beta_mat = NULL, cov_mat = NULL, cpg_loci = NULL, is_h
                                                     colData = col_data, rowData = cpg_loci)
     if(!is.null(h5_dir)){
       tryCatch(HDF5Array::saveHDF5SummarizedExperiment(x = se, dir = h5_dir, replace = TRUE),
-               error = function(e) message("The dataset is not saved."))
+               error = function(e) message("The dataset is not saved. Please save manually, using the HDF5Array::saveSummarizedExperiment command. "))
     }
   }else{
     se = SummarizedExperiment::SummarizedExperiment(assays = list(beta = beta_mat, cov = cov_mat),
