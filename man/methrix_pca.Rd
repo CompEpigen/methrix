@@ -13,9 +13,9 @@ methrix_pca(m, ranges = NULL, pheno = NULL, do.plot = T, n_pc = 5)
 
 \item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the violin plot.}
 
-\item{n_pc}{Number of principal components to return.}
+\item{do.plot}{Should a plot be generated?}
 
-\item{do.lot}{Should a plot be generated?}
+\item{n_pc}{Number of principal components to return.}
 }
 \description{
 Principal Component Analysis
