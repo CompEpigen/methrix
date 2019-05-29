@@ -111,7 +111,7 @@ methrix_density <- function(m,ranges=NULL,pheno=NULL,return_ggplot=F,bw.adjust=2
 #' @param m Input \code{\link{methrix}} object
 #' @param ranges \code{\link{GRanges}} object with GenomicRegions which should be used for subsetting.
 #' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
-#' @param do.plot Should a plot be generated?
+#' @param do.lot Should a plot be generated?
 #' @param n_pc Number of principal components to return.
 #'
 #' @return
@@ -163,77 +163,3 @@ methrix_pca <- function(m,ranges=NULL,pheno=NULL,do.plot=T,n_pc=5){
     print(p)}
     return(meth.pca)
 }
-
-
-
-#' Covergae QC Plots
-#'
-#' @param m Input \code{\link{methrix}} object
-#' @param type Choose between "hist" (histogram) or "dens" (density plot).
-#' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
-#' @param perSample Color the plots in a sample-wise manner?
-#' @param return_ggplot Return a \code{\link{ggplot2}} object.
-#'
-#' @return
-#' @export
-#'
-#' @examples
-methrix_coverage <- function(m, type=c("hist","dens"),pheno=NULL,perSample=F,return_ggplot=T){
-  meth_sub <- methrix::get_matrix(m = m, type = "C", add_loci = F)
-
-  ## melt the object to a long format
-  meth.melt <- reshape2::melt(meth_sub)
-
-  # add the pheno column of choice
-  if(!is.null(pheno)){
-    if(pheno%in%colnames(colData(m))==0){stop("Phenotype annotation cannot be found in colData(m).")
-    }
-    pheno.plot <- data.table("id"=rownames(colData(m)),
-                             "data"=as.factor(colData(m)[,pheno]))
-  }else{
-    pheno.plot <- data.table("id"=rownames(colData(m)),
-                             "data"=rownames(colData(m)))
-  }
-
-  # merge the pheno column to the others
-  plot.data <- merge(meth.melt,pheno.plot,by.x="Var2",by.y="id",all.x=T,all.y=T)
-
-  #generate the violin plot
-  if(perSample==F){
-    if(type=="dens"){
-  p <- ggplot2::ggplot(plot.data,ggplot2::aes(value))+
-    ggplot2::geom_density(alpha=.5,adjust=1.5)+
-    ggplot2::theme_classic()+
-    ggplot2::xlab("Coverage")#+
-    #ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))
-  print(p)
-  }else if(type=="hist"){
-    p <- ggplot2::ggplot(plot.data,ggplot2::aes(value))+
-      ggplot2::geom_histogram(alpha=.5,binwidth = 1)+
-      ggplot2::theme_classic()+
-      ggplot2::xlab("Coverage")
-    print(p)
-  }}else{
-    if(type=="dens"){
-      p <- ggplot2::ggplot(plot.data,ggplot2::aes(value,fill=data))+
-        ggplot2::geom_density(alpha=.5,adjust=1.5)+
-        ggplot2::theme_classic()+
-        #ggplot2::xlab(pheno)+
-        ggplot2::xlab("Coverage")+
-        #ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))+
-        ggplot2::labs(fill = "Samples")
-      print(p)}else if(type=="hist"){
-        p <- ggplot2::ggplot(plot.data,ggplot2::aes(value,fill=data))+
-          ggplot2::geom_histogram(alpha=.5,binwidth = 1)+
-          ggplot2::theme_classic()+
-          ggplot2::xlab("Coverage")+
-          ggplot2::labs(fill = "Samples")
-        print(p)
-      }
-  }
-  if(return_ggplot==T){
-    return(p)
-  }
-
-}
-
