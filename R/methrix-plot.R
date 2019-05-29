@@ -45,10 +45,10 @@ methrix_violin <- function(m,ranges=NULL,pheno=NULL,return_ggplot=F){
     ggplot2::ylab(expression(beta*"-Value"))+
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))+
     ggplot2::labs(fill = "Annotation")
-  print(p)
+  #print(p)
   if(return_ggplot==T){
     return(p)
-  }
+  }else{print(p)}
 }
 
 
@@ -99,10 +99,10 @@ methrix_density <- function(m,ranges=NULL,pheno=NULL,return_ggplot=F,bw.adjust=2
     ggplot2::xlab(expression(beta*"-Value"))+
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))+
     ggplot2::labs(fill = "Annotation")
-  print(p)
+  #print(p)
   if(return_ggplot==T){
     return(p)
-  }
+  }else{print(p)}
 }
 
 
@@ -208,13 +208,13 @@ methrix_coverage <- function(m, type=c("hist","dens"),pheno=NULL,perSample=F,ret
     ggplot2::theme_classic()+
     ggplot2::xlab("Coverage")#+
     #ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))
-  print(p)
+  #print(p)
   }else if(type=="hist"){
     p <- ggplot2::ggplot(plot.data,ggplot2::aes(value))+
       ggplot2::geom_histogram(alpha=.5,binwidth = 1)+
       ggplot2::theme_classic()+
       ggplot2::xlab("Coverage")
-    print(p)
+    #print(p)
   }}else{
     if(type=="dens"){
       p <- ggplot2::ggplot(plot.data,ggplot2::aes(value,fill=data))+
@@ -224,17 +224,20 @@ methrix_coverage <- function(m, type=c("hist","dens"),pheno=NULL,perSample=F,ret
         ggplot2::xlab("Coverage")+
         #ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))+
         ggplot2::labs(fill = "Samples")
-      print(p)}else if(type=="hist"){
+      #print(p)
+      }else if(type=="hist"){
         p <- ggplot2::ggplot(plot.data,ggplot2::aes(value,fill=data))+
           ggplot2::geom_histogram(alpha=.5,binwidth = 1)+
           ggplot2::theme_classic()+
           ggplot2::xlab("Coverage")+
           ggplot2::labs(fill = "Samples")
-        print(p)
+        #print(p)
       }
   }
   if(return_ggplot==T){
     return(p)
+  }else{
+    print(p)
   }
 
 }
