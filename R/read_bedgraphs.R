@@ -153,12 +153,12 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
     if(length(files) != nrow(coldata)){
       stop("Number of samples in coldata does not match the number of input files.")
     }
-    if (any(make.names(rownames(sample_annotation), unique = TRUE)!=rownames(sample_annotation))){
-      modified <- which(make.names(rownames(sample_annotation), unique = TRUE)!=rownames(sample_annotation))
-      rownames(sample_annotation) <- make.names(rownames(sample_annotation), unique = TRUE)
-      warning("The sample names contained a non-valid character or were duplicated. The following changes were made:")
-      cat(paste(paste(rownames(sample_annotation)[modified],
-                      make.names(rownames(sample_annotation), unique = TRUE)[modified], sep=" => "), collapse = " \n "))
+    if (any(make.names(rownames(coldata), unique = TRUE)!=rownames(coldata))){
+      modified <- which(make.names(rownames(coldata), unique = TRUE)!=rownames(coldata))
+      cat("The sample names contained a non-valid character or were duplicated. The following changes were made:")
+      cat(paste(paste(rownames(coldata)[modified],
+                      make.names(rownames(coldata), unique = TRUE)[modified], sep=" => "), collapse = " \n "), "\n")
+      rownames(coldata) <- make.names(rownames(coldata), unique = TRUE)
 
     }
 
