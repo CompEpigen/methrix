@@ -206,8 +206,10 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
 #' @export
 coverage_filter = function(m, cov_thr = 1, min_samples = 1){
 
+    cov_dat = get_matrix(m = m, type = "C")
+
     res <- as.data.table(which(cov_dat <= cov_thr, arr.ind = T))
-    res <- res[,.(Count=(.N)), by=V1]
+    res <- res[,.(Count=(.N)), by=row]
     row_idx = res$V1[res$Count > min_samples]
 
 
