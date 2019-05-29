@@ -111,7 +111,7 @@ methrix_density <- function(m,ranges=NULL,pheno=NULL,return_ggplot=F,bw.adjust=2
 #' @param m Input \code{\link{methrix}} object
 #' @param ranges \code{\link{GRanges}} object with GenomicRegions which should be used for subsetting.
 #' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
-#' @param do.plot Should a plot be generated?
+#' @param do.lot Should a plot be generated?
 #' @param n_pc Number of principal components to return.
 #'
 #' @return
@@ -163,6 +163,7 @@ methrix_pca <- function(m,ranges=NULL,pheno=NULL,do.plot=T,n_pc=5){
     print(p)}
     return(meth.pca)
 }
+<<<<<<< HEAD
 
 
 
@@ -239,3 +240,5 @@ methrix_coverage <- function(m, type=c("hist","dens"),pheno=NULL,perSample=F,ret
 
 }
 
+=======
+>>>>>>> 995f01f388cbb756b14576773ccb78fe20373e5d
