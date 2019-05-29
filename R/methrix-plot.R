@@ -163,7 +163,6 @@ methrix_pca <- function(m,ranges=NULL,pheno=NULL,do.plot=T,n_pc=5){
     print(p)}
     return(meth.pca)
 }
-<<<<<<< HEAD
 
 
 
@@ -240,5 +239,3 @@ methrix_coverage <- function(m, type=c("hist","dens"),pheno=NULL,perSample=F,ret
 
 }
 
-=======
->>>>>>> 995f01f388cbb756b14576773ccb78fe20373e5d
