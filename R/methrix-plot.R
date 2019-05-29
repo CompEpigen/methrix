@@ -173,12 +173,13 @@ methrix_pca <- function(m,ranges=NULL,pheno=NULL,do.plot=T,n_pc=5){
 #' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
 #' @param perSample Color the plots in a sample-wise manner?
 #' @param return_ggplot Return a \code{\link{ggplot2}} object.
+#' @param lim Maximum coverage value to be plotted.
 #'
 #' @return
 #' @export
 #'
 #' @examples
-methrix_coverage <- function(m, type=c("hist","dens"),pheno=NULL,perSample=F,return_ggplot=T){
+methrix_coverage <- function(m, type=c("hist","dens"),pheno=NULL,perSample=F,return_ggplot=T,lim=100){
   meth_sub <- methrix::get_matrix(m = m, type = "C", add_loci = F)
 
   ## melt the object to a long format
@@ -197,6 +198,7 @@ methrix_coverage <- function(m, type=c("hist","dens"),pheno=NULL,perSample=F,ret
 
   # merge the pheno column to the others
   plot.data <- merge(meth.melt,pheno.plot,by.x="Var2",by.y="id",all.x=T,all.y=T)
+  plot.data <- plot.data[plot.data$value<=100,]
 
   #generate the violin plot
   if(perSample==F){

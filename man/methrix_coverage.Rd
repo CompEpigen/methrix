@@ -5,7 +5,7 @@
 \title{Covergae QC Plots}
 \usage{
 methrix_coverage(m, type = c("hist", "dens"), pheno = NULL,
-  perSample = F, return_ggplot = T)
+  perSample = F, return_ggplot = T, lim = 100)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
@@ -17,6 +17,8 @@ methrix_coverage(m, type = c("hist", "dens"), pheno = NULL,
 \item{perSample}{Color the plots in a sample-wise manner?}
 
 \item{return_ggplot}{Return a \code{\link{ggplot2}} object.}
+
+\item{lim}{Maximum coverage value to be plotted.}
 }
 \description{
 Covergae QC Plots
