@@ -4,20 +4,25 @@
 \alias{methrix_density}
 \title{Density Plot of \eqn{\beta}-Values}
 \usage{
-methrix_density(m, ranges = NULL, pheno = NULL, return_ggplot = F,
-  bw.adjust = 2)
+methrix_density(m, ranges = NULL, pheno = NULL,
+  return_ggplot = FALSE, bw.adjust = 2)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
 
-\item{ranges}{\code{\link{GRanges}} object with GenomicRegions which should be used for plotting.}
+\item{ranges}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
 
 \item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the violin plot.}
 
-\item{return_ggplot}{Return a \code{\link{ggplot2}} object.}
-
 \item{bw.adjust}{Multiplicate bandwide adjustment. See \code{\link{geom_density}} for more information}
+}
+\value{
+ggplot2 object
 }
 \description{
 Density Plot of \eqn{\beta}-Values
+}
+\examples{
+data("mm9_bsmap")
+methrix_density(m = mm9_bsmap)
 }

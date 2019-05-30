@@ -1,4 +1,10 @@
-# methrix 0.9.86 [in progress]
+# methrix 0.9.90
+
+* Added plotting functions
+* Added DMR calling function
+* Support for HDF5 backend
+
+# methrix 0.9.86
 
 * `methrixreport` works on Windows
 * Error handling when bedgraph file contains non-reference CpGs

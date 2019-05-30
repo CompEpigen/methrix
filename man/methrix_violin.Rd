@@ -4,17 +4,22 @@
 \alias{methrix_violin}
 \title{Violin Plot for \eqn{\beta}-Values}
 \usage{
-methrix_violin(m, ranges = NULL, pheno = NULL, return_ggplot = F)
+methrix_violin(m, ranges = NULL, pheno = NULL, return_ggplot = FALSE)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
 
-\item{ranges}{\code{\link{GRanges}} object with GenomicRegions which should be used for plotting.}
+\item{ranges}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
 
 \item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the violin plot.}
-
-\item{return_ggplot}{Return a \code{\link{ggplot2}} object.}
+}
+\value{
+ggplot2 object
 }
 \description{
 Violin Plot for \eqn{\beta}-Values
+}
+\examples{
+data("mm9_bsmap")
+methrix_violin(m = mm9_bsmap)
 }

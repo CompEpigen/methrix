@@ -4,18 +4,22 @@
 \alias{methrix_pca}
 \title{Principal Component Analysis}
 \usage{
-methrix_pca(m, ranges = NULL, pheno = NULL, do.plot = T, n_pc = 5)
+methrix_pca(m, ranges = NULL, pheno = NULL, do.plot = TRUE,
+  n_pc = 5)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
 
-\item{ranges}{\code{\link{GRanges}} object with GenomicRegions which should be used for subsetting.}
+\item{ranges}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
 
 \item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the violin plot.}
 
 \item{n_pc}{Number of principal components to return.}
 
 \item{do.lot}{Should a plot be generated?}
+}
+\value{
+PCA results
 }
 \description{
 Principal Component Analysis
