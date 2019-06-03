@@ -210,7 +210,7 @@ coverage_filter = function(m, cov_thr = 1, min_samples = 1){
 
     res <- as.data.table(which(cov_dat <= cov_thr, arr.ind = T))
     res <- res[,.(Count=(.N)), by=row]
-    row_idx = res$row[res$Count > min_samples]
+    row_idx = res$row[res$Count >= min_samples]
 
 
     cat(paste0("-Retained ", format(length(row_idx[row_idx]), big.mark = ","), " of ", format(nrow(cov_dat), big.mark = ","), " sites\n"))
