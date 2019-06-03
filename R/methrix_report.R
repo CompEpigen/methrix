@@ -45,7 +45,7 @@ methrix_report = function(meth, output_dir = NULL, plot_beta_dist = FALSE, n_thr
     message("File already present. Skipping step 2..")
   }else{
     mean_cov_chr = c_chr_summary[,c(1, 4:ncol(c_chr_summary)), with = FALSE][,lapply(.SD, function(x){mean(x[!x == 0])}), chr]
-    median_cov_chr = c_chr_summary[,c(1, 4:ncol(c_chr_summary)), with = FALSE][,lapply(.SD, function(x){median(x[!x == 0])}), chr]
+    median_cov_chr = c_chr_summary[,c(1, 4:ncol(c_chr_summary)), with = FALSE][,lapply(.SD, function(x){as.integer(median(x[!x == 0]))}), chr]
     cov_per_chr_dt = data.table::rbindlist(l = list(mean = mean_cov_chr, median = median_cov_chr), idcol = "stat", use.names = TRUE)
     data.table::fwrite(x = cov_per_chr_dt, file = of2, sep = "\t")
   }
