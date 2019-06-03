@@ -73,7 +73,7 @@ methrix_report = function(meth, output_dir = NULL, plot_beta_dist = FALSE, n_thr
   if(file.exists(of4)){
     message("File already present. Skipping step 4..")
   }else{
-    mf = methrix::coverage_filter(m = meth, cov_thr = 1, min_samples = nrow(colData(meth)), n_threads = n_thr)
+    mf = methrix::coverage_filter(m = meth, cov_thr = 1, min_samples = nrow(colData(meth)))
     mf_chr_summary = methrix::getChrSummary(x = mf)
     colnames(mf_chr_summary) = c("chr", "n_CpG")
     rm(mf)
