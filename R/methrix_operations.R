@@ -407,3 +407,47 @@ region_filter = function(m, regions){
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
+#' Combine methrix objects
+#' @details Takes two \code{\link{methrix}} objects and combines them row- or column-wise
+#' @param m1 \code{\link{methrix}} object
+#' @param m1 \code{\link{methrix}} object
+#' @param by The direction of combine. "column" (cbind) combines samples with same regions, "row" combines different regions,
+#' e.g. different chromosomes.
+#' @return An object of class \code{\link{methrix}}
+#' @export
+#'
+combine_methrix = function(m1, m2, by=c("row", "column")){
+
+  if (by=="row"){
+    if (!(all(rownames(m1@colData)==rownames(m2@colData)))){
+      stop("You have different samples in your dataset. You need the same samples in your datasets. ")
+    } else {
+    m <- rbind(m1, m2)
+    }
+    if (any(duplicated((as.data.table(m@elementMetadata))))){
+      stop("There are overlapping regions in your datasets. This function only takes distinct objects. ")
+    }
+  }
+  if (by=="col"){
+    if (any(rownames(m1@colData) %in% rownames(m2@colData))){
+      stop("You have the same samples in your datasets. You need different samples for this merging.  ")
+    } else if (!identical(m1@elementMetadata, m2@elementMetadata)){
+      stop("You have to have the same regions in your datasets. ")
+    } else {
+      m <- cbind(m1, m2)
+    }
+  }
+
+if(is_h5(m)){
+  n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
+} else {
+  n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))}
+
+se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
+                                    Summary = c(ncol(m), format(nrow(m), big.mark = ","),
+                                                n_non_covered, length(unique(m@elementMetadata$chr)), m@metadata$genome, m@metadata$is_h5))
+m@metadata$summary <- se_summary
+return(m)
+
+
+}
