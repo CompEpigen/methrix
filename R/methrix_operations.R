@@ -210,7 +210,7 @@ coverage_filter = function(m, cov_thr = 1, min_samples = 1){
 
     res <- as.data.table(which(cov_dat <= cov_thr, arr.ind = T))
     res <- res[,.(Count=(.N)), by=row]
-    row_idx = res$V1[res$Count > min_samples]
+    row_idx = res$row[res$Count > min_samples]
 
 
     cat(paste0("-Retained ", format(length(row_idx[row_idx]), big.mark = ","), " of ", format(nrow(cov_dat), big.mark = ","), " sites\n"))
@@ -437,7 +437,7 @@ combine_methrix = function(m1, m2, by=c("row", "column")){
       m <- cbind(m1, m2)
     }
   }
-
+gc()
 if(is_h5(m)){
   n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
 } else {
