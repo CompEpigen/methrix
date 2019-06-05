@@ -1,3 +1,8 @@
+# methrix 0.9.91
+* Added summary statistics function
+* Improvements to PCA
+* Added example bedgraphs and datasets for testing
+
 # methrix 0.9.90
 
 * Added plotting functions

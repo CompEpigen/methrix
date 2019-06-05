@@ -6,8 +6,8 @@
 #' @param na_rm Remove NA's ? Default \code{TRUE}
 #' @return a coverage or methylation matrix
 #' @examples
-#' data("mm9_bsmap")
-#' get_region_summary(m = mm9_bsmap, regions = data.table(chr = "chr1", start = 3020220, end = 3209171), type = "M", how = "mean")
+#' data("methrix_data")
+#' get_region_summary(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103), type = "M", how = "mean")
 #' @export
 get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm = TRUE){
 
@@ -82,8 +82,8 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
 #' @param m \code{\link{methrix}} object
 #' @return An object of class \code{\link{methrix}}
 #' @examples
-#' data("mm9_bsmap")
-#' order_by_sd(m = mm9_bsmap)
+#' data("methrix_data")
+#' order_by_sd(m = methrix_data)
 #' @export
 order_by_sd = function(m){
 
@@ -106,9 +106,9 @@ order_by_sd = function(m){
 #' @param contigs chromosome names to subset by
 #' @param samples sample names to subset by
 #' @examples
-#' data("mm9_bsmap")
+#' data("methrix_data")
 #' #Subset to chromosome 1
-#' subset_methrix(mm9_bsmap, contigs = "chr1")
+#' subset_methrix(methrix_data, contigs = "chr21")
 #' @return An object of class \code{\link{methrix}}
 #' @export
 subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
@@ -198,9 +198,9 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
 #' @param min_samples At-least these many samples should have a loci with coverage >= \code{cov_thr}
 #' @importFrom methods is as new
 #' @examples
-#' data("mm9_bsmap")
+#' data("methrix_data")
 #' #keep only CpGs which are covered by at-least 1 read across 3 samples
-#' coverage_filter(m = mm9_bsmap, cov_thr = 1, min_samples = 3, n_threads = 1)
+#' coverage_filter(m = methrix_data, cov_thr = 1, min_samples = 3)
 #' @return An object of class \code{\link{methrix}}
 #' @export
 coverage_filter = function(m, cov_thr = 1, min_samples = 1){
@@ -242,11 +242,11 @@ coverage_filter = function(m, cov_thr = 1, min_samples = 1){
 #' @param add_loci Default FALSE. If TRUE adds CpG position info to the matrix and returns as a data.table
 #' @return Coverage or Methylation matrix
 #' @examples
-#' data("mm9_bsmap")
+#' data("methrix_data")
 #' #Get methylation matrix
-#' get_matrix(m = mm9_bsmap, type = "M")
+#' get_matrix(m = methrix_data, type = "M")
 #' #Get methylation matrix along with loci
-#' get_matrix(m = mm9_bsmap, type = "M", add_loci = TRUE)
+#' get_matrix(m = methrix_data, type = "M", add_loci = TRUE)
 #' @export
 #'
 get_matrix= function(m, type = "M", add_loci = FALSE){
@@ -278,8 +278,8 @@ get_matrix= function(m, type = "M", add_loci = FALSE){
 #' @return An object of class \code{\link{BSseq}}
 #' @examples
 #' \dontrun{
-#' data("mm9_bsmap")
-#' methrix2bsseq(m = mm9_bsmap)
+#' data("methrix_data")
+#' methrix2bsseq(m = methrix_data)
 #' }
 #' @export
 #'
@@ -307,8 +307,8 @@ methrix2bsseq = function(m){
 #' @param m \code{\link{methrix}} object
 #' @return An object of class \code{\link{methrix}}
 #' @examples
-#' data("mm9_bsmap")
-#' remove_uncovered(m = mm9_bsmap)
+#' data("methrix_data")
+#' remove_uncovered(m = methrix_data)
 #' @export
 #'
 remove_uncovered = function(m){
@@ -357,8 +357,8 @@ remove_uncovered = function(m){
 #' @param regions genomic regions to filter-out. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
 #' @return An object of class \code{\link{methrix}}
 #' @examples
-#' data("mm9_bsmap")
-#' region_filter(m = mm9_bsmap, regions = data.table(chr = "chr1", start = 3020220, end = 3209171))
+#' data("methrix_data")
+#' region_filter(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103))
 #' @export
 region_filter = function(m, regions){
 
@@ -455,7 +455,11 @@ return(m)
 #' @param m \code{\link{methrix}} object
 #' @param per_chr Estimate stats per chromosome. Default FALSE
 #' @seealso \code{\link{plot_stats}}
-get_stat = function(m, per_chr = FALSE){
+#' @examples
+#' data("methrix_data")
+#' get_stats(methrix_data)
+#' @export
+get_stats = function(m, per_chr = FALSE){
 
   #m_sub = remove_uncovered(m = m)
 

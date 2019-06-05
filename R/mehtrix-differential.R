@@ -13,11 +13,6 @@
 #' @param parallel Execute job parallel? Just possible if chrWise = TRUE. Default FALSE.
 #' @param chrWise Compute job chromosome-wise and compute FDR adjusted p-values afterwards? Default FALSE.
 #' @param ncore Number of cores if executed parallel. Default 1.
-#'
-#' @import DSS
-#' @import bsseq
-#' @import doParallel
-#' @import foreach
 #' @return list of DMRs
 #' @export
 
@@ -30,21 +25,22 @@ methrix_differential <- function(m, pheno = NULL, smooth = FALSE, s_span = 500, 
   }
 
   if(is.null(pheno)){
-    stop("You forgot to specify a phenotype column for DMR calling.")
+    stop("Please specify a phenotypic column for comparision")
   }
 
   if(sum(pheno %in% colnames(colData(m))) == 0) {
-    stop("You forgot to specify a phenotype column for DMR calling.")
+    stop("Can not find the provided phenotypic column")
   }
 
   if(length(levels(as.factor(colData(m)[pheno][, 1]))) > 2) {
     stop("Methrix currently only supports DMR calling with DSS for two classes. Please choose a phenotype column with just two classes.")
   }
+
   work_fac <- as.factor(colData(m)[pheno][,1])
 
   ## define the classes
-  class1 <- rownames(colData(m)[which(work_fac==levels(work_fac)[1]),])
-  class2 <- rownames(colData(m)[which(work_fac==levels(work_fac)[2]),])
+  class1 <- rownames(colData(m)[which(work_fac == levels(work_fac)[1]),])
+  class2 <- rownames(colData(m)[which(work_fac == levels(work_fac)[2]),])
   cat(paste0("The following sample is included in class I: ",class1,"\n"))
   cat(paste0("The following sample is included in class II: ",class2,"\n"))
 

@@ -8,8 +8,8 @@
 #' @export
 #' @import ggplot2
 #' @examples
-#' data("mm9_bsmap")
-#' methrix_violin(m = mm9_bsmap)
+#' data("methrix_data")
+#' methrix_violin(m = methrix_data)
 methrix_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL){
 
   # add the pheno column of choice
@@ -31,6 +31,9 @@ methrix_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL){
       meth_sub <- get_matrix(m = m, type = "M", add_loci = FALSE)
   }else{
     n_cpgs = as.integer(as.character(n_cpgs))
+    if(nrow(m) < n_cpgs){
+      n_cpgs = nrow(m)
+    }
     set.seed(seed = 1024)
     ids = sample(x = 1:nrow(m), replace = FALSE, size = n_cpgs)
     meth_sub <- get_matrix(m = m[ids, ], type = "M", add_loci = FALSE)
@@ -70,8 +73,8 @@ methrix_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL){
 #' @export
 #'
 #' @examples
-#' data("mm9_bsmap")
-#' methrix_density(m = mm9_bsmap)
+#' data("methrix_data")
+#' methrix_density(m = methrix_data)
 methrix_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.adjust = 2){
 
   # add the pheno column of choice
@@ -94,6 +97,9 @@ methrix_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.a
     meth_sub <- get_matrix(m = m, type = "M", add_loci = FALSE)
   }else{
     n_cpgs = as.integer(as.character(n_cpgs))
+    if(nrow(m) < n_cpgs){
+      n_cpgs = nrow(m)
+    }
     set.seed(seed = 1024)
     ids = sample(x = 1:nrow(m), replace = FALSE, size = n_cpgs)
     meth_sub <- get_matrix(m = m[ids, ], type = "M", add_loci = FALSE)
@@ -131,6 +137,9 @@ methrix_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.a
 #' @param do_plot Should a plot be generated?
 #' @param n_pc Number of principal components to return. Default 5.
 #' @return PCA results
+#' @examples
+#' data("methrix_data")
+#' methrix_pca(methrix_data)
 #' @export
 #'
 methrix_pca <- function(m, top_var = 5000, ranges = NULL, pheno = NULL, do_plot = TRUE, n_pc = 5){
@@ -245,8 +254,8 @@ methrix_pca <- function(m, top_var = 5000, ranges = NULL, pheno = NULL, do_plot 
 #' @export
 #'
 #' @examples
-#' data("mm9_bsmap")
-#' methrix_coverage(m = mm9_bsmap)
+#' data("methrix_data")
+#' methrix_coverage(m = methrix_data)
 methrix_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perSample = FALSE, lim = 100){
 
   type = match.arg(arg = type, choices = c("hist", "dens"), several.ok = FALSE)
@@ -323,7 +332,11 @@ methrix_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perSample
 #' @param stat Can be \code{mean} or \code{median}. Default \code{mean}
 #' @param ignore_chr Chromsomes to ignore. Default \code{NULL}
 #' @param samples Use only these samples. Default \code{NULL}
-#' @seealso \code{\link{get_stat}}
+#' @seealso \code{\link{get_stats}}
+#' @examples
+#' data("methrix_data")
+#' gs = get_stats(methrix_data)
+#' plot_stats(gs)
 #' @export
 #'
 plot_stats = function(plot_dat, what = "M", stat = "mean", ignore_chr = NULL, samples = NULL){

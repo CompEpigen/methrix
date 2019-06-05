@@ -32,9 +32,12 @@
 #' @import DelayedMatrixStats
 #' @import SummarizedExperiment DelayedArray HDF5Array
 #' @examples
-#' bdg_files = list.files(path = system.file('extdata', package = 'methrix'), pattern = "*bdg\\.gz$", full.names = TRUE)
-#' mm9_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Mmusculus.UCSC.mm9", bored = FALSE)
-#' meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = mm9_cpgs, chr_idx = 1, start_idx = 2, end_idx = 3, cov_idx = 4, beta_idx = 5, stranded = TRUE, zero_based = FALSE, collapse_strands = TRUE)
+#'\dontrun{
+#'bdg_files = list.files(path = system.file('extdata', package = 'methrix'), pattern = "*\\.bdg\\.gz$", full.names = TRUE)
+#' hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19", bored = FALSE)
+#' meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = hg19_cpgs, chr_idx = 1, start_idx = 2, end_idx = 3, cov_idx = 4, beta_idx = 5, stranded = TRUE, zero_based = FALSE, collapse_strands = TRUE)
+#'}
+#'
 
 read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill_CpGs = TRUE, stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL, ref_build = "Unknown", contigs = NULL, vect = TRUE,
                           vect_batch_size = NULL, coldata = NULL, chr_idx = NULL, start_idx = NULL, end_idx = NULL,
