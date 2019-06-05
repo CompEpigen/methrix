@@ -415,7 +415,7 @@ region_filter = function(m, regions){
 #' @return An object of class \code{\link{methrix}}
 #' @export
 #'
-combine_methrix = function(m1, m2, by=c("row", "column")){
+combine_methrix = function(m1, m2, by=c("row", "col")){
 
   if (by=="row"){
     if (!(all(rownames(m1@colData)==rownames(m2@colData)))){

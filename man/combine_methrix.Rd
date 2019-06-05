@@ -4,7 +4,7 @@
 \alias{combine_methrix}
 \title{Combine methrix objects}
 \usage{
-combine_methrix(m1, m2, by = c("row", "column"))
+combine_methrix(m1, m2, by = c("row", "col"))
 }
 \arguments{
 \item{m1}{\code{\link{methrix}} object}
