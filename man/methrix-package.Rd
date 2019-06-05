@@ -18,9 +18,9 @@ Authors:
 
 Other contributors:
 \itemize{
+  \item Maximilian Schönung [contributor]
   \item Pavlo Lutsik [contributor]
   \item Joschka Hey [contributor]
-  \item Maximilian Schönung [contributor]
 }
 
 }

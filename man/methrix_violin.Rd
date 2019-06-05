@@ -4,12 +4,14 @@
 \alias{methrix_violin}
 \title{Violin Plot for \eqn{\beta}-Values}
 \usage{
-methrix_violin(m, ranges = NULL, pheno = NULL, return_ggplot = FALSE)
+methrix_violin(m, ranges = NULL, n_cpgs = 25000, pheno = NULL)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
 
 \item{ranges}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
+
+\item{n_cpgs}{Use these many random CpGs for plotting. Default 25000. Set it to \code{NULL} to use all - which can be memory expensive.}
 
 \item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the violin plot.}
 }

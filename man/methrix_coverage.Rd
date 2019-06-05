@@ -5,7 +5,7 @@
 \title{Covergae QC Plots}
 \usage{
 methrix_coverage(m, type = c("hist", "dens"), pheno = NULL,
-  perSample = FALSE, return_ggplot = TRUE, lim = 100)
+  perSample = FALSE, lim = 100)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}

@@ -88,11 +88,12 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
 order_by_sd = function(m){
 
   if(is_h5(m)){
-    row_order = order(DelayedMatrixStats::rowSds(x = get_matrix(m = m, type = "M"), na.rm = TRUE), decreasing = TRUE)
+    sds = DelayedMatrixStats::rowSds(x = get_matrix(m, type = "M"))
   }else{
-    row_order = order(matrixStats::rowSds(x = get_matrix(m = m, type = "M"), na.rm = TRUE), decreasing = TRUE)
-    m = m[row_order,]
+    sds = matrixStats::rowSds(x = get_matrix(m, type = "M"))
   }
+  row_order = order(sds, na.last = TRUE, decreasing = TRUE)
+  m = m[row_order,]
   m
 }
 
@@ -111,8 +112,6 @@ order_by_sd = function(m){
 #' @return An object of class \code{\link{methrix}}
 #' @export
 subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
-
-
 
   #m_dat = get_matrix(m = m, type = "M", add_loci = TRUE)
   #c_dat = get_matrix(m = m, type = "C", add_loci = TRUE)
@@ -448,6 +447,86 @@ se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered",
                                                 n_non_covered, length(unique(m@elementMetadata$chr)), m@metadata$genome, m@metadata$is_h5))
 m@metadata$summary <- se_summary
 return(m)
-
-
 }
+
+#--------------------------------------------------------------------------------------------------------------------------
+#' Estimate descriptive statistics
+#' @details Calculate descriptive statistics
+#' @param m \code{\link{methrix}} object
+#' @param per_chr Estimate stats per chromosome. Default FALSE
+#' @seealso \code{\link{plot_stats}}
+get_stat = function(m, per_chr = FALSE){
+
+  #m_sub = remove_uncovered(m = m)
+
+  if(per_chr){
+    row_df = data.frame(rowData(x = m))
+    row_chrs = names(table(row_df$chr))
+    cat("-Processing", length(row_chrs), "chromosomes")
+
+    stats = lapply(row_chrs, function(x){
+      x_idx = which(row_df$chr == x)
+      mean_meth = matrixStats::colMeans2(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
+      median_meth = matrixStats::colMedians(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
+      sd_meth = matrixStats::colSds(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
+      gc(verbose = FALSE)
+
+      cov_mat = get_matrix(m = m[x_idx,], type = "C")
+      #Set uncovered loci to NA (zeros can affect mean and median)
+      cov_mat[cov_mat == 0] = NA
+      mean_cov = matrixStats::colMeans2(x = cov_mat, na.rm = TRUE)
+      median_cov = matrixStats::colMedians(cov_mat, na.rm = TRUE)
+      sd_cov = matrixStats::colSds(cov_mat, na.rm = TRUE)
+
+      chr_stat = data.table(
+        Sample_Name = rownames(colData(x = m)),
+        mean_meth = mean_meth,
+        median_meth = median_meth,
+        sd_meth = sd_meth,
+        mean_cov = mean_cov,
+        median_cov = median_cov,
+        sd_cov = sd_cov,
+        stringsAsFactors = FALSE
+      )
+      rm(cov_mat)
+      gc(verbose = FALSE)
+
+      chr_stat
+    })
+
+    names(stats) = row_chrs
+    stats = data.table::rbindlist(l = stats, use.names = TRUE, fill = TRUE, idcol = "Chromosome")
+
+  }else{
+    mean_meth = matrixStats::colMeans2(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
+    median_meth = matrixStats::colMeans2(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
+    sd_meth = matrixStats::colSds(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
+    gc(verbose = FALSE)
+
+    cov_mat = get_matrix(m = m, type = "C")
+    #Set uncovered loci to NA (zeros can affect mean and median)
+    cov_mat[cov_mat == 0] = NA
+    mean_cov = matrixStats::colMeans2(x = cov_mat, na.rm = TRUE)
+    median_cov = matrixStats::colMedians(cov_mat, na.rm = TRUE)
+    sd_cov = matrixStats::colSds(cov_mat, na.rm = TRUE)
+
+    rm(cov_mat)
+    gc(verbose = FALSE)
+
+    stats = data.table(
+      Sample_Name = rownames(colData(x = m)),
+      mean_meth = mean_meth,
+      median_meth = median_meth,
+      sd_meth = sd_meth,
+      mean_cov = mean_cov,
+      median_cov = median_cov,
+      sd_cov = sd_cov,
+      stringsAsFactors = FALSE
+    )
+  }
+
+  stats
+}
+
+
+

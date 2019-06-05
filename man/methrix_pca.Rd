@@ -4,19 +4,23 @@
 \alias{methrix_pca}
 \title{Principal Component Analysis}
 \usage{
-methrix_pca(m, ranges = NULL, pheno = NULL, do.plot = TRUE,
-  n_pc = 5)
+methrix_pca(m, top_var = 5000, ranges = NULL, pheno = NULL,
+  do_plot = TRUE, n_pc = 5)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
+
+\item{top_var}{Top most variable to use. Default 5000. Set it to NULL to use all CpGs (which is not recommended due to memory requirements). This option is mutually exclusive with \code{ranges}}
 
 \item{ranges}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
 
 \item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the violin plot.}
 
-\item{n_pc}{Number of principal components to return.}
+\item{do_plot}{Should a plot be generated?}
 
-\item{do.lot}{Should a plot be generated?}
+\item{n_pc}{Number of principal components to return. Default 5.}
+
+\item{top_var}{number of top most variable CpGs to use. Default 1000}
 }
 \value{
 PCA results
