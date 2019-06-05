@@ -128,14 +128,14 @@ plotly::ggplotly(p = p)
 ```{r}
 #global_meth = data.table::fread(input = "global_meth_per_samp.tsv")
 global_meth = data.table::fread(input = params$global_meth_per_samp_tsv)
-p = ggplot(data = global_meth, aes(x = mean, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)
+p = ggplot(data = global_meth, aes(x = mean, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)+ theme(legend.position = "none")
 
 plotly::ggplotly(p = p)
 ```
 
 ### Median
 ```{r}
-p = ggplot(data = global_meth, aes(x = median, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)
+p = ggplot(data = global_meth, aes(x = median, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)+ theme(legend.position = "none")
 
 plotly::ggplotly(p = p)
 ```
@@ -145,14 +145,14 @@ plotly::ggplotly(p = p)
 ```{r}
 #global_cov = data.table::fread(input = "global_cov_per_samp.tsv")
 global_cov = data.table::fread(input = params$global_cov_per_samp_tsv)
-p = ggplot(data = global_cov, aes(x = mean, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+p = ggplot(data = global_cov, aes(x = mean, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+ theme(legend.position = "none")
 
 plotly::ggplotly(p = p)
 ```
 
 ### Median
 ```{r}
-p = ggplot(data = global_cov, aes(x = median, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+p = ggplot(data = global_cov, aes(x = median, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+ theme(legend.position = "none")
 
 plotly::ggplotly(p = p)
 ```
