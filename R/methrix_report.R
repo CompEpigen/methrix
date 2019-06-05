@@ -78,7 +78,8 @@ methrix_report = function(meth, output_dir = NULL, plot_beta_dist = FALSE, n_thr
     colnames(mf_chr_summary) = c("chr", "n_CpG")
     rm(mf)
     gc(verbose = FALSE)
-    mf_chr_summary = merge(mf_chr_summary, contig_nCpGs, by = 'chr', all.x = TRUE)
+    mf_chr_summary = merge(contig_nCpGs, mf_chr_summary, by = 'chr', all.x = TRUE)
+    mf_chr_summary$n_CpG[is.na(mf_chr_summary$n_CpG)]<-0
     mf_chr_summary[, fract_CpG := n_CpG/total_CpGs]
     data.table::fwrite(x = mf_chr_summary, file = of4, sep = "\t")
   }
