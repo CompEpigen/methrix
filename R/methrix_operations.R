@@ -11,85 +11,54 @@
 #' @export
 get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm = TRUE, verbose = TRUE){
 
-  type = match.arg(arg = type, choices = c('M', 'C'))
-  how = match.arg(arg = how, choices = c('mean', 'median', 'max', 'min', 'sum'))
+  type = match.arg(arg = type, choices = c('M', 'C','MR'))
+  how = match.arg(arg = how, choices = c('mean', 'sum', 'max', 'min'))
 
   start_proc_time = proc.time()
+  regions_work = cast_ranges(regions = regions)
 
-  target_regions = cast_ranges(regions)
-  #Add a unique id for every target range (i.e, rows)
-  target_regions[, rid := paste0("rid_", 1:nrow(target_regions))]
+  regions_work[, id := paste0(chr, ":", start, "-", end)]
+  data.table::setDT(x = regions_work, key = c("chr", "start", "end"))
 
-  r_dat = data.table::as.data.table(rowData(x = m))
-  r_dat[, chr := as.character(chr)]
-  r_dat[, end := start + 1]
-  data.table::setDT(x = r_dat, key = c("chr", "start", "end"))
-
-  if(verbose){
-    cat("-Checking for overlaps..\n")
-  }
-  overlap_indices = data.table::foverlaps(x = r_dat, y = target_regions, type = "any", nomatch = NULL, which = TRUE)
-
-  if(nrow(overlap_indices) == 0){
-    stop("No overlaps detected")
+  if (type == "M") {
+    dat = get_matrix(m = m, type = "M", add_loci = TRUE)
+  }else if (type == "C") {
+    dat = get_matrix(m = m, type = "C", add_loci = TRUE)
+  }else if (type == "MR") {
+    dat_C = get_matrix(m = m, type = "C", add_loci = FALSE)
+    dat_M = get_matrix(m = m, type = "M", add_loci = FALSE)
+    reg = get_matrix(m = m, type = "M", add_loci = TRUE)[,1:3]
+    dat = cbind(reg,dat_C*dat_M)
   }
 
-  overlap_indices[,yid := paste0("rid_", yid)]
-  n_overlap_cpgs = overlap_indices[,.N,yid]
-  colnames(n_overlap_cpgs) = c('rid', 'n_overlap_CpGs')
+  dat[,end := start+1]
+  #region_overlap <- unique(data.table::foverlaps(x = dat, y = regions_work, type = "any", nomatch = NULL, which=T)$yid)
+  overlap = data.table::foverlaps(x = dat, y = regions_work, type = "any", nomatch = NULL)
 
-  overlap_indices = split(overlap_indices, as.factor(as.character(overlap_indices$yid)))
 
-  cat("-Summarizing overlaps..\n")
-  overlap_summaries = lapply(overlap_indices, function(idx){
-
-    if(how == "mean"){
-      if(is_h5(m)){
-        idx_summary = DelayedMatrixStats::colMeans2(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
-      }else{
-        idx_summary = matrixStats::colMeans2(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
-      }
-    }else if(how == "median"){
-      if(is_h5(m)){
-        idx_summary = DelayedMatrixStats::colMedians(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
-      }else{
-        idx_summary = matrixStats::colMedians(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
-      }
-    }else if(how == "min"){
-      if(is_h5(m)){
-        stop("Min value is not supported for h5. Sorry..")
-      }else{
-        idx_summary = matrixStats::colMins(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
-      }
-    }else if(how == "max"){
-      if(is_h5(m)){
-        stop("Max value is not supported for h5. Sorry..")
-      }else{
-        idx_summary = matrixStats::colMaxs(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
-      }
-    }else if(how == "sum"){
-      if(is_h5(m)){
-        stop("Max value is not supported for h5. Sorry..")
-      }else{
-        idx_summary = matrixStats::colSums2(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
-      }
-    }
-
-    #idx_summary = giveme_this(mat = get_matrix(m = m[idx$xid, ], type = type), stat = how, na_rm = na_rm, ish5 = is_h5(m))
-    idx_summary = data.frame(t(data.frame(idx_summary)))
-    colnames(idx_summary) = rownames(colData(m))
-    idx_summary
-  })
-
-  overlap_summaries = data.table::rbindlist(l = overlap_summaries, use.names = TRUE, fill = TRUE, idcol = "rid")
-  overlap_summaries = merge(target_regions, overlap_summaries, by = "rid")
-  overlap_summaries = merge(n_overlap_cpgs, overlap_summaries, by = "rid")
-
-  if(verbose){
-    cat("-Done! Finished in:",data.table::timetaken(start_proc_time),"\n")
+  if(nrow(overlap) == 0){
+    stop("Subsetting resulted in zero entries")
   }
 
-  return(overlap_summaries)
+  if(how == "mean") {
+    cat("-Summarizing by average\n")
+    output = overlap[, lapply(.SD, mean, na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
+  }else if (how == "max") {
+    cat("-Summarizing by maximum\n")
+    output = overlap[, lapply(.SD, max, na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
+  }else if (how == "min") {
+    cat("-Summarizing by minimum\n")
+    output = overlap[, lapply(.SD, min, na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
+  }else if (how == "sum") {
+    cat("-Summarizing by sum\n")
+    output = overlap[, lapply(.SD, sum, na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
+  }
+
+  output <- merge(regions_work[,list(id)],output, by="id", all = TRUE, sort = FALSE)
+  #output <- output[order(regions$chr, regions$start, regions$end),]
+  #output = cbind(regions[,c("chr", "start", "end"), with = FALSE], mean[,rownames(colData(m)), with = FALSE])
+  cat("-Done! Finished in:",data.table::timetaken(start_proc_time),"\n")
+  return(output)
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
