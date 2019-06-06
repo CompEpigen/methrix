@@ -28,11 +28,6 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
   }
 
   #Check maximum betavalues (Can be 1 or 100)
-  if(beta_fract){
-    cov_scale = 1
-  }else{
-    cov_scale = 100
-  }
   fix_missing = vector()
   if(is.null(strand)){
     fix_missing = "strand := '*'"
