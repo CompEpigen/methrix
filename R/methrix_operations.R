@@ -42,7 +42,40 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
 
   cat("-Summarizing overlaps..\n")
   overlap_summaries = lapply(overlap_indices, function(idx){
-    idx_summary = giveme_this(mat = get_matrix(m = m[idx$xid, ], type = type), stat = how, na_rm = na_rm, ish5 = is_h5(m))
+
+    if(how == "mean"){
+      if(is_h5(m)){
+        idx_summary = DelayedMatrixStats::colMeans2(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
+      }else{
+        idx_summary = matrixStats::colMeans2(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
+      }
+    }else if(how == "median"){
+      if(is_h5(m)){
+        idx_summary = DelayedMatrixStats::colMedians(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
+      }else{
+        idx_summary = matrixStats::colMedians(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
+      }
+    }else if(how == "min"){
+      if(is_h5(m)){
+        stop("Min value is not supported for h5. Sorry..")
+      }else{
+        idx_summary = matrixStats::colMins(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
+      }
+    }else if(how == "max"){
+      if(is_h5(m)){
+        stop("Max value is not supported for h5. Sorry..")
+      }else{
+        idx_summary = matrixStats::colMaxs(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
+      }
+    }else if(how == "sum"){
+      if(is_h5(m)){
+        stop("Max value is not supported for h5. Sorry..")
+      }else{
+        idx_summary = matrixStats::colSums2(get_matrix(m = m[idx$xid, ], type = type), na.rm = na_rm)
+      }
+    }
+
+    #idx_summary = giveme_this(mat = get_matrix(m = m[idx$xid, ], type = type), stat = how, na_rm = na_rm, ish5 = is_h5(m))
     idx_summary = data.frame(t(data.frame(idx_summary)))
     colnames(idx_summary) = rownames(colData(m))
     idx_summary
