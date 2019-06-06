@@ -13,22 +13,6 @@ methrix <- setClass(Class = 'methrix', contains = "SummarizedExperiment")
 # we can include validity checks as well
 # we might need to keep track of the processing steps
 
-#' extract CpGs per chromosome stats
-#' @name getChrSummary
-#' @rdname getChrSummary
-#' @param x An object of class methrix
-#' @return CpG per chromosome table
-#' @exportMethod getChrSummary
-setGeneric(name = "getChrSummary", function(x) standardGeneric("getChrSummary"))
-
-## Accessor methods
-#' @rdname getChrSummary
-#' @aliases getChrSummary
-#' @examples
-#' data("mm9_bsmap")
-#' getChrSummary(x = mm9_bsmap)
-setMethod(f = "getChrSummary",signature = "methrix", function(x) x@metadata$chr_summary)
-
 setMethod(f = 'show', signature = 'methrix', definition = function(object){
   cat(paste0('An object of class ', class(object), "\n"))
   print(object@metadata$summary)

@@ -17,6 +17,7 @@ RoxygenNote: 6.1.1
 Suggests: 
     knitr,
     rmarkdown,
+    DSS,
     BSseq,
     plotly,
     ggplot2,

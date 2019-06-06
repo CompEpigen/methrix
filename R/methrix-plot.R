@@ -327,7 +327,7 @@ methrix_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perSample
 #--------------------------------------------------------------------------------------------------------------------------
 #' Plot descriptive statistics
 #' @details plot descriptive statistics results from get_stat
-#' @param plot_dat results from \code\link{get_stat}
+#' @param plot_dat results from \code{\link{get_stat}}
 #' @param what Can be \code{M} or \code{C}. Default \code{M}
 #' @param stat Can be \code{mean} or \code{median}. Default \code{mean}
 #' @param ignore_chr Chromsomes to ignore. Default \code{NULL}

@@ -322,3 +322,48 @@ non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL
     return(list(beta_matrix = beta_mat, cov_matrix = cov_mat))
   }
 }
+
+#--------------------------------------------------------------------------------------------------------------------------
+#Parse genomic regions and convert them to key'd data.table
+cast_ranges = function(regions){
+  if(is(regions, "GRanges")){
+    target_regions = data.table::as.data.table(x = regions)
+    target_regions[, seqnames := as.character(seqnames)]
+    colnames(target_regions)[1:3] = c("chr", "start", "end")
+    data.table::setDT(x = target_regions, key = c("chr", "start", "end"))
+    target_regions = target_regions[,.(chr, start, end)]
+  }else if(is(regions, "data.frame")){
+    target_regions = data.table::as.data.table(x = regions)
+    colnames(target_regions)[1:3] = c("chr", "start", "end")
+    target_regions = target_regions[,.(chr, start, end)]
+    target_regions[, chr := as.character(chr)]
+    target_regions[, start := as.numeric(as.character(start))]
+    target_regions[, end := as.numeric(as.character(end))]
+    data.table::setDT(x = target_regions, key = c("chr", "start", "end"))
+  }else{
+    stop("Invalid input class for regions. Must be a data.table or GRanges object")
+  }
+
+  target_regions
+}
+
+#--------------------------------------------------------------------------------------------------------------------------
+#Get min/max/mean/median of a matrix
+giveme_this = function(mat, stat = "mean", na_rm = TRUE){
+  stat = match.arg(arg = stat, choices = c("mean", "median", "min", "max", 'sum'))
+
+  if(stat == "mean"){
+    res = matrixStats::colMeans2(mat, na.rm = na_rm)
+  }else if(stat == "median"){
+    res = matrixStats::colMedians(mat, na.rm = na_rm)
+  }else if(stat == "min"){
+    res = matrixStats::colMins(mat, na.rm = na_rm)
+  }else if(stat == "max"){
+    res = matrixStats::colMaxs(mat, na.rm = na_rm)
+  }else if(stat == "sum"){
+    res = matrixStats::colSums2(mat, na.rm = na_rm)
+  }
+
+
+  res
+}

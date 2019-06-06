@@ -8,7 +8,7 @@ plot_stats(plot_dat, what = "M", stat = "mean", ignore_chr = NULL,
   samples = NULL)
 }
 \arguments{
-\item{plot_dat}{results from \code\link{get_stat}}
+\item{plot_dat}{results from \code{\link{get_stat}}}
 
 \item{what}{Can be \code{M} or \code{C}. Default \code{M}}
 
