@@ -26,6 +26,6 @@ Extract and summarize methylation or coverage info by regions of interest
 Takes \code{\link{methrix}} object and summarizes regions
 }
 \examples{
-data("mm9_bsmap")
-get_region_summary(m = mm9_bsmap, regions = data.table(chr = "chr1", start = 3020220, end = 3209171), type = "M", how = "mean")
+data("methrix_data")
+get_region_summary(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103), type = "M", how = "mean")
 }

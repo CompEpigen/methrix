@@ -28,3 +28,7 @@ PCA results
 \description{
 Principal Component Analysis
 }
+\examples{
+data("methrix_data")
+methrix_pca(methrix_data)
+}

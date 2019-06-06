@@ -24,6 +24,11 @@ Plot descriptive statistics
 \details{
 plot descriptive statistics results from get_stat
 }
+\examples{
+data("methrix_data")
+gs = get_stats(methrix_data)
+plot_stats(gs)
+}
 \seealso{
-\code{\link{get_stat}}
+\code{\link{get_stats}}
 }

@@ -2,6 +2,7 @@
 * Added summary statistics function
 * Improvements to PCA
 * Added example bedgraphs and datasets for testing
+* Fixed major bug caused by beta values in percent scale
 
 # methrix 0.9.90
 

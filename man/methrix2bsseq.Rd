@@ -20,7 +20,7 @@ Takes \code{\link{methrix}} object and returns a \code{\link{BSseq}} object
 }
 \examples{
 \dontrun{
-data("mm9_bsmap")
-methrix2bsseq(m = mm9_bsmap)
+data("methrix_data")
+methrix2bsseq(m = methrix_data)
 }
 }

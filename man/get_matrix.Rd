@@ -23,9 +23,9 @@ Extract methylation or coverage matrices
 Takes \code{\link{methrix}} object and returns user specified \code{methylation} or \code{coverage} matrix
 }
 \examples{
-data("mm9_bsmap")
+data("methrix_data")
 #Get methylation matrix
-get_matrix(m = mm9_bsmap, type = "M")
+get_matrix(m = methrix_data, type = "M")
 #Get methylation matrix along with loci
-get_matrix(m = mm9_bsmap, type = "M", add_loci = TRUE)
+get_matrix(m = methrix_data, type = "M", add_loci = TRUE)
 }

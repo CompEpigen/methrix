@@ -25,6 +25,6 @@ ggplot2 object
 Covergae QC Plots
 }
 \examples{
-data("mm9_bsmap")
-methrix_coverage(m = mm9_bsmap)
+data("methrix_data")
+methrix_coverage(m = methrix_data)
 }

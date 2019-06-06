@@ -25,7 +25,7 @@ Subsets \code{\link{methrix}} object based on given conditions.
 Takes \code{\link{methrix}} object and filters CpGs based on coverage statistics
 }
 \examples{
-data("mm9_bsmap")
+data("methrix_data")
 #Subset to chromosome 1
-subset_methrix(mm9_bsmap, contigs = "chr1")
+subset_methrix(methrix_data, contigs = "chr21")
 }

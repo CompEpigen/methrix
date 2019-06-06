@@ -25,6 +25,6 @@ ggplot2 object
 Density Plot of \eqn{\beta}-Values
 }
 \examples{
-data("mm9_bsmap")
-methrix_density(m = mm9_bsmap)
+data("methrix_data")
+methrix_density(m = methrix_data)
 }

@@ -19,6 +19,6 @@ Remove loci that are uncovered across all samples
 Takes \code{\link{methrix}} object and removes loci that are uncovered across all samples
 }
 \examples{
-data("mm9_bsmap")
-remove_uncovered(m = mm9_bsmap)
+data("methrix_data")
+remove_uncovered(m = methrix_data)
 }

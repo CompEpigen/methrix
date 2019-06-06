@@ -58,12 +58,12 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
       cat("--Estimating beta values from M and coverage\n")
       return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
                               beta = beta, M = n_meth, U = n_unmeth, cov = cov),
-                  fix_missing = c(fix_missing, "beta := M/cov")))
+                  fix_missing = c(fix_missing, "beta := M/cov", "U := cov - M")))
     }else if(!is.null(n_unmeth)){ #U available
       cat("--Estimating beta values from U and coverage\n")
       return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
                               beta = beta, M = n_meth, U = n_unmeth, cov = cov),
-                  fix_missing = c(fix_missing, paste0("beta := 1- (U/cov)"))))
+                  fix_missing = c(fix_missing, paste0("beta := 1- (U/cov)"), "M := cov - U")))
     }
   } else if(!is.null(beta) & is.null(cov)){ #If anyone of them is present (case-2: beta available, estimate coverage)
     if(all(is.null(n_meth), is.null(n_unmeth))){
@@ -85,7 +85,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
 
       return(list(col_idx = c(chr = chr, start = start, end = end, strand = strand,
                               beta = beta, cov = cov),
-                  fix_missing = c("M := as.integer(cov * beta)", "U = cov - M")))
+                  fix_missing = c("M := as.integer(cov * beta)", "U := cov - M")))
     }else{
       if(verbose){
         cat("--All fields are present. Nice.\n")
@@ -103,12 +103,32 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
 #Read bedgraphs, and add missing info
 read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_collapse = FALSE, fill_cpgs = TRUE, contigs = contigs){
 
+  cat(paste0("-Processing:    ", basename(bdg), "\n"))
   bdg_dat = suppressWarnings(data.table::fread(file = bdg, sep = "\t", colClasses = col_list$col_classes, verbose = FALSE, showProgress = FALSE))
   colnames(bdg_dat)[col_list$col_idx] = names(col_list$col_idx)
 
+  if("beta" %in% colnames(bdg_dat)){
+    if(nrow(bdg_dat) < 1000){
+      max_beta = max(bdg_dat[sample_row_idx, beta], na.rm = TRUE)
+    }else{
+      #Choose 1000 random beta values
+      sample_row_idx = sample(x = 1:nrow(bdg_dat), size = 1000, replace = FALSE)
+      max_beta = max(bdg_dat[sample_row_idx, beta], na.rm = TRUE)
+      rm(sample_row_idx)
+    }
+    if(max_beta > 1){
+      bdg_dat[, beta := beta/100]
+      if(verbose){
+        cat("--Note:         Converted beta values from percent to fractions\n")
+      }
+      rm(max_beta)
+    }
+    gc(verbose = FALSE)
+  }
+
   if(!is.null(col_list$fix_missing)){
     for(cmd in col_list$fix_missing){
-      bdg_dat[,eval(parse(text=cmd))]
+      bdg_dat[,eval(parse(text = cmd))]
     }
   }
 
@@ -136,7 +156,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
   missing_cpgs = genome[!bdg_dat[,list(chr, start)], on = c("chr", "start")]
 
   if(verbose){
-    cat(paste0("-CpGs missing:  ", format(nrow(missing_cpgs), big.mark = ","), " ",basename(bdg),"\n"))
+    cat(paste0("--CpGs missing: ", format(nrow(missing_cpgs), big.mark = ","), "\n"))
     #message(paste0("Missing ", format(nrow(missing_cpgs), big.mark = ","), " reference CpGs from: ", basename(bdg)))
   }
   if(nrow(missing_cpgs)>0){
@@ -152,7 +172,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
   if(is(is_identical, 'character')){
     #cat(paste0('--non reference CpGs found. Removing them\n'))
     non_ref_cpgs = bdg_dat[!genome[,list(chr, start)], on = c("chr", "start")]
-    cat(paste0("-Non ref CpGs:  ", format(nrow(non_ref_cpgs), big.mark = ","), " [Removing them]\n"))
+    cat(paste0("--Non ref CpGs: ", format(nrow(non_ref_cpgs), big.mark = ","), " [Removing them]\n"))
     bdg_dat = bdg_dat[genome[,list(chr, start)], on = c("chr", "start")]
     data.table::setkey(x = bdg_dat, "chr", "start")
     is_identical = data.table:::all.equal.data.table(target = bdg_dat[,.(chr, start)],
