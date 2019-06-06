@@ -42,7 +42,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
 
   cat("-Summarizing overlaps..\n")
   overlap_summaries = lapply(overlap_indices, function(idx){
-    idx_summary = giveme_this(mat = get_matrix(m = m[idx$xid, ], type = type), stat = how, na_rm = na_rm)
+    idx_summary = giveme_this(mat = get_matrix(m = m[idx$xid, ], type = type), stat = how, na_rm = na_rm, ish5 = is_h5(m))
     idx_summary = data.frame(t(data.frame(idx_summary)))
     colnames(idx_summary) = rownames(colData(m))
     idx_summary

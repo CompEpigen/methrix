@@ -349,21 +349,34 @@ cast_ranges = function(regions){
 
 #--------------------------------------------------------------------------------------------------------------------------
 #Get min/max/mean/median of a matrix
-giveme_this = function(mat, stat = "mean", na_rm = TRUE){
+giveme_this = function(mat, stat = "mean", na_rm = TRUE, ish5 = FALSE){
   stat = match.arg(arg = stat, choices = c("mean", "median", "min", "max", 'sum'))
 
-  if(stat == "mean"){
-    res = matrixStats::colMeans2(mat, na.rm = na_rm)
-  }else if(stat == "median"){
-    res = matrixStats::colMedians(mat, na.rm = na_rm)
-  }else if(stat == "min"){
-    res = matrixStats::colMins(mat, na.rm = na_rm)
-  }else if(stat == "max"){
-    res = matrixStats::colMaxs(mat, na.rm = na_rm)
-  }else if(stat == "sum"){
-    res = matrixStats::colSums2(mat, na.rm = na_rm)
+  if(ish5){
+    if(stat == "mean"){
+      res = matrixStats::colMeans2(mat, na.rm = na_rm)
+    }else if(stat == "median"){
+      res = matrixStats::colMedians(mat, na.rm = na_rm)
+    }else if(stat == "min"){
+      res = matrixStats::colMins(mat, na.rm = na_rm)
+    }else if(stat == "max"){
+      res = matrixStats::colMaxs(mat, na.rm = na_rm)
+    }else if(stat == "sum"){
+      res = matrixStats::colSums2(mat, na.rm = na_rm)
+    }
+  }else{
+    if(stat == "mean"){
+      res = DelayedMatrixStats::colMeans2(mat, na.rm = na_rm)
+    }else if(stat == "median"){
+      res = DelayedMatrixStats::colMedians(mat, na.rm = na_rm)
+    }else if(stat == "min"){
+      res = DelayedMatrixStats::colMins(mat, na.rm = na_rm)
+    }else if(stat == "max"){
+      res = DelayedMatrixStats::colMaxs(mat, na.rm = na_rm)
+    }else if(stat == "sum"){
+      res = DelayedMatrixStats::colSums2(mat, na.rm = na_rm)
+    }
   }
-
 
   res
 }
