@@ -15,6 +15,8 @@ get_region_summary(m, regions = NULL, type = "M", how = "mean",
 \item{how}{mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min. Default "mean"}
 
 \item{na_rm}{Remove NA's ? Default \code{TRUE}}
+
+\item{verbose}{Default TRUE}
 }
 \value{
 a coverage or methylation matrix
@@ -27,5 +29,5 @@ Takes \code{\link{methrix}} object and summarizes regions
 }
 \examples{
 data("methrix_data")
-get_region_summary(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103), type = "M", how = "mean")
+get_region_summary2(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103), type = "M", how = "mean")
 }

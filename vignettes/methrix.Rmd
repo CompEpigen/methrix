@@ -36,7 +36,7 @@ This vignette describes basic usage of the package intended to process several l
 #Load library
 library(methrix)
 #Genome of your preference to work with
-library(BSgenome.Mmusculus.UCSC.mm9) 
+library(BSgenome.Hsapiens.UCSC.hg19) 
 ```
 
 
@@ -49,6 +49,11 @@ bdg_files = list.files(
 )
 
 print(bdg_files)
+
+#Generate some sample annotation table
+sample_anno = data.frame(row.names = gsub(pattern = "\\.bdg\\.gz$", replacement = "", x = basename(bdg_files)), condition = c("Cancer", 'Cancer', "Normal", "Normal"), stringsAsFactors = FALSE)
+
+print(sample_anno)
 ```
 
 We can import bedgraph files with the function `read_bedgraphs` which reads in the bedgraphs, adds CpGs missing from the reference set, and creates a methylation/coverage matrices. If your system has enough memory increasing `vect_batch_size` and `n_threads` speeds up the process. Once the process is complete - it returns an object of class `methrix` which in turn inherits [SummarizedExperiment](https://bioconductor.org/packages/release/bioc/vignettes/SummarizedExperiment/inst/doc/SummarizedExperiment.html) class. `methrix` object contains 'methylation' and 'coverage' matrices (either in-memory or as on-disk HDF5 arrays) along with pheno-data and other basic info. This object can be passed to all downstream functions for various analysis.
@@ -57,24 +62,27 @@ Bedgraphs used for vignette are generated with [BSMAP](https://bmcbioinformatics
 
 ```{r, warning=FALSE}
 #First extract genome wide CpGs from the desired genome
-mm9_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Mmusculus.UCSC.mm9", bored = FALSE)
+hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19", bored = FALSE)
 ```
 
 ```{r}
 #Read the files
 meth = methrix::read_bedgraphs(
   files = bdg_files,
-  ref_cpgs = mm9_cpgs,
+  ref_cpgs = hg19_cpgs,
   chr_idx = 1,
   start_idx = 2,
-  end_idx = 3,
-  cov_idx = 4,
-  beta_idx = 5,
+  M_idx = 3,
+  U_idx = 4,
   stranded = TRUE,
-  zero_based = FALSE, 
   collapse_strands = TRUE
 )
 ```
+
+```{r, echo=FALSE}
+meth = methrix::order_by_sd(meth)
+```
+
 
 Note: Use argument `pipeline` if your bedgraphs are generated with "Bismark", "MethylDeckal", or "MethylcTools".
 
@@ -84,12 +92,8 @@ meth
 ```
 
 ## Basic operations
-```{r}
-#Get chromosome wise number of CpGs
-getChrSummary(x = meth)
-```
 
-Its possible to extract methylation/coverage matrices using `get_matrix` function.
+### Extract methylation/coverage matrices
 ```{r}
 #Coverage matrix
 coverage_mat = methrix::get_matrix(m = meth, type = "C")
@@ -108,51 +112,68 @@ meth_mat_with_loci = methrix::get_matrix(m = meth, type = "M", add_loci = TRUE)
 meth_mat_with_loci
 ```
 
+### CpGs covered per chromosome
+```{r}
+cpg_per_chr = get_chr_summary(m = meth)
+cpg_per_chr
+```
+
 ## Filtering
 ### Remove uncovered loci
 Usual task in analysis involves removing uncovered CpGs. i.e, those loci which are not covered across all sample (in other words covered only in subset of samples resulting `NA` for rest of the samples ).
 ```{r}
-meth_clean = methrix::remove_uncovered(m = meth)
-meth_clean
+meth = methrix::remove_uncovered(m = meth)
+meth
 ```
 
 ### Coverage filter
 Furthermore if you prefer you can filter sites based on coverage conditions.
 ```{r}
 #e.g; Retain all loci which are covered at-least in two sample by 3 or more reads
-meth_cov_filtered = methrix::coverage_filter(m = meth, cov_thr = 3, min_samples = 2, n_threads = 3)
-meth_cov_filtered
+methrix::coverage_filter(m = meth, cov_thr = 3, min_samples = 2)
 ```
 
 ## Subset operations
 ### Subset by chromosome
 ```{r}
 #Retain sites only from chromosme 1 and "X"
-meth_1x = methrix::subset_methrix(m = meth, contigs = c("chr1", "X"))
-meth_1x
+methrix::subset_methrix(m = meth, contigs = "chr21")
 ```
 
 ### Subset by genomic regions
 Regions can be data.table or [GRanges](https://kasperdanielhansen.github.io/genbioconductor/html/GenomicRanges_GRanges.html#granges) format.
 ```{r}
 #e.g; Retain sites only in TP53 loci 
-tp53_loci = data.table::data.table(chr = "chr17", start = "7571720", end = "7590868")
-print(tp53_loci)
+target_loci = data.table::data.table(chr = "chr21", start = 27867971, end =  27868103)
+print(target_loci)
 
-meth_tp53 = methrix::subset_methrix(m = meth, regions = tp53_loci)
-meth_tp53
+methrix::subset_methrix(m = meth, regions = target_loci)
 ```
 
 ### Subset by sampels
 ```{r}
-meth_119 = methrix::subset_methrix(m = meth, samples = "sample_119")
-meth_119
+methrix::subset_methrix(m = meth, samples = "C1")
 ```
 
-## Reorder matrices by sd
+## Summary statsitcis 
+### Basic summaries
 ```{r}
-meth_sd = methrix::order_by_sd(m = meth)
+meth_stats = get_stats(m = meth)
+print(meth_stats)
 ```
+
+```{r}
+#Draw mean coverage per sample
+plot_stats(plot_dat = meth_stats, what = "C", stat = "mean")
+#Draw mean methylation per sample
+plot_stats(plot_dat = meth_stats, what = "M", stat = "mean")
+```
+
+### PCA
+```{r}
+methrix_pca(m = meth)
+```
+
 
 ## Converting methrix to BSseq
 If you prefer to work with [bsseq](https://bioconductor.org/packages/release/bioc/vignettes/bsseq/inst/doc/bsseq.html#3_using_objects_of_class_bsseq) object, you can generate `bsseq` object from methrix with the `methrix2bsseq`. 

@@ -1,3 +1,10 @@
+#Tiny function to check if object is h5
+is_h5 = function(m){
+  return(m@metadata$is_h5)
+}
+
+#--------------------------------------------------------------------------------------------------------------------------
+
 get_source_idx = function(protocol = NULL){
   if(protocol == "MethylcTools"){
     return(list(col_idx = c(chr = 1, start = 2, strand = 3, context = 4, cnp_rate = 5, M = 6, U = 7),
@@ -380,3 +387,57 @@ giveme_this = function(mat, stat = "mean", na_rm = TRUE, ish5 = FALSE){
 
   res
 }
+
+
+#Older implementation of get_region_summary - takes almost twice the memory. Backing it up here
+# get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm = TRUE, verbose = TRUE){
+#
+#   type = match.arg(arg = type, choices = c('M', 'C','MR'))
+#   how = match.arg(arg = how, choices = c('mean', 'sum', 'max', 'min'))
+#
+#   start_proc_time = proc.time()
+#   regions_work = cast_ranges(regions = regions)
+#
+#   regions_work[, id := paste0(chr, ":", start, "-", end)]
+#   data.table::setDT(x = regions_work, key = c("chr", "start", "end"))
+#
+#   if (type == "M") {
+#     dat = get_matrix(m = m, type = "M", add_loci = TRUE)
+#   }else if (type == "C") {
+#     dat = get_matrix(m = m, type = "C", add_loci = TRUE)
+#   }else if (type == "MR") {
+#     dat_C = get_matrix(m = m, type = "C", add_loci = FALSE)
+#     dat_M = get_matrix(m = m, type = "M", add_loci = FALSE)
+#     reg = get_matrix(m = m, type = "M", add_loci = TRUE)[,1:3]
+#     dat = cbind(reg,dat_C*dat_M)
+#   }
+#
+#   dat[,end := start+1]
+#   #region_overlap <- unique(data.table::foverlaps(x = dat, y = regions_work, type = "any", nomatch = NULL, which=T)$yid)
+#   overlap = data.table::foverlaps(x = dat, y = regions_work, type = "any", nomatch = NULL)
+#
+#
+#   if(nrow(overlap) == 0){
+#     stop("Subsetting resulted in zero entries")
+#   }
+#
+#   if(how == "mean") {
+#     cat("-Summarizing by average\n")
+#     output = overlap[, lapply(.SD, mean, na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
+#   }else if (how == "max") {
+#     cat("-Summarizing by maximum\n")
+#     output = overlap[, lapply(.SD, max, na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
+#   }else if (how == "min") {
+#     cat("-Summarizing by minimum\n")
+#     output = overlap[, lapply(.SD, min, na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
+#   }else if (how == "sum") {
+#     cat("-Summarizing by sum\n")
+#     output = overlap[, lapply(.SD, sum, na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
+#   }
+#
+#   output <- merge(regions_work[,list(id)],output, by="id", all = TRUE, sort = FALSE)
+#   #output <- output[order(regions$chr, regions$start, regions$end),]
+#   #output = cbind(regions[,c("chr", "start", "end"), with = FALSE], mean[,rownames(colData(m)), with = FALSE])
+#   cat("-Done! Finished in:",data.table::timetaken(start_proc_time),"\n")
+#   return(output)
+# }

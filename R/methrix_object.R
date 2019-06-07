@@ -55,8 +55,3 @@ create_methrix = function(beta_mat = NULL, cov_mat = NULL, cpg_loci = NULL, is_h
 
   return(methrix(se))
 }
-
-#Tiny function to check if object is h5
-is_h5 = function(m){
-  return(m@metadata$is_h5)
-}

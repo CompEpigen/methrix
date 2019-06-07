@@ -7,7 +7,7 @@
 order_by_sd(m)
 }
 \arguments{
-\item{m}{\code{\link{methrix}} object}
+\item{m}{\code{\link{methrix}} objectw}
 }
 \value{
 An object of class \code{\link{methrix}}
