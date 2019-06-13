@@ -54,15 +54,45 @@ methrix_differential <- function(m, pheno = NULL, smooth = FALSE, s_span = 500, 
   }else if(parallel){
     chroms <- levels(as.factor(m@elementMetadata@listData$chr))
 
-    #Set-up the cluster
-    doParallel::registerDoParallel(cores = ncore)
-    cat(paste0("You are now working on ",foreach::getDoParWorkers()," cores.","\n"))
-    dml_classI_classII <- foreach::foreach(i=chroms, .final = function(x) setNames(x, chroms)) %dopar% {
-      cat(paste0("Currently processing: ",i,"\n"))
-      methrix_work <- methrix::subset_methrix(m = m, contigs = i)
-      methrix_bs <-  methrix::methrix2bsseq(m = methrix_work)
-      DSS::DMLtest(methrix_bs,group1 = class1, group2 = class2, smoothing=smooth,smoothing.span=s_span)}
-    # combine the DMLs and adjust the p-values
+    # #Set-up the cluster for the doParallel package
+    # doParallel::registerDoParallel(cores = ncore)
+    # cat(paste0("You are now working on ",foreach::getDoParWorkers()," cores.","\n"))
+    # dml_classI_classII <- foreach::foreach(i=chroms, .final = function(x) setNames(x, chroms)) %dopar% {
+    #   cat(paste0("Currently processing: ",i,"\n"))
+    #   methrix_work <- methrix::subset_methrix(m = m, contigs = i)
+    #   methrix_bs <-  methrix::methrix2bsseq(m = methrix_work)
+    #   DSS::DMLtest(methrix_bs,group1 = class1, group2 = class2, smoothing=smooth,smoothing.span=s_span)}
+    # # combine the DMLs and adjust the p-values
+
+    ## use the parallel package
+
+    # check if the machine is a windows
+    if (!.Platform$OS.type == "unix"){
+      if (ncore > 1){
+        warning("Windows OS doesn't support parallel processing. Setting ncore to 1.")
+      }}
+
+    # check for max cores
+    if (detectCores()<ncore){
+      ncore=detectCores()-1
+      warning(paste0("Just ",detectCores()," cores can be detected. Setting ncore to ",ncore,"."))
+    }
+
+    #split into a list per chromosome
+    chr_list <- list()
+    for(i in chroms){
+    chr_list[i] <- methrix_work <- methrix::subset_methrix(m = m, contigs = i)
+    }
+
+    # define the dmr function
+    dmr_fun <- function(x){
+      methrix_bs <-  methrix::methrix2bsseq(m = x)
+      return(DSS::DMLtest(methrix_bs,group1 = class1, group2 = class2, smoothing=smooth,smoothing.span=s_span))
+    }
+
+    # call DMLS
+    dml_classI_classII <-  mclapply(chr_list,dmr_fun,mc.cores = ncore)
+
     dml_test <- do.call("rbind", dml_classI_classII)
     dml_test$fdr <- p.adjust(dml_test$pval, method = "BH")
   }else if(chrWise & !parallel){
