@@ -130,34 +130,45 @@ methrix_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.a
 #' Principal Component Analysis
 #'
 #' @param m Input \code{\link{methrix}} object
-#' @param top_var Top most variable to use. Default 5000. Set it to NULL to use all CpGs (which is not recommended due to memory requirements). This option is mutually exclusive with \code{ranges}
+#' @param top_var Number of variable CpGs to use. Default 5000. Set it to NULL to use all CpGs (which is not recommended due to memory requirements). This option is mutually exclusive with \code{ranges}.
 #' @param ranges genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
 #' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
-#' @param top_var number of top most variable CpGs to use. Default 1000
+#' @param var Choose between random CpG sites ("rand") or most variable CpGs ("top").
 #' @param do_plot Should a plot be generated?
 #' @param n_pc Number of principal components to return. Default 5.
+#' @param do_fast Use the \code{\link{prcomp_irlba}} function for a quick PCA. This might be useful when computing with large datasets.
 #' @return PCA results
+#' @importFrom  irlba prcomp_irlba
 #' @examples
 #' data("methrix_data")
 #' methrix_pca(methrix_data)
 #' @export
 #'
-methrix_pca <- function(m, top_var = 5000, ranges = NULL, pheno = NULL, do_plot = TRUE, n_pc = 5){
-
+methrix_pca <- function(m, var="top",top_var = 1000, ranges = NULL, pheno = NULL, do_plot = TRUE, n_pc = 5,do_fast=FALSE){
+  var_select <- match.arg(var,c("top","rand"))
   ## subset based on the input ranges
   if(!is.null(ranges)){
+    print("GenomicRanges will be used for the PCA.")
     meth_sub <- subset_methrix(m = m, regions = ranges)
     meth_sub = methrix::get_matrix(m = meth_sub, type = "M", add_loci = FALSE)
   }else if(is.null(top_var)){
+    print("All CpGs in the dataset will be used for the PCA.")
     meth_sub <- get_matrix(m = m, type = "M", add_loci = FALSE)
   }else{
+    print("Top variable CpGs will be used for the PCA.")
     top_var = as.integer(as.character(top_var))
     if(nrow(m) < top_var){
       top_var = nrow(m)
     }
-    set.seed(seed = 1024)
+    if(var_select=="rand"){set.seed(seed = 1024)
     ids = sample(x = 1:nrow(m), replace = FALSE, size = as.integer(as.character(top_var)))
-    meth_sub <- get_matrix(m = m[ids, ], type = "M", add_loci = FALSE)
+      meth_sub <- get_matrix(m = m[ids, ], type = "M", add_loci = FALSE)
+      }else{
+      meth_sub <-  methrix::get_matrix(m = m, type = "M", add_loci = FALSE)
+      mv <- apply(meth_sub,1,sd)
+      mv_ord <- order(mv,decreasing = T)
+      meth_sub <-  methrix::get_matrix(m = m[mv_ord[1:5000],], type = "M", add_loci = FALSE)
+    }
   }
 
   #Remove NA
@@ -166,9 +177,12 @@ methrix_pca <- function(m, top_var = 5000, ranges = NULL, pheno = NULL, do_plot 
     stop("Zero loci available post NA removal :(")
   }
 
-  ##To-do: Use irlba for PCA (https://cran.r-project.org/web/packages/irlba/index.html)
   set.seed(seed = 1024)
+  if(do_fast==TRUE){
+  meth_pca = irlba::prcomp_irlba(x = t(meth_sub), retx = TRUE,n = n_pc)
+  }else{
   meth_pca = prcomp(x = t(meth_sub), retx = TRUE)
+  }
 
   if(n_pc > ncol(meth_pca$x)){
     n_pc = ncol(meth_pca$x)
@@ -176,7 +190,8 @@ methrix_pca <- function(m, top_var = 5000, ranges = NULL, pheno = NULL, do_plot 
 
   #-----------------------------------------------------------------------------------------------------------------------
   # Draw cumulative variance explained by PCs
-  pc_vars = meth_pca$sdev ^ 2 / sum(meth_pca$sdev ^ 2)
+  if(do_plot==TRUE){
+    pc_vars = meth_pca$sdev ^ 2 / sum(meth_pca$sdev ^ 2)
   par(bty = "n", mgp = c(2.5,.5,0), mar = c(3,4,2,2)+.1, tcl = -.25, las = 1)
   plot(
     pc_vars,
@@ -199,7 +214,7 @@ methrix_pca <- function(m, top_var = 5000, ranges = NULL, pheno = NULL, do_plot 
   )
   legend("topright", col = c("red", "black"), lty = 1, c("Per PC","Cumulative"), bty = "n")
   lines(x = c(length(meth_pca$sdev), n_pc, n_pc), y = c(cum_var[n_pc], cum_var[n_pc], 0), lty = 3)
-  title(main = paste0("Variance explained by ",  n_pc , " PC: ", round(sum(c(meth_pca$sdev^2/sum(meth_pca$sdev^2))[1:n_pc]), digits = 2)), adj = 0)
+  title(main = paste0("Variance explained by ",  n_pc , " PC: ", round(sum(c(meth_pca$sdev^2/sum(meth_pca$sdev^2))[1:n_pc]), digits = 2)), adj = 0)}
   #-----------------------------------------------------------------------------------------------------------------------
 
   # add the pheno column of choice
@@ -237,7 +252,7 @@ methrix_pca <- function(m, top_var = 5000, ranges = NULL, pheno = NULL, do_plot 
 
   gc(verbose = FALSE)
 
-  return(meth_pca)
+  return(meth_pca$x)
 }
 
 
