@@ -528,3 +528,44 @@ get_chr_summary = function(m = NULL){
 }
 
 
+#--------------------------------------------------------------------------------------------------------------------------
+#' Saves HDF5 methrix object
+#' @details Takes \code{\link{methrix}} object and saves it
+#' @param m \code{\link{methrix}} object
+#' @param dir The directory to use. Created, if not existing.
+#' @param replace Should it overwrite the pre-existing data? FALSE by default.
+#' @param ... Parameters to pass to saveHDF5SummarizedExperiment
+#' @examples
+#' data("methrix_data")
+#' save_HDF5_methrix(methrix_data, dir="/my_methrix_folder", replace=T)
+#' @export
+save_HDF5_methrix = function(m=NULL, dir="", replace=FALSE, ...){
+
+  if (class(m)=="methrix" && is_h5(m)){
+    HDF5Array::saveHDF5SummarizedExperiment(x=m, dir=dir, replace = replace, ...)
+  } else {
+    stop("The object is not a mthrix object or not in an HDF5 format. ")
+  }
+
+}
+
+#--------------------------------------------------------------------------------------------------------------------------
+#' Loads HDF5 methrix object
+#' @details Takes  directory with a previously saved HDF5Array format \code{\link{methrix}} object and loads it
+#' @param dir The directory to read in from.
+#' @param ... Parameters to pass to loadHDF5SummarizedExperiment
+#' @examples
+#' load_HDF5_methrix(dir="/my_methrix_folder")
+#' @export
+load_HDF5_methrix = function(dir="", ...){
+
+  m <- HDF5Array::loadHDF5SummarizedExperiment(dir=dir,  ...)
+  m <- as(m, "methrix")
+  return(m)
+
+}
+
+
+
+
+
