@@ -200,8 +200,14 @@ coverage_filter = function(m, cov_thr = 1, min_samples = 1){
   cov_dat = get_matrix(m = m, type = "C")
 
   res <- as.data.table(which(cov_dat >= cov_thr, arr.ind = T))
-  res <- res[,.(Count=(.N)), by=row]
-  row_idx = res$row[res$Count >= min_samples]
+
+  if (is_h5(m)){
+  res <- res[,.(Count=(.N)), by=V1]
+  row_idx = res$V1[res$Count >= min_samples]} else {
+    res <- res[,.(Count=(.N)), by=row]
+    row_idx = res$row[res$Count >= min_samples]
+  }
+
 
 
   cat(paste0("-Retained ", format(length(row_idx[row_idx]), big.mark = ","), " of ", format(nrow(cov_dat), big.mark = ","), " sites\n"))
@@ -554,6 +560,7 @@ save_HDF5_methrix = function(m=NULL, dir="", replace=FALSE, ...){
 #' @details Takes  directory with a previously saved HDF5Array format \code{\link{methrix}} object and loads it
 #' @param dir The directory to read in from.
 #' @param ... Parameters to pass to loadHDF5SummarizedExperiment
+#' @return An object of class \code{\link{methrix}}
 #' @examples
 #' load_HDF5_methrix(dir="/my_methrix_folder")
 #' @export
@@ -564,6 +571,7 @@ load_HDF5_methrix = function(dir="", ...){
   return(m)
 
 }
+
 
 
 
