@@ -20,7 +20,7 @@ setMethod(f = 'show', signature = 'methrix', definition = function(object){
 
 #Create methrix obj
 create_methrix = function(beta_mat = NULL, cov_mat = NULL, cpg_loci = NULL, is_hdf5 = FALSE,
-                          genome_name = "hg19", col_data = NULL, h5_dir = NULL, ref_cpg_dt = NULL, chrom_sizes = NULL){
+                          genome_name = "hg19", col_data = NULL, h5_dir = NULL, ref_cpg_dt = NULL, chrom_sizes = NULL, desc = NULL){
 
   if(is_hdf5){
     n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = cov_mat) == 0))
@@ -41,7 +41,9 @@ create_methrix = function(beta_mat = NULL, cov_mat = NULL, cpg_loci = NULL, is_h
 
   if(is_hdf5){
     se = SummarizedExperiment::SummarizedExperiment(assays = list(beta = as(beta_mat, "HDF5Array"), cov = as(cov_mat, "HDF5Array")),
-                                                    metadata = list(genome = genome_name, is_h5 = is_hdf5, summary = se_summary, chr_summary = chr_summary, ref_CpG = ref_cpg_dt, chrom_sizes = chrom_sizes),
+                                                    metadata = list(genome = genome_name, is_h5 = is_hdf5, summary = se_summary,
+                                                                    chr_summary = chr_summary, ref_CpG = ref_cpg_dt,
+                                                                    chrom_sizes = chrom_sizes, descriptive_stats = desc),
                                                     colData = col_data, rowData = cpg_loci)
     if(!is.null(h5_dir)){
       tryCatch(HDF5Array::saveHDF5SummarizedExperiment(x = se, dir = h5_dir, replace = TRUE),
@@ -49,7 +51,9 @@ create_methrix = function(beta_mat = NULL, cov_mat = NULL, cpg_loci = NULL, is_h
     }
   }else{
     se = SummarizedExperiment::SummarizedExperiment(assays = list(beta = beta_mat, cov = cov_mat),
-                                                    metadata = list(genome = genome_name, is_h5 = is_hdf5, summary = se_summary, chr_summary = chr_summary, ref_CpG = ref_cpg_dt, chrom_sizes = chrom_sizes),
+                                                    metadata = list(genome = genome_name, is_h5 = is_hdf5, summary = se_summary,
+                                                                    chr_summary = chr_summary, ref_CpG = ref_cpg_dt,
+                                                                    chrom_sizes = chrom_sizes, descriptive_stats = desc),
                                                     colData = col_data, rowData = cpg_loci)
   }
 

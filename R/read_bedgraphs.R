@@ -105,7 +105,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
     genome = extract_CPGs(ref_genome = ref_cpgs)
     conig_lens = genome$contig_lens
     genome = genome$cpgs
-  }else if(is(ref_cpgs[1], "data.table")){
+  }else if(is(ref_cpgs[1], "data.frame")){
     genome = data.table::copy(x = ref_cpgs)
     data.table::setkey(x = genome, chr, start)
   }else{
@@ -117,7 +117,9 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
     genome[, end := end - 1]
   }
 
-  cat(paste0("-CpGs raw:      ", format(nrow(genome), big.mark = ","), "\n"))
+  if(verbose){
+    cat(paste0("-CpGs raw:      ", format(nrow(genome), big.mark = ","), "\n"))
+  }
   genome = genome[chr %in% as.character(contigs)]
 
   if(nrow(genome) == 0) {
@@ -190,9 +192,11 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
 
   ref_cpgs_chr = genome[, .N, chr]
 
+  descriptive_stats = list(genome_stat = mat_list$genome_stat, chr_stat = mat_list$chr_stat, n_cpgs_covered = mat_list$ncpg)
+
   m_obj =  create_methrix(beta_mat = mat_list$beta_mat, cov_mat = mat_list$cov_matrix,
                           cpg_loci = genome[,.(chr, start, strand)], is_hdf5 = h5, genome_name = ref_build,
-                          col_data = coldata, h5_dir = h5_dir, ref_cpg_dt = ref_cpgs_chr, chrom_sizes = conig_lens)
+                          col_data = coldata, h5_dir = h5_dir, ref_cpg_dt = ref_cpgs_chr, chrom_sizes = conig_lens, desc = descriptive_stats)
 
   rm(genome)
   gc()

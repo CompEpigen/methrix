@@ -13,10 +13,9 @@ output:
 params:
   n_covered_tsv: NULL
   n_covered_by_all_samples_tsv: NULL
-  m_stat_tsv: NULL
-  c_stat_tsv: NULL
-  global_meth_per_samp_tsv: NULL
-  global_cov_per_samp_tsv: NULL
+  mc_per_chr_stat: NULL
+  mc_per_sample_stat: NULL
+  chr_lens: NULL
 ---
 
 ```{r setup, include=FALSE}
@@ -33,13 +32,15 @@ library(data.table)
 ## Reference CpGs covered {.tabset}
 ### Raw
 ```{r}
-#n_covered = data.table::fread(input = "n_covered_per_chr.tsv")
 n_covered = data.table::fread(input = params$n_covered_tsv)
-n_covered = data.table::melt(data = n_covered, id.vars = c('chr', 'total_CpGs'))
-colnames(n_covered) = c("chr", "total_CpGs", "Sample_Name", "n_CpG")
-n_covered[, fraction := n_CpG/total_CpGs]
+n_covered[, fraction := n_covered/total_CpGs]
 
-p = ggplot(data = n_covered, aes(x = chr, y = n_CpG, label = Sample_Name))+geom_boxplot()+geom_jitter(size = 0.6)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+contig_lens = data.table::fread(input = params$chr_lens)
+
+chr_order = contig_lens$contig[contig_lens$contig %in% unique(n_covered[,chr])]
+n_covered[, chr := factor(as.character(chr), levels = chr_order)]
+
+p = ggplot(data = n_covered, aes(x = chr, y = n_covered, label = Sample_Name))+geom_boxplot()+geom_jitter(size = 0.6)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 plotly::ggplotly(p = p)
 ```
 
@@ -50,12 +51,12 @@ plotly::ggplotly(p = p)
 ```
 Number of reference CpGs covered by each sample in each chromosome
 
-
 ## Reference CpGs covered by all {.tabset}
 ### Raw
 ```{r}
 #n_covered_all = data.table::fread(input = "n_covered_by_all_samples.tsv")
 n_covered_all = data.table::fread(input = params$n_covered_by_all_samples_tsv)
+n_covered_all[,chr := factor(as.character(chr), levels = rev(chr_order))]
 p = ggplot(data = n_covered_all, aes(x = chr, y = n_CpG, label = n_CpG))+geom_bar(stat = 'identity')+coord_flip()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+theme_minimal()
 plotly::ggplotly(p = p)
 ```
@@ -67,30 +68,21 @@ plotly::ggplotly(p = p)
 ```
 Number of reference CpGs covered by all samples
 
-
 ## Chromosome-wise Methylation {.tabset}
 ### Mean
 ```{r}
 #m_stat = data.table::fread(input = "m_per_chr.tsv")
-m_stat = data.table::fread(input = params$m_stat_tsv)
-mean_m = m_stat[stat %in% "mean"]
-mean_m[,stat := NULL]
-mean_m = data.table::melt(data = mean_m, id.vars = 'chr')
-colnames(mean_m) = c("chr", "Sample_Name", "Beta")
+m_stat = data.table::fread(input = params$mc_per_chr_stat)
+m_stat[,Chromosome := factor(as.character(Chromosome), levels = chr_order)]
 
-p = ggplot(data = mean_m, aes(x = Beta, y = Sample_Name, color = chr, label = Sample_Name))+geom_point()+xlim(0, 1)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+p = ggplot(data = m_stat, aes(x = mean_meth, y = Sample_Name, color = Chromosome, label = Sample_Name))+geom_point()+xlim(0, 1)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 
 plotly::ggplotly(p = p)
 ```
 
 ### Median
 ```{r}
-median_m = m_stat[stat %in% "median"]
-median_m[,stat := NULL]
-median_m = data.table::melt(data = median_m, id.vars = 'chr')
-colnames(median_m) = c("chr", "Sample_Name", "Beta")
-
-p = ggplot(data = median_m, aes(x = Beta, y = Sample_Name, color = chr, label = Sample_Name))+geom_point()+xlim(0, 1)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+p = ggplot(data = m_stat, aes(x = median_meth, y = Sample_Name, color = Chromosome, label = Sample_Name))+geom_point()+xlim(0, 1)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 
 plotly::ggplotly(p = p)
 ```
@@ -98,26 +90,14 @@ plotly::ggplotly(p = p)
 ## Chromosome-wise depth of coverage {.tabset}
 ### Mean
 ```{r}
-#c_stat = data.table::fread(input = "c_per_chr.tsv")
-c_stat = data.table::fread(input = params$c_stat_tsv)
-mean_c = c_stat[stat %in% "mean"]
-mean_c[,stat := NULL]
-mean_c = data.table::melt(data = mean_c, id.vars = 'chr')
-colnames(mean_c) = c("chr", "Sample_Name", "Coverage")
-
-p = ggplot(data = mean_c, aes(x = Coverage, y = Sample_Name, color = chr, label = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+p = ggplot(data = m_stat, aes(x = mean_cov, y = Sample_Name, color = Chromosome, label = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 
 plotly::ggplotly(p = p)
 ```
 
 ### Median
 ```{r}
-median_c = c_stat[stat %in% "median"]
-median_c[,stat := NULL]
-median_c = data.table::melt(data = median_c, id.vars = 'chr')
-colnames(median_c) = c("chr", "Sample_Name", "Coverage")
-
-p = ggplot(data = median_c, aes(x = Coverage, y = Sample_Name, color = chr, label = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+p = ggplot(data = m_stat, aes(x = median_meth, y = Sample_Name, color = Chromosome, label = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 
 plotly::ggplotly(p = p)
 ```
@@ -127,15 +107,15 @@ plotly::ggplotly(p = p)
 ### Mean
 ```{r}
 #global_meth = data.table::fread(input = "global_meth_per_samp.tsv")
-global_meth = data.table::fread(input = params$global_meth_per_samp_tsv)
-p = ggplot(data = global_meth, aes(x = mean, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)+ theme(legend.position = "none")
+global_meth = data.table::fread(input = params$mc_per_sample_stat)
+p = ggplot(data = global_meth, aes(x = mean_meth, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)+ theme(legend.position = "none")
 
 plotly::ggplotly(p = p)
 ```
 
 ### Median
 ```{r}
-p = ggplot(data = global_meth, aes(x = median, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)+ theme(legend.position = "none")
+p =  ggplot(data = global_meth, aes(x = median_meth, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)+ theme(legend.position = "none")
 
 plotly::ggplotly(p = p)
 ```
@@ -143,23 +123,21 @@ plotly::ggplotly(p = p)
 ## Genome-wide depth of coverage {.tabset}
 ### Mean
 ```{r}
-#global_cov = data.table::fread(input = "global_cov_per_samp.tsv")
-global_cov = data.table::fread(input = params$global_cov_per_samp_tsv)
-p = ggplot(data = global_cov, aes(x = mean, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+ theme(legend.position = "none")
+p = ggplot(data = global_meth, aes(x = mean_cov, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+ theme(legend.position = "none")
 
 plotly::ggplotly(p = p)
 ```
 
 ### Median
 ```{r}
-p = ggplot(data = global_cov, aes(x = median, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+ theme(legend.position = "none")
+p =  ggplot(data = global_meth, aes(x = median_cov, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+ theme(legend.position = "none")
 
 plotly::ggplotly(p = p)
 ```
 
 ## Beta value distribution
-```{r, eval=FALSE}
-dens_files = list.files(pattern = "*_density\\.tsv$")
+```{r, eval=TRUE}
+dens_files = list.files(pattern = "*_density\\.tsv\\.gz$", path = normalizePath(dirname(path = params$mc_per_sample_stat)), full.names = TRUE)
 dens_files = normalizePath(path = dens_files)
 
 if(length(dens_files) > 0){
@@ -172,16 +150,10 @@ if(length(dens_files) > 0){
   }
   
   dens_dat = lapply(dens_files, data.table::fread)
-  names(dens_dat) = gsub(pattern = "_density.tsv", replacement = "", x = basename(dens_files))
-  max_y = max(unlist(lapply(X = dens_dat, function(x) max(x[,y]))))
-
-  plot(x = NA, y = NA, xlim = c(0, 1), ylim = c(0, max_y), axes = FALSE, xlab = NA, ylab = NA)
-  lapply(seq_len(length(dens_dat)), function(i){
-    points(x = dens_dat[[i]], type = 'l', col = cols[i], lwd = 1.2)
-  })
-  axis(side = 1, at = seq(0, 1, 0.25))
-  axis(side = 2, at = c(0, round(max_y, digits = 2)), las = 2)
-  legend(x = 0.25, y = max_y, legend = names(dens_dat), col = cols, adj = 0, bty = 'n', cex = 0.7, lty = 1)
+  names(dens_dat) = gsub(pattern = "_density.tsv.gz", replacement = "", x = basename(dens_files))
+  dens_dat = data.table::rbindlist(l = dens_dat, idcol = "Sample_Name", use.names = TRUE, fill = TRUE)
+  p = ggplot(dens_dat, aes(x = x, y = y, color = Sample_Name))+geom_line()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+  plotly::ggplotly(p = p)
 }
 ```
 

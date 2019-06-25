@@ -158,8 +158,8 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
   }
 
   data.table::setkey(x = bdg_dat, "chr", "start")
-
   data.table::setkey(x = genome, "chr", "start")
+
   missing_cpgs = genome[!bdg_dat[,list(chr, start)], on = c("chr", "start")]
 
   if(verbose){
@@ -209,7 +209,11 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
   bdg_dat$beta = replace(x = bdg_dat$beta, list = is.nan(bdg_dat$beta), values = NA)
   bdg_dat = bdg_dat[,.(chr, start, beta, cov, strand)]
 
-  return(bdg_dat)
+  bdg_genome_stat = bdg_dat[!is.na(beta), .(mean_meth = mean(beta), median_meth =  median(beta), mean_cov = mean(cov), median_cov =  median(cov))]
+  bdg_chr_stat = bdg_dat[!is.na(beta), .(mean_meth = mean(beta), median_meth =  median(beta), mean_cov = mean(cov), median_cov =  median(cov)), .(chr)]
+  bdg_ncpg_stat = bdg_dat[!is.na(beta), .N, .(chr)]
+
+  return(list(bdg = bdg_dat, genome_stat = bdg_genome_stat, chr_stat = bdg_chr_stat, ncpg = bdg_ncpg_stat))
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
@@ -221,6 +225,10 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
 
   beta_mat_final = data.table::data.table()
   cov_mat_final = data.table::data.table()
+  genome_stat_final = data.table::data.table()
+  chr_stat_final = data.table::data.table()
+  ncpg_final = data.table::data.table()
+
   for(i in seq_along(batches)){
     #browser()
     cat(paste0("-Batch:         ",  i , "/", length(batches)), "\n")
@@ -228,7 +236,7 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
     samp_names = batches_samp_names[[i]]
     if (grepl("Windows", Sys.getenv("OS"))){
       if (thr > 1){
-        warning("Windows OS doesn't support parallel processing. Setting n_threads to 1.")
+        warning("Windows doesn't support parallel processing. Setting n_threads to 1.")
       }
       bdgs = lapply(batch_files, read_bdg, col_list = col_idx, genome = genome, strand_collapse = strand_collapse, contigs = contigs)
     }else {
@@ -236,22 +244,33 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
     names(bdgs) = samp_names
 
     if(i == 1){
-      cov_mat_final = data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE)
-      beta_mat_final = data.frame(lapply(bdgs, function(x) x[,.(beta)]), stringsAsFactors = FALSE)
+      cov_mat_final = data.frame(lapply(bdgs, function(x) x$bdg[,.(cov)]), stringsAsFactors = FALSE)
+      beta_mat_final = data.frame(lapply(bdgs, function(x) x$bdg[,.(beta)]), stringsAsFactors = FALSE)
       colnames(cov_mat_final) = colnames(beta_mat_final) = samp_names
+
+      genome_stat_final = data.table::rbindlist(lapply(bdgs, function(x) x$genome_stat), use.names = TRUE, fill = TRUE, idcol = "Sample_Name")
+      chr_stat_final = data.table::rbindlist(lapply(bdgs, function(x) x$chr_stat), use.names = TRUE, fill = TRUE, idcol = "Sample_Name")
+      ncpg_final = data.table::rbindlist(lapply(bdgs, function(x) x$ncpg), use.names = TRUE, fill = TRUE, idcol = "Sample_Name")
     }else{
-      cov_mat = data.frame(lapply(bdgs, function(x) x[,.(cov)]), stringsAsFactors = FALSE)
-      beta_mat = data.frame(lapply(bdgs, function(x) x[,.(beta)]), stringsAsFactors = FALSE)
+      cov_mat = data.frame(lapply(bdgs, function(x) x$bdg[,.(cov)]), stringsAsFactors = FALSE)
+      beta_mat = data.frame(lapply(bdgs, function(x) x$bdg[,.(beta)]), stringsAsFactors = FALSE)
       colnames(cov_mat) = colnames(beta_mat) = samp_names
       cov_mat_final = cbind(cov_mat_final, cov_mat)
       beta_mat_final = cbind(beta_mat_final, beta_mat)
+
+      genome_stat_final = rbind(genome_stat_final, data.table::rbindlist(lapply(bdgs, function(x) x$genome_stat), use.names = TRUE, fill = TRUE, idcol = "Sample_Name"))
+      chr_stat_final = rbind(chr_stat_final, data.table::rbindlist(lapply(bdgs, function(x) x$chr_stat), use.names = TRUE, fill = TRUE, idcol = "Sample_Name"))
+      ncpg_final = rbind(ncpg_final, data.table::rbindlist(lapply(bdgs, function(x) x$ncpg), use.names = TRUE, fill = TRUE, idcol = "Sample_Name"))
+
       rm(cov_mat)
       rm(beta_mat)
       gc()
     }
   }
+  gc()
+  ncpg_final = data.table::dcast(data = ncpg_final, chr ~ Sample_Name, value.var = 'N')
 
-  return(list(beta_matrix = data.table::setDT(beta_mat_final), cov_matrix = data.table::setDT(cov_mat_final)))
+  return(list(beta_matrix = data.table::setDT(beta_mat_final), cov_matrix = data.table::setDT(cov_mat_final), genome_stat = genome_stat_final, chr_stat = chr_stat_final, ncpg = ncpg_final))
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
@@ -297,36 +316,47 @@ non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL
     beta_mat = data.table::data.table()
     cov_mat = data.table::data.table()
   }
+
+  genome_stat_final = data.table::data.table()
+  chr_stat_final = data.table::data.table()
+  ncpg_final = data.table::data.table()
+
   if(h5){
     #browser()
     for(i in seq_along(files)){
-      if(verbose){
-        message("Processing: ", files[i])
-      }
       b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse, contigs = contigs)
-      DelayedArray::write_block(block=as.matrix(b[, .(beta)]), viewport = grid[[i]], x = M_sink)
-      DelayedArray::write_block(block=as.matrix(b[, .(cov)]), viewport = grid[[i]], x = cov_sink)
+      DelayedArray::write_block(block=as.matrix(b$bdg[, .(beta)]), viewport = grid[[i]], x = M_sink)
+      DelayedArray::write_block(block=as.matrix(b$bdg[, .(cov)]), viewport = grid[[i]], x = cov_sink)
+      genome_stat_final = rbind(genome_stat_final, b$genome_stat[, Sample_Name := rownames(coldata)[i]])
+      chr_stat_final = rbind(chr_stat_final, b$chr_stat[, Sample_Name := rownames(coldata)[i]])
+      ncpg_final = rbind(ncpg_final, b$ncpg[, Sample_Name := rownames(coldata)[i]])
       rm(b)
       gc()
     }
-    return(list(beta_matrix = as(M_sink, "HDF5Array"), cov_matrix = as(cov_sink, "HDF5Array")))
+    ncpg_final = data.table::dcast(data = ncpg_final, chr ~ Sample_Name, value.var = 'N')
+    return(list(beta_matrix = as(M_sink, "HDF5Array"), cov_matrix = as(cov_sink, "HDF5Array"), genome_stat = genome_stat_final, chr_stat = chr_stat_final, ncpg = ncpg_final))
   } else {
     for(i in seq_along(files)){
-      if(verbose){
-        message("Processing: ", files[i])
-      }
       if(i == 1){
         b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse, contigs = contigs)
-        beta_mat = b[,.(chr, start, beta)]
-        cov_mat = b[,.(chr, start, cov)]
+        beta_mat = b$bdg[,.(chr, start, beta)]
+        cov_mat = b$bdg[,.(chr, start, cov)]
+        genome_stat_final = b$genome_stat[,Sample_Name := rownames(coldata)[i]]
+        chr_stat_final = b$chr_stat[,Sample_Name := rownames(coldata)[i]]
+        ncpg_final = b$ncpg[,Sample_Name := rownames(coldata)[i]]
       }else{
         b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse, contigs = contigs)
-        beta_mat = cbind(beta_mat, b[,.(beta)])
-        cov_mat = cbind(cov_mat, b[,.(cov)])
+        beta_mat = cbind(beta_mat, b$bdg[,.(beta)])
+        cov_mat = cbind(cov_mat, b$bdg[,.(cov)])
+        genome_stat_final = rbind(genome_stat_final, b$genome_stat[, Sample_Name := rownames(coldata)[i]])
+        chr_stat_final = rbind(chr_stat_final, b$chr_stat[, Sample_Name := rownames(coldata)[i]])
+        ncpg_final = rbind(ncpg_final, b$ncpg[, Sample_Name := rownames(coldata)[i]])
       }
       colnames(beta_mat)[ncol(beta_mat)] = colnames(cov_mat)[ncol(cov_mat)] = rownames(coldata)[i]
     }
-    return(list(beta_matrix = beta_mat, cov_matrix = cov_mat))
+    ncpg_final = data.table::dcast(data = ncpg_final, chr ~ Sample_Name, value.var = 'N')
+    #return(list(beta_matrix = beta_mat, cov_matrix = cov_mat))
+    return(list(beta_matrix = as(M_sink, "HDF5Array"), cov_matrix = as(cov_sink, "HDF5Array"), genome_stat = genome_stat_final, chr_stat = chr_stat_final, ncpg = ncpg_final))
   }
 }
 
@@ -387,7 +417,6 @@ giveme_this = function(mat, stat = "mean", na_rm = TRUE, ish5 = FALSE){
 
   res
 }
-
 
 #Older implementation of get_region_summary - takes almost twice the memory. Backing it up here
 # get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm = TRUE, verbose = TRUE){

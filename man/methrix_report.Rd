@@ -4,7 +4,8 @@
 \alias{methrix_report}
 \title{Creates a detailed interative html summary report from Methrix object}
 \usage{
-methrix_report(meth, output_dir = NULL, plot_beta_dist = FALSE,
+methrix_report(meth, output_dir = NULL, recal_stats = FALSE,
+  plot_beta_dist = TRUE, beta_nCpG = 10000, skip_cov = FALSE,
   n_thr = 4)
 }
 \arguments{
@@ -12,7 +13,11 @@ methrix_report(meth, output_dir = NULL, plot_beta_dist = FALSE,
 
 \item{output_dir}{Output directory name where the files should be saved. If \code{NULL} creats a \code{tempdir}}
 
+\item{recal_stats}{Whether summary statistics should be recalculated? If you are using subsetted methrix object set this to TRUE.}
+
 \item{plot_beta_dist}{Default FALSE. This is a time consuming and writes huge density files required for plotting.}
+
+\item{skip_cov}{Default TRUE. Coverage estimation loads entire matrix into memory. Set it to \code{TRUE}}
 
 \item{n_thr}{Default 4. Only used if \code{plot_beta_dist} is TRUE}
 }

@@ -199,7 +199,7 @@ coverage_filter = function(m, cov_thr = 1, min_samples = 1){
 
   cov_dat = get_matrix(m = m, type = "C")
 
-  res <- as.data.table(which(cov_dat >= cov_thr, arr.ind = T))
+  res <- data.table::as.data.table(which(cov_dat >= cov_thr, arr.ind = TRUE))
 
   if (is_h5(m)){
   res <- res[,.(Count=(.N)), by=V1]
@@ -398,7 +398,9 @@ region_filter = function(m, regions){
 #' @return An object of class \code{\link{methrix}}
 #' @export
 #'
-combine_methrix = function(m1, m2, by=c("row", "col")){
+combine_methrix = function(m1, m2, by = c("row", "col")){
+
+  by = match.arg(arg = by, choices = c("row", "col"), several.ok = FALSE)
 
   if (by=="row"){
     if (!(all(rownames(m1@colData)==rownames(m2@colData)))){
@@ -437,12 +439,13 @@ combine_methrix = function(m1, m2, by=c("row", "col")){
 #' @details Calculate descriptive statistics
 #' @param m \code{\link{methrix}} object
 #' @param per_chr Estimate stats per chromosome. Default FALSE
+#' @param skip_cov Default \code{TRUE}
 #' @seealso \code{\link{plot_stats}}
 #' @examples
 #' data("methrix_data")
 #' get_stats(methrix_data)
 #' @export
-get_stats = function(m, per_chr = FALSE){
+get_stats = function(m, per_chr = FALSE, skip_cov = TRUE){
 
   #m_sub = remove_uncovered(m = m)
 
@@ -452,18 +455,46 @@ get_stats = function(m, per_chr = FALSE){
     cat("-Processing", length(row_chrs), "chromosomes")
 
     stats = lapply(row_chrs, function(x){
-      x_idx = which(row_df$chr == x)
-      mean_meth = matrixStats::colMeans2(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
-      median_meth = matrixStats::colMedians(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
-      sd_meth = matrixStats::colSds(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
-      gc(verbose = FALSE)
+      if(is_h5(m)){
+        x_idx = which(row_df$chr == x)
+        mean_meth = DelayedMatrixStats::colMeans2(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
+        median_meth = DelayedMatrixStats::colMedians(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
+        sd_meth = DelayedMatrixStats::colSds(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
+        gc(verbose = FALSE)
 
-      cov_mat = get_matrix(m = m[x_idx,], type = "C")
-      #Set uncovered loci to NA (zeros can affect mean and median)
-      cov_mat[cov_mat == 0] = NA
-      mean_cov = matrixStats::colMeans2(x = cov_mat, na.rm = TRUE)
-      median_cov = matrixStats::colMedians(cov_mat, na.rm = TRUE)
-      sd_cov = matrixStats::colSds(cov_mat, na.rm = TRUE)
+        mean_cov = median_cov = sd_cov = NA
+        if(!skip_cov){
+          cov_mat = get_matrix(m = m[x_idx,], type = "C")
+          #Set uncovered loci to NA (zeros can affect mean and median)
+          cov_mat[cov_mat == 0] = NA
+          mean_cov = DelayedMatrixStats::colMeans2(x = cov_mat, na.rm = TRUE)
+          median_cov = DelayedMatrixStats::colMedians(cov_mat, na.rm = TRUE)
+          sd_cov = DelayedMatrixStats::colSds(cov_mat, na.rm = TRUE)
+
+          rm(cov_mat)
+          gc(verbose = FALSE)
+        }
+
+      }else{
+        x_idx = which(row_df$chr == x)
+        mean_meth = matrixStats::colMeans2(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
+        median_meth = matrixStats::colMedians(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
+        sd_meth = matrixStats::colSds(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
+        gc(verbose = FALSE)
+
+        mean_cov = median_cov = sc_cov = NA
+        if(!skip_cov){
+          cov_mat = get_matrix(m = m[x_idx,], type = "C")
+          #Set uncovered loci to NA (zeros can affect mean and median)
+          cov_mat[cov_mat == 0] = NA
+          mean_cov = matrixStats::colMeans2(x = cov_mat, na.rm = TRUE)
+          median_cov = matrixStats::colMedians(cov_mat, na.rm = TRUE)
+          sd_cov = matrixStats::colSds(cov_mat, na.rm = TRUE)
+
+          rm(cov_mat)
+          gc(verbose = FALSE)
+        }
+      }
 
       chr_stat = data.table(
         Sample_Name = rownames(colData(x = m)),
@@ -475,8 +506,6 @@ get_stats = function(m, per_chr = FALSE){
         sd_cov = sd_cov,
         stringsAsFactors = FALSE
       )
-      rm(cov_mat)
-      gc(verbose = FALSE)
 
       chr_stat
     })
@@ -485,20 +514,41 @@ get_stats = function(m, per_chr = FALSE){
     stats = data.table::rbindlist(l = stats, use.names = TRUE, fill = TRUE, idcol = "Chromosome")
 
   }else{
-    mean_meth = matrixStats::colMeans2(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
-    median_meth = matrixStats::colMeans2(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
-    sd_meth = matrixStats::colSds(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
-    gc(verbose = FALSE)
 
-    cov_mat = get_matrix(m = m, type = "C")
-    #Set uncovered loci to NA (zeros can affect mean and median)
-    cov_mat[cov_mat == 0] = NA
-    mean_cov = matrixStats::colMeans2(x = cov_mat, na.rm = TRUE)
-    median_cov = matrixStats::colMedians(cov_mat, na.rm = TRUE)
-    sd_cov = matrixStats::colSds(cov_mat, na.rm = TRUE)
+    if(is_h5(m)){
+      mean_meth = DelayedMatrixStats::colMeans2(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
+      median_meth = DelayedMatrixStats::colMeans2(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
+      sd_meth = DelayedMatrixStats::colSds(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
+      gc(verbose = FALSE)
 
-    rm(cov_mat)
-    gc(verbose = FALSE)
+      if(!skip_cov){
+        cov_mat = get_matrix(m = m, type = "C")
+        #Set uncovered loci to NA (zeros can affect mean and median)
+        cov_mat[cov_mat == 0] = NA
+        mean_cov = DelayedMatrixStats::colMeans2(x = cov_mat, na.rm = TRUE)
+        median_cov = DelayedMatrixStats::colMedians(cov_mat, na.rm = TRUE)
+        sd_cov = DelayedMatrixStats::colSds(cov_mat, na.rm = TRUE)
+        rm(cov_mat)
+        gc(verbose = FALSE)
+      }
+    }else{
+      mean_meth = matrixStats::colMeans2(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
+      median_meth = matrixStats::colMedians(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
+      sd_meth = matrixStats::colSds(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
+      gc(verbose = FALSE)
+
+      mean_cov = median_cov = sc_cov = NA
+      if(!skip_cov){
+        cov_mat = get_matrix(m = m, type = "C")
+        #Set uncovered loci to NA (zeros can affect mean and median)
+        cov_mat[cov_mat == 0] = NA
+        mean_cov = matrixStats::colMeans2(x = cov_mat, na.rm = TRUE)
+        median_cov = matrixStats::colMedians(cov_mat, na.rm = TRUE)
+        sd_cov = matrixStats::colSds(cov_mat, na.rm = TRUE)
+        rm(cov_mat)
+        gc(verbose = FALSE)
+      }
+    }
 
     stats = data.table(
       Sample_Name = rownames(colData(x = m)),
@@ -569,11 +619,4 @@ load_HDF5_methrix = function(dir="", ...){
   m <- HDF5Array::loadHDF5SummarizedExperiment(dir=dir,  ...)
   m <- as(m, "methrix")
   return(m)
-
 }
-
-
-
-
-
-

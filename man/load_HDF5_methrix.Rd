@@ -11,6 +11,9 @@ load_HDF5_methrix(dir = "", ...)
 
 \item{...}{Parameters to pass to loadHDF5SummarizedExperiment}
 }
+\value{
+An object of class \code{\link{methrix}}
+}
 \description{
 Loads HDF5 methrix object
 }
