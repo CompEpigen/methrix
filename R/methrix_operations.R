@@ -207,7 +207,7 @@ coverage_filter = function(m, cov_thr = 1, min_samples = 1){
     res <- res[,.(Count=(.N)), by=row]
     row_idx = res$row[res$Count >= min_samples]
   }
-
+  row_idx <- row_idx[order(row_idx, decreasing = F)]
 
 
   cat(paste0("-Retained ", format(length(row_idx[row_idx]), big.mark = ","), " of ", format(nrow(cov_dat), big.mark = ","), " sites\n"))
@@ -452,7 +452,7 @@ get_stats = function(m, per_chr = FALSE, skip_cov = TRUE){
   if(per_chr){
     row_df = data.frame(rowData(x = m))
     row_chrs = names(table(row_df$chr))
-    cat("-Processing", length(row_chrs), "chromosomes")
+    cat("-Processing", length(row_chrs), "chromosomes \n")
 
     stats = lapply(row_chrs, function(x){
       if(is_h5(m)){
@@ -501,11 +501,11 @@ get_stats = function(m, per_chr = FALSE, skip_cov = TRUE){
         mean_meth = mean_meth,
         median_meth = median_meth,
         sd_meth = sd_meth,
-        mean_cov = mean_cov,
-        median_cov = median_cov,
-        sd_cov = sd_cov,
         stringsAsFactors = FALSE
       )
+      if(!skip_cov){
+        chr_stat[, c("mean_cov", "median_cov", "sd_cov") := list(mean_cov, median_cov, sd_cov)]
+      }
 
       chr_stat
     })
@@ -555,11 +555,12 @@ get_stats = function(m, per_chr = FALSE, skip_cov = TRUE){
       mean_meth = mean_meth,
       median_meth = median_meth,
       sd_meth = sd_meth,
-      mean_cov = mean_cov,
-      median_cov = median_cov,
-      sd_cov = sd_cov,
       stringsAsFactors = FALSE
     )
+    if(!skip_cov){
+    stats[, c("mean_cov", "median_cov", "sd_cov") := list(mean_cov, median_cov, sd_cov)]
+    }
+
   }
 
   stats
