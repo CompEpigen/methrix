@@ -1,7 +1,5 @@
-<img src="vignettes/logo_large_hexagon.gif" height="100" width="100" style="position:absolute;top:30px;right:0;" />
+<img src="vignettes/logo_large_hexagon.gif" height="135" width="135" style="align:center" />
 
-
-## Methrix
 ------------------------------------------------------------------------------------
 Fast and efficient summarization of generic bedGraph files from Bisufite sequencing
 ------------------------------------------------------------------------------------

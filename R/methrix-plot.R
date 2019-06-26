@@ -75,47 +75,80 @@ methrix_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL){
 #' @examples
 #' data("methrix_data")
 #' methrix_density(m = methrix_data)
-methrix_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.adjust = 2){
+methrix_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.adjust = 2, col_palette="RdYlGn"){
 
-  # add the pheno column of choice
-  if(!is.null(pheno)){
-    if(pheno %in% colnames(colData(m)) == 0){
-      stop("Phenotype annotation cannot be found in colData(m).")
-    }
-    pheno.plot <- data.table("id" = rownames(colData(m)),
-                             "data" = as.factor(colData(m)[, pheno]))
-  }else{
-    pheno.plot <- data.table("id" = rownames(colData(m)),
-                             "data" = rownames(colData(m)))
-  }
+  # # add the pheno column of choice
+  # if (!is.null(pheno)) {
+  #   if (pheno %in% colnames(colData(m)) == 0) {
+  #     stop("Phenotype annotation cannot be found in colData(m).")
+  #   }
+  #   pheno.plot <- data.table("id" = rownames(colData(m)),
+  #                            "data" = as.factor(colData(m)[, pheno]))
+  # } else {
+  #   pheno.plot <- data.table("id" = rownames(colData(m)),
+  #                            "data" = rownames(colData(m)))
+  # }
 
   ## subset based on the input ranges
-  if(!is.null(ranges)){
+  if (!is.null(ranges)) {
     meth_sub <- subset_methrix(m = m, regions = ranges)
-    meth_sub = get_matrix(m = meth_sub, type = "M", add_loci = FALSE)
-  }else if(is.null(n_cpgs)){
-    meth_sub <- get_matrix(m = m, type = "M", add_loci = FALSE)
-  }else{
-    n_cpgs = as.integer(as.character(n_cpgs))
-    if(nrow(m) < n_cpgs){
-      n_cpgs = nrow(m)
+    if (!is.null(n_cpgs)) {
+      ids = sample(x = 1:nrow(meth_sub), replace = FALSE, size = min(n_cpgs, nrow(meth_sub)))
+      meth_sub = get_matrix(m = meth_sub[ids,],
+                            type = "M",
+                            add_loci = FALSE)
+    } else {
+      meth_sub = get_matrix(m = meth_sub,
+                            type = "M",
+                            add_loci = FALSE)
     }
-    set.seed(seed = 1024)
-    ids = sample(x = 1:nrow(m), replace = FALSE, size = n_cpgs)
-    meth_sub <- get_matrix(m = m[ids, ], type = "M", add_loci = FALSE)
+  } else if (!is.null(n_cpgs)) {
+
+    #n_cpgs = as.integer(as.character(n_cpgs))
+    #if (nrow(m) < n_cpgs) {
+    #  n_cpgs = nrow(m)
+    #}
+    #set.seed(seed = 1024)
+    ids = sample(x = 1:nrow(m),
+                 replace = FALSE,
+                 size = min(n_cpgs, nrow(m)))
+    meth_sub <-
+      get_matrix(m = m[ids,],
+                 type = "M",
+                 add_loci = FALSE)
+  } else {
+    meth_sub <- get_matrix(m = m,
+                           type = "M",
+                           add_loci = FALSE)
   }
 
   ## melt the object to a long format
-  meth.melt <- data.table::melt(meth_sub)
-  data.table::setDT(x = meth.melt)
+
+  # meth.melt <- data.table::melt(as.matrix(meth_sub))
+  # data.table::setDT(x = meth.melt)
+
 
   # merge the pheno column to the others
-  plot.data <- merge(x = meth.melt, y = pheno.plot, by.x = "Var2", by.y = "id", all.x = TRUE, all.y = TRUE)
 
-  #generate the violin plot
-  p <- ggplot2::ggplot(plot.data, ggplot2::aes(x = value, fill = data))+
+
+  if (!is.null(pheno)) {
+    if (pheno %in% colnames(colData(m))) {
+      colnames(meth_sub) <- m@colData[, pheno]
+    } else {
+      stop("Please provide a valid phenotype annotation column.")
+    }
+  }
+
+  plot.data <- data.table::melt(as.matrix(meth_sub))
+  data.table::setDT(x = plot.data)
+
+  #plot.data <- merge(x = meth.melt, y = pheno.plot, by.x = "Var2", by.y = "id", all.x = TRUE, all.y = TRUE)
+
+  #generate the density plot
+  p <- ggplot2::ggplot(plot.data, ggplot2::aes(x = value, fill = Var2))+
     ggplot2::geom_density(alpha = .5, adjust = bw.adjust)+
-    ggplot2::theme_classic(base_size = 14)+scale_fill_viridis_d()+
+    ggplot2::theme_classic(base_size = 14)+
+    ggplot2::scale_fill_brewer(type="div", palette = col_palette)+
     #ggplot2::xlab(pheno)+
     ggplot2::xlab(expression(beta*"-Value"))+
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))+
@@ -257,78 +290,89 @@ methrix_pca <- function(m, var="top",top_var = 1000, ranges = NULL, pheno = NULL
 
 
 #--------------------------------------------------------------------------------------------------------------------------
-#' Covergae QC Plots
+#' Coverage QC Plots
 #'
 #' @param m Input \code{\link{methrix}} object
 #' @param type Choose between "hist" (histogram) or "dens" (density plot).
-#' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
-#' @param perSample Color the plots in a sample-wise manner?
+#' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the plot.
+#' @param perGroup Color the plots in a sample-wise manner?
 #' @param lim Maximum coverage value to be plotted.
-#'
+#' @param size.lim The maximum number of observarions (sites*samples) to use. If the dataset is larger that this,
+#' random sites will be selected from the genome.
+#' @param col_palette Name of the ggplot diverging to use. Possible values: BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral
 #' @return ggplot2 object
 #' @export
 #'
 #' @examples
 #' data("methrix_data")
 #' methrix_coverage(m = methrix_data)
-methrix_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perSample = FALSE, lim = 100){
+
+methrix_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perGroup = FALSE, lim = 100, size.lim=1000000, col_palette="RdYlGn"){
 
   type = match.arg(arg = type, choices = c("hist", "dens"), several.ok = FALSE)
   #On an average a matrix of 28e6 rows x 10 columns, sizes around 2.4 GB. Copying, and melting would double the memory consumption.
   #We should think of something else.
+
+  if (length(m@assays[[2]])>size.lim){
+    cat("The dataset is bigger than the size limit. A random subset of the object will be used that contains ~", size.lim, " observations. \n")
+    n_rows <- trunc(size.lim/nrow(m@colData))
+    sel_rows <- sample(1:nrow(m@elementMetadata), size = n_rows, replace = F)
+
+    meth_sub <- methrix::get_matrix(m = m[sel_rows,], type = "C", add_loci = FALSE)
+
+  } else {
   meth_sub <- methrix::get_matrix(m = m, type = "C", add_loci = FALSE)
+  }
 
-  ## melt the object to a long format
-  meth.melt <- data.table::melt(meth_sub)
-  data.table::setDT(x = meth.melt)
-
-  # add the pheno column of choice
-  if(!is.null(pheno)){
+  if(perGroup){
+    if (is.null(pheno)){
+      stop("For group based plotting, provide group information using the pheno argument.")
+    }
     if(pheno %in% colnames(colData(m)) == 0){
       stop("Phenotype annotation cannot be found in colData(m).")
     }
-    pheno.plot <- data.table("id" = rownames(colData(m)),
-                             "data" = as.factor(colData(m)[, pheno]))
-  }else{
-    pheno.plot <- data.table("id" = rownames(colData(m)),
-                             "data" = rownames(colData(m)))
+    colnames(meth_sub) <- m@colData[,pheno]
   }
-  # merge the pheno column to the others
-  plot.data <- merge(x = meth.melt, y = pheno.plot, by.x = "Var2", by.y = "id", all.x = TRUE, all.y = TRUE)
+
+  ## melt the object to a long format
+  ## add support for DelayedMatrix
+  plot.data <- data.table::melt(as.matrix(meth_sub))
+  data.table::setDT(x = plot.data)
+
   plot.data <- plot.data[value <= lim,]
 
-  #generate the violin plot
-  if(!perSample) {
+  #generate the plots
+  if(!perGroup) {
     if(type == "dens"){
       p <- ggplot2::ggplot(plot.data, ggplot2::aes(value)) +
-        ggplot2::geom_density(alpha = .5, adjust = 1.5) +
+        ggplot2::geom_density(alpha = .5, adjust = 1.5, fill=RColorBrewer::brewer.pal(3, col_palette)[1]) +
         ggplot2::theme_classic() +
-        ggplot2::xlab("Coverage")#+
-      #ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))
-      #print(p)
+        ggplot2::xlab("Coverage")
+
     } else if(type == "hist") {
       p <- ggplot2::ggplot(plot.data, ggplot2::aes(value)) +
-        ggplot2::geom_histogram(alpha = .5, binwidth = 1) +
+        ggplot2::geom_histogram(alpha = .5, binwidth = 1, fill=RColorBrewer::brewer.pal(3, col_palette)[1], color="grey90") +
         ggplot2::theme_classic() +
         ggplot2::xlab("Coverage")
       #print(p)
     }
   } else{
     if(type == "dens") {
-      p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = data)) +
-        ggplot2::geom_density(alpha = .5, adjust = 1.5) +
+      p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = Var2)) +
+        ggplot2::geom_density(alpha = .6, adjust = 1.5) +
         ggplot2::theme_classic() +
-        #ggplot2::xlab(pheno)+
         ggplot2::xlab("Coverage") +
-        #ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))+
-        ggplot2::labs(fill = "Samples")
+        ggplot2::labs(fill = "Groups")+
+        ggplot2::scale_fill_brewer(type="div", palette = col_palette)
+
       #print(p)
     } else if (type == "hist") {
-      p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = data)) +
-        ggplot2::geom_histogram(alpha = .5, binwidth = 1) +
+      p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = Var2)) +
+        ggplot2::geom_histogram(alpha = .6, binwidth = 1, color="grey90") +
         ggplot2::theme_classic() +
         ggplot2::xlab("Coverage") +
-        ggplot2::labs(fill = "Samples")
+        ggplot2::labs(fill = "Groups")+
+        ggplot2::scale_fill_brewer(type="div", palette = col_palette)
       #print(p)
     }
   }
