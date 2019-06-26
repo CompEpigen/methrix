@@ -163,7 +163,7 @@ methrix_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.a
 #' Principal Component Analysis
 #'
 #' @param m Input \code{\link{methrix}} object
-#' @param top_var Number of variable CpGs to use. Default 5000. Set it to NULL to use all CpGs (which is not recommended due to memory requirements). This option is mutually exclusive with \code{ranges}.
+#' @param top_var Number of variable CpGs to use. Default 1000 Set it to NULL to use all CpGs (which is not recommended due to memory requirements). This option is mutually exclusive with \code{ranges}.
 #' @param ranges genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
 #' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
 #' @param var Choose between random CpG sites ("rand") or most variable CpGs ("top").
@@ -177,47 +177,88 @@ methrix_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.a
 #' methrix_pca(methrix_data)
 #' @export
 #'
-methrix_pca <- function(m, var="top",top_var = 1000, ranges = NULL, pheno = NULL, do_plot = TRUE, n_pc = 5,do_fast=FALSE){
+methrix_pca <- function(m, var="top",top_var = 1000, ranges = NULL, pheno = NULL, do_plot = TRUE, n_pc = 5, do_fast = FALSE, col_palette = "RdYlGn"){
   var_select <- match.arg(var,c("top","rand"))
   ## subset based on the input ranges
-  if(!is.null(ranges)){
+  if (!is.null(ranges)) {
     print("GenomicRanges will be used for the PCA.")
     meth_sub <- subset_methrix(m = m, regions = ranges)
-    meth_sub = methrix::get_matrix(m = meth_sub, type = "M", add_loci = FALSE)
-  }else if(is.null(top_var)){
+    meth_sub = methrix::get_matrix(m = meth_sub,
+                                   type = "M",
+                                   add_loci = FALSE)
+  }
+  if (is.null(top_var)) {
     print("All CpGs in the dataset will be used for the PCA.")
-    meth_sub <- get_matrix(m = m, type = "M", add_loci = FALSE)
-  }else{
-    print("Top variable CpGs will be used for the PCA.")
+    if (is.null(ranges)){
+    meth_sub <- get_matrix(m = m,
+                           type = "M",
+                           add_loci = FALSE)}
+  } else {
+    print("Selected CpGs will be used for the PCA.")
     top_var = as.integer(as.character(top_var))
-    if(nrow(m) < top_var){
-      top_var = nrow(m)
-    }
-    if(var_select=="rand"){set.seed(seed = 1024)
-    ids = sample(x = 1:nrow(m), replace = FALSE, size = as.integer(as.character(top_var)))
-      meth_sub <- get_matrix(m = m[ids, ], type = "M", add_loci = FALSE)
-      }else{
-      meth_sub <-  methrix::get_matrix(m = m, type = "M", add_loci = FALSE)
-      mv <- apply(meth_sub,1,sd)
-      mv_ord <- order(mv,decreasing = T)
-      meth_sub <-  methrix::get_matrix(m = m[mv_ord[1:5000],], type = "M", add_loci = FALSE)
+    # if (nrow(m) < top_var) {
+    #   top_var = nrow(m)
+    # }
+    if (var_select == "rand") {
+      #set.seed(seed = 1024)
+      if (!is.null(ranges)){
+        ids = sample(
+          x = 1:nrow(meth_sub),
+          replace = FALSE,
+          size = min(top_var, nrow(meth_sub))
+        )
+
+      } else {
+        ids = sample(
+          x = 1:nrow(m),
+          replace = FALSE,
+          size = as.integer(as.character(min(top_var, nrow(m))))
+        )
+        meth_sub <- get_matrix(m = m[ids,],
+                               type = "M",
+                               add_loci = FALSE)
+      }
+
+    } else {
+      # meth_sub <-
+      #   methrix::get_matrix(m = m,
+      #                       type = "M",
+      #                       add_loci = FALSE)
+      # mv <- apply(meth_sub, 1, sd)
+      # mv_ord <- order(mv, decreasing = T)
+      if (!is.null(ranges)){
+        if(is_h5(m)){
+          sds <- DelayedMatrixStats::rowSds(meth_sub, na.rm=T)
+        } else {
+          sds <- matrixStats::rowSds(meth_sub, na.rm=T)
+        }
+       meth_sub <- meth_sub[order(sds, decreasing = T)[1:min(top_var, nrow(meth_sub))],]
+
+      } else {
+      meth_sub <- methrix::get_matrix(m = order_by_sd(m)[1:min(top_var, nrow(m))],
+                             # m[mv_ord[1:top_var], ],
+                            type = "M",
+                            add_loci = FALSE)
+      }
     }
   }
 
   #Remove NA
-  meth_sub = meth_sub[complete.cases(meth_sub),, drop = FALSE]
-  if(nrow(meth_sub) == 0){
+  meth_sub = meth_sub[complete.cases(meth_sub), , drop = FALSE]
+  if (nrow(meth_sub) == 0) {
     stop("Zero loci available post NA removal :(")
   }
 
-  set.seed(seed = 1024)
-  if(do_fast==TRUE){
-  meth_pca = irlba::prcomp_irlba(x = t(meth_sub), retx = TRUE,n = n_pc)
-  }else{
-  meth_pca = prcomp(x = t(meth_sub), retx = TRUE)
+  #set.seed(seed = 1024)
+  if (do_fast == TRUE) {
+    meth_pca = irlba::prcomp_irlba(x = t(meth_sub),
+                                   retx = TRUE,
+                                   n = n_pc)
+  } else{
+    meth_pca = prcomp(x = t(meth_sub), retx = TRUE)
   }
 
-  if(n_pc > ncol(meth_pca$x)){
+  if (n_pc > ncol(meth_pca$x)) {
     n_pc = ncol(meth_pca$x)
   }
 
@@ -274,7 +315,9 @@ methrix_pca <- function(m, var="top",top_var = 1000, ranges = NULL, pheno = NULL
   #generate the plot
   if(do_plot){
     p <- ggplot2::ggplot(plot.data,ggplot2::aes(x = PC1, y = PC2, color = labs, label = ind))+
-      ggplot2::geom_point(alpha = .8, size = 3)+scale_color_viridis_d()+
+      ggplot2::geom_point(alpha = .8, size = 3)+
+      #scale_color_viridis_d()+
+      ggplot2::scale_fill_brewer(type="div", palette = col_palette)+
       ggplot2::theme_minimal(base_size = 14)+
       ggplot2::xlab(paste0("PC1 (",round(pc_vars[1]*100, digits = 2),"% Variability)"))+
       ggplot2::ylab(paste0("PC2 (",round(pc_vars[2]*100, digits = 2),"% Variability)"))+
