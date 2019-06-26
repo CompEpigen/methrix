@@ -68,7 +68,7 @@ methrix_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL){
 #' @param ranges genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
 #' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
 #' @param bw.adjust Multiplicate bandwide adjustment. See \code{\link{geom_density}} for more information
-#'
+#' @param col_palette Name of the ggplot diverging to use. Possible values: BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral
 #' @return ggplot2 object
 #' @export
 #'

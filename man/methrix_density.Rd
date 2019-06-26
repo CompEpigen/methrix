@@ -5,7 +5,7 @@
 \title{Density Plot of \eqn{\beta}-Values}
 \usage{
 methrix_density(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
-  bw.adjust = 2)
+  bw.adjust = 2, col_palette = "RdYlGn")
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
@@ -17,6 +17,8 @@ methrix_density(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
 \item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the violin plot.}
 
 \item{bw.adjust}{Multiplicate bandwide adjustment. See \code{\link{geom_density}} for more information}
+
+\item{col_palette}{Name of the ggplot diverging to use. Possible values: BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral}
 }
 \value{
 ggplot2 object

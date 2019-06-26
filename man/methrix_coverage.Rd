@@ -2,27 +2,33 @@
 % Please edit documentation in R/methrix-plot.R
 \name{methrix_coverage}
 \alias{methrix_coverage}
-\title{Covergae QC Plots}
+\title{Coverage QC Plots}
 \usage{
 methrix_coverage(m, type = c("hist", "dens"), pheno = NULL,
-  perSample = FALSE, lim = 100)
+  perGroup = FALSE, lim = 100, size.lim = 1e+06,
+  col_palette = "RdYlGn")
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
 
 \item{type}{Choose between "hist" (histogram) or "dens" (density plot).}
 
-\item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the violin plot.}
+\item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the plot.}
 
-\item{perSample}{Color the plots in a sample-wise manner?}
+\item{perGroup}{Color the plots in a sample-wise manner?}
 
 \item{lim}{Maximum coverage value to be plotted.}
+
+\item{size.lim}{The maximum number of observarions (sites*samples) to use. If the dataset is larger that this,
+random sites will be selected from the genome.}
+
+\item{col_palette}{Name of the ggplot diverging to use. Possible values: BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral}
 }
 \value{
 ggplot2 object
 }
 \description{
-Covergae QC Plots
+Coverage QC Plots
 }
 \examples{
 data("methrix_data")
