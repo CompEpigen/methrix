@@ -8,7 +8,7 @@ plot_stats(plot_dat, what = "M", stat = "mean", ignore_chr = NULL,
   samples = NULL)
 }
 \arguments{
-\item{plot_dat}{results from \code{\link{get_stat}}}
+\item{plot_dat}{results from \code{\link{get_stats}}}
 
 \item{what}{Can be \code{M} or \code{C}. Default \code{M}}
 
@@ -22,7 +22,7 @@ plot_stats(plot_dat, what = "M", stat = "mean", ignore_chr = NULL,
 Plot descriptive statistics
 }
 \details{
-plot descriptive statistics results from get_stat
+plot descriptive statistics results from \code{\link{get_stats}}
 }
 \examples{
 data("methrix_data")

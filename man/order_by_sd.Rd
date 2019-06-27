@@ -2,18 +2,20 @@
 % Please edit documentation in R/methrix_operations.R
 \name{order_by_sd}
 \alias{order_by_sd}
-\title{Order mathrix object by SD}
+\title{Order methrix object by SD}
 \usage{
-order_by_sd(m)
+order_by_sd(m, na.rm = TRUE)
 }
 \arguments{
-\item{m}{\code{\link{methrix}} objectw}
+\item{m}{\code{\link{methrix}} object}
+
+\item{na.rm}{remove NAs when calculating SD. TRUE by default.}
 }
 \value{
 An object of class \code{\link{methrix}}
 }
 \description{
-Order mathrix object by SD
+Order methrix object by SD
 }
 \details{
 Takes \code{\link{methrix}} object and reorganizes the data by standard deviation

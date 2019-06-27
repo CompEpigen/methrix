@@ -4,52 +4,62 @@
 #' @param n_cpgs Use these many random CpGs for plotting. Default 25000. Set it to \code{NULL} to use all - which can be memory expensive.
 #' @param ranges genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
 #' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
+#' @param col_palette Name of the ggplot diverging to use. Possible values: BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral
 #' @return ggplot2 object
 #' @export
 #' @import ggplot2
 #' @examples
 #' data("methrix_data")
 #' methrix_violin(m = methrix_data)
-methrix_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL){
+methrix_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, col_palette="RdYlGn"){
 
-  # add the pheno column of choice
-  if(!is.null(pheno)){
-    if(pheno %in% colnames(colData(m)) == 0){
-      stop("Phenotype annotation cannot be found in colData(m).")
+  if (!is.null(ranges)) {
+    meth_sub <- subset_methrix(m = m, regions = ranges)
+    if (!is.null(n_cpgs)) {
+      cat("Randomly selecting ", n_cpgs, " sites. \n")
+      ids = sample(x = 1:nrow(meth_sub), replace = FALSE, size = min(n_cpgs, nrow(meth_sub)))
+      meth_sub = get_matrix(m = meth_sub[ids,],
+                            type = "M",
+                            add_loci = FALSE)
+    } else {
+      meth_sub = get_matrix(m = meth_sub,
+                            type = "M",
+                            add_loci = FALSE)
     }
-    pheno.plot <- data.table::data.table("id" = rownames(colData(m)),
-                             "data" = as.factor(colData(m)[, pheno]))
-  }else{
-    pheno.plot <- data.table::data.table("id" = rownames(colData(m)),
-                             "data" = rownames(colData(m)))
+  } else if (!is.null(n_cpgs)) {
+    cat("Randomly selecting ", n_cpgs, " sites. \n")
+
+    ids = sample(x = 1:nrow(m),
+                 replace = FALSE,
+                 size = min(n_cpgs, nrow(m)))
+    meth_sub <-
+      get_matrix(m = m[ids,],
+                 type = "M",
+                 add_loci = FALSE)
+  } else {
+    meth_sub <- get_matrix(m = m,
+                           type = "M",
+                           add_loci = FALSE)
   }
 
-  ## subset based on the input ranges
-  if(!is.null(ranges)){
-      meth_sub <-get_matrix(m = subset_methrix(m = m, regions = ranges), type = "M", add_loci = FALSE)
-  }else if(is.null(n_cpgs)){
-      meth_sub <- get_matrix(m = m, type = "M", add_loci = FALSE)
-  }else{
-    n_cpgs = as.integer(as.character(n_cpgs))
-    if(nrow(m) < n_cpgs){
-      n_cpgs = nrow(m)
+
+  if (!is.null(pheno)) {
+    if (pheno %in% colnames(colData(m))) {
+      colnames(meth_sub) <- m@colData[, pheno]
+    } else {
+      stop("Please provide a valid phenotype annotation column.")
     }
-    set.seed(seed = 1024)
-    ids = sample(x = 1:nrow(m), replace = FALSE, size = n_cpgs)
-    meth_sub <- get_matrix(m = m[ids, ], type = "M", add_loci = FALSE)
   }
 
-  ## melt the object to a long format
-  meth.melt <- data.table::melt(meth_sub)
-  data.table::setDT(x = meth.melt)
+  plot.data <- data.table::melt(as.matrix(meth_sub))
+  data.table::setDT(x = plot.data)
 
-  # merge the pheno column to the others
-  plot.data <- merge(x = meth.melt, y = pheno.plot, by.x = "Var2", by.y = "id", all.x = TRUE, all.y = TRUE)
 
   #generate the violin plot
-  p <- ggplot2::ggplot(plot.data,ggplot2::aes(x = data, y = value, fill = data))+
+  p <- ggplot2::ggplot(plot.data,ggplot2::aes(x = Var2, y = value, fill = Var2))+
     ggplot2::geom_violin(alpha = .8)+
-    ggplot2::theme_classic(base_size = 14)+scale_fill_viridis_d()+
+    ggplot2::theme_classic(base_size = 14)+
+    ggplot2::scale_fill_brewer(type="div", palette = col_palette)+
     ggplot2::xlab(pheno)+
     ggplot2::ylab(expression(beta*"-Value"))+
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))+
@@ -68,54 +78,87 @@ methrix_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL){
 #' @param ranges genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
 #' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
 #' @param bw.adjust Multiplicate bandwide adjustment. See \code{\link{geom_density}} for more information
-#'
+#' @param col_palette Name of the ggplot diverging to use. Possible values: BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral
 #' @return ggplot2 object
 #' @export
 #'
 #' @examples
 #' data("methrix_data")
 #' methrix_density(m = methrix_data)
-methrix_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.adjust = 2){
+methrix_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.adjust = 2, col_palette="RdYlGn"){
 
-  # add the pheno column of choice
-  if(!is.null(pheno)){
-    if(pheno %in% colnames(colData(m)) == 0){
-      stop("Phenotype annotation cannot be found in colData(m).")
-    }
-    pheno.plot <- data.table("id" = rownames(colData(m)),
-                             "data" = as.factor(colData(m)[, pheno]))
-  }else{
-    pheno.plot <- data.table("id" = rownames(colData(m)),
-                             "data" = rownames(colData(m)))
-  }
+  # # add the pheno column of choice
+  # if (!is.null(pheno)) {
+  #   if (pheno %in% colnames(colData(m)) == 0) {
+  #     stop("Phenotype annotation cannot be found in colData(m).")
+  #   }
+  #   pheno.plot <- data.table("id" = rownames(colData(m)),
+  #                            "data" = as.factor(colData(m)[, pheno]))
+  # } else {
+  #   pheno.plot <- data.table("id" = rownames(colData(m)),
+  #                            "data" = rownames(colData(m)))
+  # }
 
   ## subset based on the input ranges
-  if(!is.null(ranges)){
+  if (!is.null(ranges)) {
     meth_sub <- subset_methrix(m = m, regions = ranges)
-    meth_sub = get_matrix(m = meth_sub, type = "M", add_loci = FALSE)
-  }else if(is.null(n_cpgs)){
-    meth_sub <- get_matrix(m = m, type = "M", add_loci = FALSE)
-  }else{
-    n_cpgs = as.integer(as.character(n_cpgs))
-    if(nrow(m) < n_cpgs){
-      n_cpgs = nrow(m)
+    if (!is.null(n_cpgs)) {
+      ids = sample(x = 1:nrow(meth_sub), replace = FALSE, size = min(n_cpgs, nrow(meth_sub)))
+      meth_sub = get_matrix(m = meth_sub[ids,],
+                            type = "M",
+                            add_loci = FALSE)
+    } else {
+      meth_sub = get_matrix(m = meth_sub,
+                            type = "M",
+                            add_loci = FALSE)
     }
-    set.seed(seed = 1024)
-    ids = sample(x = 1:nrow(m), replace = FALSE, size = n_cpgs)
-    meth_sub <- get_matrix(m = m[ids, ], type = "M", add_loci = FALSE)
+  } else if (!is.null(n_cpgs)) {
+
+    #n_cpgs = as.integer(as.character(n_cpgs))
+    #if (nrow(m) < n_cpgs) {
+    #  n_cpgs = nrow(m)
+    #}
+    #set.seed(seed = 1024)
+    ids = sample(x = 1:nrow(m),
+                 replace = FALSE,
+                 size = min(n_cpgs, nrow(m)))
+    meth_sub <-
+      get_matrix(m = m[ids,],
+                 type = "M",
+                 add_loci = FALSE)
+  } else {
+    meth_sub <- get_matrix(m = m,
+                           type = "M",
+                           add_loci = FALSE)
   }
 
   ## melt the object to a long format
-  meth.melt <- data.table::melt(meth_sub)
-  data.table::setDT(x = meth.melt)
 
-  # merge the pheno column to the others
-  plot.data <- merge(x = meth.melt, y = pheno.plot, by.x = "Var2", by.y = "id", all.x = TRUE, all.y = TRUE)
+  # meth.melt <- data.table::melt(as.matrix(meth_sub))
+  # data.table::setDT(x = meth.melt)
 
-  #generate the violin plot
-  p <- ggplot2::ggplot(plot.data, ggplot2::aes(x = value, fill = data))+
+
+  # add the pheno column
+
+
+  if (!is.null(pheno)) {
+    if (pheno %in% colnames(colData(m))) {
+      colnames(meth_sub) <- m@colData[, pheno]
+    } else {
+      stop("Please provide a valid phenotype annotation column.")
+    }
+  }
+
+  plot.data <- data.table::melt(as.matrix(meth_sub))
+  data.table::setDT(x = plot.data)
+
+  #plot.data <- merge(x = meth.melt, y = pheno.plot, by.x = "Var2", by.y = "id", all.x = TRUE, all.y = TRUE)
+
+  #generate the density plot
+  p <- ggplot2::ggplot(plot.data, ggplot2::aes(x = value, fill = Var2))+
     ggplot2::geom_density(alpha = .5, adjust = bw.adjust)+
-    ggplot2::theme_classic(base_size = 14)+scale_fill_viridis_d()+
+    ggplot2::theme_classic(base_size = 14)+
+    ggplot2::scale_fill_brewer(type="div", palette = col_palette)+
     #ggplot2::xlab(pheno)+
     ggplot2::xlab(expression(beta*"-Value"))+
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))+
@@ -130,7 +173,7 @@ methrix_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.a
 #' Principal Component Analysis
 #'
 #' @param m Input \code{\link{methrix}} object
-#' @param top_var Number of variable CpGs to use. Default 5000. Set it to NULL to use all CpGs (which is not recommended due to memory requirements). This option is mutually exclusive with \code{ranges}.
+#' @param top_var Number of variable CpGs to use. Default 1000 Set it to NULL to use all CpGs (which is not recommended due to memory requirements). This option is mutually exclusive with \code{ranges}.
 #' @param ranges genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
 #' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
 #' @param var Choose between random CpG sites ("rand") or most variable CpGs ("top").
@@ -144,47 +187,88 @@ methrix_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.a
 #' methrix_pca(methrix_data)
 #' @export
 #'
-methrix_pca <- function(m, var="top",top_var = 1000, ranges = NULL, pheno = NULL, do_plot = TRUE, n_pc = 5,do_fast=FALSE){
+methrix_pca <- function(m, var="top",top_var = 1000, ranges = NULL, pheno = NULL, do_plot = TRUE, n_pc = 5, do_fast = FALSE, col_palette = "RdYlGn"){
   var_select <- match.arg(var,c("top","rand"))
   ## subset based on the input ranges
-  if(!is.null(ranges)){
+  if (!is.null(ranges)) {
     print("GenomicRanges will be used for the PCA.")
     meth_sub <- subset_methrix(m = m, regions = ranges)
-    meth_sub = methrix::get_matrix(m = meth_sub, type = "M", add_loci = FALSE)
-  }else if(is.null(top_var)){
+    meth_sub = methrix::get_matrix(m = meth_sub,
+                                   type = "M",
+                                   add_loci = FALSE)
+  }
+  if (is.null(top_var)) {
     print("All CpGs in the dataset will be used for the PCA.")
-    meth_sub <- get_matrix(m = m, type = "M", add_loci = FALSE)
-  }else{
-    print("Top variable CpGs will be used for the PCA.")
+    if (is.null(ranges)){
+    meth_sub <- get_matrix(m = m,
+                           type = "M",
+                           add_loci = FALSE)}
+  } else {
+    print("Selected CpGs will be used for the PCA.")
     top_var = as.integer(as.character(top_var))
-    if(nrow(m) < top_var){
-      top_var = nrow(m)
-    }
-    if(var_select=="rand"){set.seed(seed = 1024)
-    ids = sample(x = 1:nrow(m), replace = FALSE, size = as.integer(as.character(top_var)))
-      meth_sub <- get_matrix(m = m[ids, ], type = "M", add_loci = FALSE)
-      }else{
-      meth_sub <-  methrix::get_matrix(m = m, type = "M", add_loci = FALSE)
-      mv <- apply(meth_sub,1,sd)
-      mv_ord <- order(mv,decreasing = T)
-      meth_sub <-  methrix::get_matrix(m = m[mv_ord[1:5000],], type = "M", add_loci = FALSE)
+    # if (nrow(m) < top_var) {
+    #   top_var = nrow(m)
+    # }
+    if (var_select == "rand") {
+      #set.seed(seed = 1024)
+      if (!is.null(ranges)){
+        ids = sample(
+          x = 1:nrow(meth_sub),
+          replace = FALSE,
+          size = min(top_var, nrow(meth_sub))
+        )
+
+      } else {
+        ids = sample(
+          x = 1:nrow(m),
+          replace = FALSE,
+          size = as.integer(as.character(min(top_var, nrow(m))))
+        )
+        meth_sub <- get_matrix(m = m[ids,],
+                               type = "M",
+                               add_loci = FALSE)
+      }
+
+    } else {
+      # meth_sub <-
+      #   methrix::get_matrix(m = m,
+      #                       type = "M",
+      #                       add_loci = FALSE)
+      # mv <- apply(meth_sub, 1, sd)
+      # mv_ord <- order(mv, decreasing = T)
+      if (!is.null(ranges)){
+        if(is_h5(m)){
+          sds <- DelayedMatrixStats::rowSds(meth_sub, na.rm=T)
+        } else {
+          sds <- matrixStats::rowSds(meth_sub, na.rm=T)
+        }
+       meth_sub <- meth_sub[order(sds, decreasing = T)[1:min(top_var, nrow(meth_sub))],]
+
+      } else {
+      meth_sub <- methrix::get_matrix(m = order_by_sd(m)[1:min(top_var, nrow(m))],
+                             # m[mv_ord[1:top_var], ],
+                            type = "M",
+                            add_loci = FALSE)
+      }
     }
   }
 
   #Remove NA
-  meth_sub = meth_sub[complete.cases(meth_sub),, drop = FALSE]
-  if(nrow(meth_sub) == 0){
+  meth_sub = meth_sub[complete.cases(meth_sub), , drop = FALSE]
+  if (nrow(meth_sub) == 0) {
     stop("Zero loci available post NA removal :(")
   }
 
-  set.seed(seed = 1024)
-  if(do_fast==TRUE){
-  meth_pca = irlba::prcomp_irlba(x = t(meth_sub), retx = TRUE,n = n_pc)
-  }else{
-  meth_pca = prcomp(x = t(meth_sub), retx = TRUE)
+  #set.seed(seed = 1024)
+  if (do_fast == TRUE) {
+    meth_pca = irlba::prcomp_irlba(x = t(meth_sub),
+                                   retx = TRUE,
+                                   n = n_pc)
+  } else{
+    meth_pca = prcomp(x = t(meth_sub), retx = TRUE)
   }
 
-  if(n_pc > ncol(meth_pca$x)){
+  if (n_pc > ncol(meth_pca$x)) {
     n_pc = ncol(meth_pca$x)
   }
 
@@ -241,7 +325,9 @@ methrix_pca <- function(m, var="top",top_var = 1000, ranges = NULL, pheno = NULL
   #generate the plot
   if(do_plot){
     p <- ggplot2::ggplot(plot.data,ggplot2::aes(x = PC1, y = PC2, color = labs, label = ind))+
-      ggplot2::geom_point(alpha = .8, size = 3)+scale_color_viridis_d()+
+      ggplot2::geom_point(alpha = .8, size = 3)+
+      #scale_color_viridis_d()+
+      ggplot2::scale_fill_brewer(type="div", palette = col_palette)+
       ggplot2::theme_minimal(base_size = 14)+
       ggplot2::xlab(paste0("PC1 (",round(pc_vars[1]*100, digits = 2),"% Variability)"))+
       ggplot2::ylab(paste0("PC2 (",round(pc_vars[2]*100, digits = 2),"% Variability)"))+
@@ -257,78 +343,89 @@ methrix_pca <- function(m, var="top",top_var = 1000, ranges = NULL, pheno = NULL
 
 
 #--------------------------------------------------------------------------------------------------------------------------
-#' Covergae QC Plots
+#' Coverage QC Plots
 #'
 #' @param m Input \code{\link{methrix}} object
 #' @param type Choose between "hist" (histogram) or "dens" (density plot).
-#' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
-#' @param perSample Color the plots in a sample-wise manner?
+#' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the plot.
+#' @param perGroup Color the plots in a sample-wise manner?
 #' @param lim Maximum coverage value to be plotted.
-#'
+#' @param size.lim The maximum number of observarions (sites*samples) to use. If the dataset is larger that this,
+#' random sites will be selected from the genome.
+#' @param col_palette Name of the ggplot diverging to use. Possible values: BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral
 #' @return ggplot2 object
 #' @export
 #'
 #' @examples
 #' data("methrix_data")
 #' methrix_coverage(m = methrix_data)
-methrix_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perSample = FALSE, lim = 100){
+
+methrix_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perGroup = FALSE, lim = 100, size.lim=1000000, col_palette="RdYlGn"){
 
   type = match.arg(arg = type, choices = c("hist", "dens"), several.ok = FALSE)
   #On an average a matrix of 28e6 rows x 10 columns, sizes around 2.4 GB. Copying, and melting would double the memory consumption.
   #We should think of something else.
+
+  if (length(m@assays[[2]])>size.lim){
+    cat("The dataset is bigger than the size limit. A random subset of the object will be used that contains ~", size.lim, " observations. \n")
+    n_rows <- trunc(size.lim/nrow(m@colData))
+    sel_rows <- sample(1:nrow(m@elementMetadata), size = n_rows, replace = F)
+
+    meth_sub <- methrix::get_matrix(m = m[sel_rows,], type = "C", add_loci = FALSE)
+
+  } else {
   meth_sub <- methrix::get_matrix(m = m, type = "C", add_loci = FALSE)
+  }
 
-  ## melt the object to a long format
-  meth.melt <- data.table::melt(meth_sub)
-  data.table::setDT(x = meth.melt)
-
-  # add the pheno column of choice
-  if(!is.null(pheno)){
+  if(perGroup){
+    if (is.null(pheno)){
+      stop("For group based plotting, provide group information using the pheno argument.")
+    }
     if(pheno %in% colnames(colData(m)) == 0){
       stop("Phenotype annotation cannot be found in colData(m).")
     }
-    pheno.plot <- data.table("id" = rownames(colData(m)),
-                             "data" = as.factor(colData(m)[, pheno]))
-  }else{
-    pheno.plot <- data.table("id" = rownames(colData(m)),
-                             "data" = rownames(colData(m)))
+    colnames(meth_sub) <- m@colData[,pheno]
   }
-  # merge the pheno column to the others
-  plot.data <- merge(x = meth.melt, y = pheno.plot, by.x = "Var2", by.y = "id", all.x = TRUE, all.y = TRUE)
+
+  ## melt the object to a long format
+  ## add support for DelayedMatrix
+  plot.data <- data.table::melt(as.matrix(meth_sub))
+  data.table::setDT(x = plot.data)
+
   plot.data <- plot.data[value <= lim,]
 
-  #generate the violin plot
-  if(!perSample) {
+  #generate the plots
+  if(!perGroup) {
     if(type == "dens"){
       p <- ggplot2::ggplot(plot.data, ggplot2::aes(value)) +
-        ggplot2::geom_density(alpha = .5, adjust = 1.5) +
+        ggplot2::geom_density(alpha = .5, adjust = 1.5, fill=RColorBrewer::brewer.pal(3, col_palette)[1]) +
         ggplot2::theme_classic() +
-        ggplot2::xlab("Coverage")#+
-      #ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))
-      #print(p)
+        ggplot2::xlab("Coverage")
+
     } else if(type == "hist") {
       p <- ggplot2::ggplot(plot.data, ggplot2::aes(value)) +
-        ggplot2::geom_histogram(alpha = .5, binwidth = 1) +
+        ggplot2::geom_histogram(alpha = .5, binwidth = 1, fill=RColorBrewer::brewer.pal(3, col_palette)[1], color="grey90") +
         ggplot2::theme_classic() +
         ggplot2::xlab("Coverage")
       #print(p)
     }
   } else{
     if(type == "dens") {
-      p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = data)) +
-        ggplot2::geom_density(alpha = .5, adjust = 1.5) +
+      p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = Var2)) +
+        ggplot2::geom_density(alpha = .6, adjust = 1.5) +
         ggplot2::theme_classic() +
-        #ggplot2::xlab(pheno)+
         ggplot2::xlab("Coverage") +
-        #ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1))+
-        ggplot2::labs(fill = "Samples")
+        ggplot2::labs(fill = "Groups")+
+        ggplot2::scale_fill_brewer(type="div", palette = col_palette)
+
       #print(p)
     } else if (type == "hist") {
-      p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = data)) +
-        ggplot2::geom_histogram(alpha = .5, binwidth = 1) +
+      p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = Var2)) +
+        ggplot2::geom_histogram(alpha = .6, binwidth = 1, color="grey90") +
         ggplot2::theme_classic() +
         ggplot2::xlab("Coverage") +
-        ggplot2::labs(fill = "Samples")
+        ggplot2::labs(fill = "Groups")+
+        ggplot2::scale_fill_brewer(type="div", palette = col_palette)
       #print(p)
     }
   }
@@ -341,8 +438,8 @@ methrix_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perSample
 
 #--------------------------------------------------------------------------------------------------------------------------
 #' Plot descriptive statistics
-#' @details plot descriptive statistics results from get_stat
-#' @param plot_dat results from \code{\link{get_stat}}
+#' @details plot descriptive statistics results from \code{\link{get_stats}}
+#' @param plot_dat results from \code{\link{get_stats}}
 #' @param what Can be \code{M} or \code{C}. Default \code{M}
 #' @param stat Can be \code{mean} or \code{median}. Default \code{mean}
 #' @param ignore_chr Chromsomes to ignore. Default \code{NULL}
@@ -378,8 +475,8 @@ plot_stats = function(plot_dat, what = "M", stat = "mean", ignore_chr = NULL, sa
       plot_dat = plot_dat[!Chromosome %in% ignore_chr]
     }
 
-    if(!is.null(ignore_chr)){
-      plot_dat = plot_dat[!Sample_Name %in% samples]
+    if(!is.null(samples)){
+      plot_dat = plot_dat[Sample_Name %in% samples]
     }
 
     colnames(plot_dat) = c("Chromosome", "Sample_Name", "measurement", "sd")

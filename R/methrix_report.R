@@ -5,17 +5,19 @@
 #' @param output_dir Output directory name where the files should be saved. If \code{NULL} creats a \code{tempdir}
 #' @param recal_stats Whether summary statistics should be recalculated? If you are using subsetted methrix object set this to TRUE.
 #' @param plot_beta_dist Default FALSE. This is a time consuming and writes huge density files required for plotting.
-#' @param skip_cov Default TRUE. Coverage estimation loads entire matrix into memory. Set it to \code{TRUE}
 #' @param n_thr Default 4. Only used if \code{plot_beta_dist} is TRUE
 #' @return an interactive html report
 #' @examples
 #' data("mm9_bsmap")
 #' methrix::methrix_report(meth = mm9_bsmap)
 #' @export
-methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_beta_dist = TRUE, beta_nCpG = 10000, skip_cov = FALSE, n_thr = 4){
+methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_beta_dist = TRUE, beta_nCpG = 10000, n_thr = 4){
 
   if(!recal_stats){
     warning("If input methrix is a subsetted version of original methrix object, set recal_stats to TRUE", immediate. = TRUE)
+    if (is.null(meth@metadata$descriptive_stats)){
+      stop("No previous statistics is available. Set recal_stats to TRUE.")
+    }
   }
 
   start_proc_time = proc.time()
@@ -30,7 +32,7 @@ methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_bet
 
   #Methylation/Coverage per chromosome
   cat(paste0("Step 1 of 5: Methylation/Coverage per chromosome\n"))
-  of1 = normalizePath(paste0(output_dir, "/MC_per_chr.tsv"))
+  of1 = suppressWarnings(normalizePath(file.path(output_dir, "/MC_per_chr.tsv")))
   if(file.exists(of1)){
     cat("File already present. Skipping step 1..\n")
   }else{
@@ -46,12 +48,12 @@ methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_bet
 
   #Global methylation/Coverage
   cat(paste0("Step 2 of 5: Global methylation/Coverage per sample\n"))
-  of2 = normalizePath(paste0(output_dir, "/global_MC_per_samp.tsv"))
+  of2 = suppressWarnings(normalizePath(file.path(output_dir, "global_MC_per_samp.tsv")))
   if(file.exists(of2)){
     cat("File already present. Skipping step 2..\n")
   }else{
     if(recal_stats){
-      genome_stat = get_stats(m = meth, skip_cov = skip_cov, per_chr = FALSE)
+      genome_stat = get_stats(m = meth, per_chr = FALSE)
       gc()
     }else{
       genome_stat = meth@metadata$descriptive_stats$genome_stat
@@ -61,7 +63,7 @@ methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_bet
 
   #n CpGs covered per chromomse
   cat(paste0("Step 3 of 5: Reference CpGs coevered per chromosome\n"))
-  of3 = normalizePath(paste0(output_dir, "/n_covered_per_chr.tsv"))
+  of3 = suppressWarnings(normalizePath(file.path(output_dir, "n_covered_per_chr.tsv")))
   contig_nCpGs = meth@metadata$ref_CpG
   colnames(contig_nCpGs) = c("chr", "total_CpGs")
   if(file.exists(of3)){
@@ -89,7 +91,7 @@ methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_bet
 
   #Common CpGs covered by all samples
   cat(paste0("Step 4 of 5: Common reference CpGs covered across all samples\n"))
-  of4 = normalizePath(paste0(output_dir, "/n_covered_by_all_samples.tsv"))
+  of4 = suppressWarnings(normalizePath(file.path(output_dir, "n_covered_by_all_samples.tsv")))
   if(file.exists(of4)){
     cat("File already present. Skipping step 4..\n")
   }else{
@@ -122,7 +124,7 @@ methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_bet
         na_vec = apply(get_matrix(meth, type = "M"), MARGIN = 1, anyNA)
       }
 
-      row_idx = sample(which(na_vec == FALSE), size = beta_nCpG, replace = FALSE)
+      row_idx = sample(which(na_vec == FALSE), size = min(beta_nCpG, length(which(na_vec == FALSE))), replace = FALSE)
 
       lapply(X = seq_len(nrow(colData(meth))), FUN = function(i){
 
@@ -131,12 +133,12 @@ methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_bet
                            file = paste0(output_dir, "/", rownames(colData(x = meth))[i], "_density.tsv.gz"), sep = "\t")
 
       })
+      rm(na_vec)
     }
-    rm(na_vec)
     gc()
   }
 
-  of5 = normalizePath(paste0(output_dir, "/contig_lens.tsv"))
+  of5 = suppressWarnings(normalizePath(file.path(output_dir, "contig_lens.tsv")))
   data.table::fwrite(x = meth@metadata$chrom_sizes, file = of5, sep = "\t")
 
   cat(paste0("Knitting report\n"))

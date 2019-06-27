@@ -4,7 +4,8 @@
 \alias{methrix_violin}
 \title{Violin Plot for \eqn{\beta}-Values}
 \usage{
-methrix_violin(m, ranges = NULL, n_cpgs = 25000, pheno = NULL)
+methrix_violin(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
+  col_palette = "RdYlGn")
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
@@ -14,6 +15,8 @@ methrix_violin(m, ranges = NULL, n_cpgs = 25000, pheno = NULL)
 \item{n_cpgs}{Use these many random CpGs for plotting. Default 25000. Set it to \code{NULL} to use all - which can be memory expensive.}
 
 \item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the violin plot.}
+
+\item{col_palette}{Name of the ggplot diverging to use. Possible values: BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral}
 }
 \value{
 ggplot2 object

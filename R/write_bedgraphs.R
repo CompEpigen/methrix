@@ -1,7 +1,9 @@
 #' Writes bedGraphs from methrix object
 #' @param m \code{\link{methrix}} object
 #' @param output_dir Output directory name where the files should be saved. If \code{NULL} creats a \code{tempdir}
-#' @param n_thr Default 4. Only used if \code{plot_beta_dist} is TRUE
+#' @param n_thr Default 4.
+#' @param rm_NA remove NAs
+#' @param force forces to create files if they are existing
 #' @param make_bigWig Default FALSE. Whether to convert bedGraph to BigWig
 #' @param bedtools_path Default NULL. Path to bedtools. Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE
 #' @param bedGraphToBigWig_path Default NULL. Path to bedGraphToBigWig Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE

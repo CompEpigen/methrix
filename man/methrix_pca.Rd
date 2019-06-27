@@ -5,14 +5,15 @@
 \title{Principal Component Analysis}
 \usage{
 methrix_pca(m, var = "top", top_var = 1000, ranges = NULL,
-  pheno = NULL, do_plot = TRUE, n_pc = 5, do_fast = FALSE)
+  pheno = NULL, do_plot = TRUE, n_pc = 5, do_fast = FALSE,
+  col_palette = "RdYlGn")
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
 
 \item{var}{Choose between random CpG sites ("rand") or most variable CpGs ("top").}
 
-\item{top_var}{Number of variable CpGs to use. Default 5000. Set it to NULL to use all CpGs (which is not recommended due to memory requirements). This option is mutually exclusive with \code{ranges}.}
+\item{top_var}{Number of variable CpGs to use. Default 1000 Set it to NULL to use all CpGs (which is not recommended due to memory requirements). This option is mutually exclusive with \code{ranges}.}
 
 \item{ranges}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
 

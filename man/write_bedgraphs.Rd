@@ -13,7 +13,11 @@ write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
 
 \item{output_dir}{Output directory name where the files should be saved. If \code{NULL} creats a \code{tempdir}}
 
-\item{n_thr}{Default 4. Only used if \code{plot_beta_dist} is TRUE}
+\item{rm_NA}{remove NAs}
+
+\item{force}{forces to create files if they are existing}
+
+\item{n_thr}{Default 4.}
 
 \item{bedtools_path}{Default NULL. Path to bedtools. Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE}
 
