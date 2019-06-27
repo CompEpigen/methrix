@@ -4,14 +4,12 @@
 \alias{get_stats}
 \title{Estimate descriptive statistics}
 \usage{
-get_stats(m, per_chr = FALSE, skip_cov = TRUE)
+get_stats(m, per_chr = TRUE)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
 
 \item{per_chr}{Estimate stats per chromosome. Default FALSE}
-
-\item{skip_cov}{Default \code{TRUE}}
 }
 \description{
 Estimate descriptive statistics

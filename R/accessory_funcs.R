@@ -163,14 +163,16 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
   missing_cpgs = genome[!bdg_dat[,list(chr, start)], on = c("chr", "start")]
 
   if(verbose){
-    cat(paste0("--CpGs missing: ", format(nrow(missing_cpgs), big.mark = ","), "\n"))
+    if(nrow(missing_cpgs) > 0){
+      cat(paste0("--CpGs missing: ", format(nrow(missing_cpgs), big.mark = ","), "\n"))
+    }
     #message(paste0("Missing ", format(nrow(missing_cpgs), big.mark = ","), " reference CpGs from: ", basename(bdg)))
   }
   if(nrow(missing_cpgs)>0){
-    missing_cpgs[, width := NULL][, beta := NA][, cov := 0][,M := 0][,U := 0]
+    missing_cpgs[, width := NULL][, beta := NA][, cov := NA][,M := NA][,U := NA]
     bdg_dat = data.table::rbindlist(list(bdg_dat, missing_cpgs), use.names = TRUE, fill = TRUE)
+    data.table::setkey(x = bdg_dat, "chr", "start")
   }
-  data.table::setkey(x = bdg_dat, "chr", "start")
   #Better than identical(); seems to take couple of seconds but this is crucial to make sure everything is in order
   is_identical = data.table:::all.equal.data.table(target = bdg_dat[,.(chr, start)],
                                                    current = genome[,.(chr, start)],
@@ -206,7 +208,9 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
     bdg_dat[,strand := "*"]
   }
 
-  bdg_dat$beta = replace(x = bdg_dat$beta, list = is.nan(bdg_dat$beta), values = NA)
+  #data.table::set(bdg_dat, which(is.nan(bdg_dat[,beta])), "beta", NA)
+  #If coverage is 0, convert corresponding beta as well as coverage values to NA
+  data.table::set(bdg_dat, which(bdg_dat[,cov] == 0), c("cov", "beta"), NA)
   bdg_dat = bdg_dat[,.(chr, start, beta, cov, strand)]
 
   bdg_genome_stat = bdg_dat[!is.na(beta), .(mean_meth = mean(beta), median_meth =  median(beta), mean_cov = mean(cov), median_cov =  median(cov))]

@@ -22,6 +22,7 @@ params:
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
 
+<img src="logo_large_hexagon.gif" height="150" width="150" style="position:absolute;top:30px;right:0px;" />
 
 ```{r}
 library(ggplot2)

@@ -171,13 +171,6 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
   } else {
     n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))}
 
-
-  se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
-                                      Summary = c(ncol(m), format(nrow(m), big.mark = ","),
-                                                  n_non_covered, length(unique(m@elementMetadata$chr)), m@metadata$genome, m@metadata$is_h5))
-  m@metadata$summary <- se_summary
-
-
   return(m)
 }
 
@@ -197,38 +190,22 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
 #' @export
 coverage_filter = function(m, cov_thr = 1, min_samples = 1){
 
-  cov_dat = get_matrix(m = m, type = "C")
+  start_proc_time = proc.time()
+  res <- data.table::as.data.table(which(get_matrix(m = m, type = "C") >= cov_thr, arr.ind = TRUE))
 
-  res <- data.table::as.data.table(which(cov_dat >= cov_thr, arr.ind = TRUE))
-
-  if (is_h5(m)){
-  res <- res[,.(Count=(.N)), by=V1]
-  row_idx = res$V1[res$Count >= min_samples]} else {
-    res <- res[,.(Count=(.N)), by=row]
-    row_idx = res$row[res$Count >= min_samples]
+  if (is_h5(m)) {
+    res <- res[, .(Count = (.N)), by = V1]
+    row_idx = res[res$Count >= min_samples, V1]
+  } else {
+    res <- res[, .(Count = (.N)), by = row]
+    row_idx = res[res$Count >= min_samples, row]
   }
 
-
-
-  cat(paste0("-Retained ", format(length(row_idx[row_idx]), big.mark = ","), " of ", format(nrow(cov_dat), big.mark = ","), " sites\n"))
-
-  rm(cov_dat)
   gc()
+  cat(paste0("-Retained ", format(length(row_idx), big.mark = ","), " of ", format(nrow(m), big.mark = ","), " sites\n"))
+  cat("-Finished in:  ",data.table::timetaken(start_proc_time),"\n")
 
-  m = m[row_idx,]
-
-  if(is_h5(m)){
-    n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
-  } else {
-    n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))}
-
-
-  m@metadata$summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
-                                              Summary = c(ncol(m), format(nrow(m), big.mark = ","),
-                                                          n_non_covered, length(unique(m@elementMetadata$chr)), m@metadata$genome, m@metadata$is_h5))
-
-  return(m)
-
+  return(m[row_idx,])
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
@@ -311,40 +288,16 @@ methrix2bsseq = function(m){
 #'
 remove_uncovered = function(m){
 
-  if(is_h5(m)){
-    cov_dat = m@assays[["cov"]]
-
-    row_idx = which(DelayedMatrixStats::rowSums2(x = cov_dat) == 0)
-
-  } else {
-
-    cov_dat = get_matrix(m = m, type = "C")
-
-    row_idx = which(matrixStats::rowSums2(x = cov_dat, na.rm = TRUE) == 0)
-  }
-
+  start_proc_time = proc.time()
+  row_idx = data.table::as.data.table(which(is.na(get_matrix(m = m, type = "C")), arr.ind = TRUE))[,.N,row][N == ncol(m), row]
 
   cat(paste0("-Removed ", format(length(row_idx), big.mark = ","),
-             " [", round(length(row_idx)/nrow(cov_dat) * 100, digits = 2), "%] uncovered loci of ",
-             format(nrow(cov_dat), big.mark = ","), " sites\n"))
+             " [", round(length(row_idx)/nrow(m) * 100, digits = 2), "%] uncovered loci of ",
+             format(nrow(m), big.mark = ","), " sites\n"))
 
-  rm(cov_dat)
   gc()
-
-  m = m[-row_idx,]
-
-  if(is_h5(m)){
-    n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
-  } else {
-    n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
-  }
-
-
-  m@metadata$summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
-                                              Summary = c(ncol(m), format(nrow(m), big.mark = ","),
-                                                          n_non_covered, length(unique(m@elementMetadata$chr)), m@metadata$genome, m@metadata$is_h5))
-
-  m
+  cat("-Finished in:  ",data.table::timetaken(start_proc_time),"\n")
+  m[-row_idx,]
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
@@ -360,7 +313,9 @@ remove_uncovered = function(m){
 #' @export
 region_filter = function(m, regions){
 
+  start_proc_time = proc.time()
 
+  start_proc_time = proc.time()
   target_regions = cast_ranges(regions)
 
   current_regions <-  data.table::as.data.table(colData(m))
@@ -373,19 +328,9 @@ region_filter = function(m, regions){
   }
 
   cat(paste0("-Removed ", format(nrow(overlap), big.mark = ','), " CpGs\n"))
+  cat("-Finished in:  ",data.table::timetaken(start_proc_time),"\n")
 
-  m <- m[-overlap$xid,]
-  if(is_h5(m)){
-    n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
-  } else {
-    n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))}
-
-  se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
-                                      Summary = c(ncol(m), format(nrow(m), big.mark = ","),
-                                                  n_non_covered, nrow(current_regions[overlap$xid,.N,chr]), m@metadata$genome, m@metadata$is_h5))
-  m@metadata$summary <- se_summary
-  return(m)
-
+  m[-overlap$xid,]
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
@@ -439,128 +384,81 @@ combine_methrix = function(m1, m2, by = c("row", "col")){
 #' @details Calculate descriptive statistics
 #' @param m \code{\link{methrix}} object
 #' @param per_chr Estimate stats per chromosome. Default FALSE
-#' @param skip_cov Default \code{TRUE}
 #' @seealso \code{\link{plot_stats}}
 #' @examples
 #' data("methrix_data")
 #' get_stats(methrix_data)
 #' @export
-get_stats = function(m, per_chr = FALSE, skip_cov = TRUE){
+get_stats = function(m, per_chr = TRUE){
 
-  #m_sub = remove_uncovered(m = m)
+  start_proc_time = proc.time()
+
+  row_idx = data.table::as.data.table(which(is.na(get_matrix(m = m, type = "C")), arr.ind = TRUE))
+  colnames(row_idx) = c("row", "col")
+  row_idx = split(row_idx, as.factor(as.character(row_idx$col)))
 
   if(per_chr){
-    row_df = data.frame(rowData(x = m))
-    row_chrs = names(table(row_df$chr))
-    cat("-Processing", length(row_chrs), "chromosomes")
-
-    stats = lapply(row_chrs, function(x){
-      if(is_h5(m)){
-        x_idx = which(row_df$chr == x)
-        mean_meth = DelayedMatrixStats::colMeans2(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
-        median_meth = DelayedMatrixStats::colMedians(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
-        sd_meth = DelayedMatrixStats::colSds(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
-        gc(verbose = FALSE)
-
-        mean_cov = median_cov = sd_cov = NA
-        if(!skip_cov){
-          cov_mat = get_matrix(m = m[x_idx,], type = "C")
-          #Set uncovered loci to NA (zeros can affect mean and median)
-          cov_mat[cov_mat == 0] = NA
-          mean_cov = DelayedMatrixStats::colMeans2(x = cov_mat, na.rm = TRUE)
-          median_cov = DelayedMatrixStats::colMedians(cov_mat, na.rm = TRUE)
-          sd_cov = DelayedMatrixStats::colSds(cov_mat, na.rm = TRUE)
-
-          rm(cov_mat)
-          gc(verbose = FALSE)
-        }
-
-      }else{
-        x_idx = which(row_df$chr == x)
-        mean_meth = matrixStats::colMeans2(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
-        median_meth = matrixStats::colMedians(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
-        sd_meth = matrixStats::colSds(x = get_matrix(m = m[x_idx,], type = "M"), na.rm = TRUE)
-        gc(verbose = FALSE)
-
-        mean_cov = median_cov = sc_cov = NA
-        if(!skip_cov){
-          cov_mat = get_matrix(m = m[x_idx,], type = "C")
-          #Set uncovered loci to NA (zeros can affect mean and median)
-          cov_mat[cov_mat == 0] = NA
-          mean_cov = matrixStats::colMeans2(x = cov_mat, na.rm = TRUE)
-          median_cov = matrixStats::colMedians(cov_mat, na.rm = TRUE)
-          sd_cov = matrixStats::colSds(cov_mat, na.rm = TRUE)
-
-          rm(cov_mat)
-          gc(verbose = FALSE)
-        }
-      }
-
-      chr_stat = data.table(
-        Sample_Name = rownames(colData(x = m)),
-        mean_meth = mean_meth,
-        median_meth = median_meth,
-        sd_meth = sd_meth,
-        mean_cov = mean_cov,
-        median_cov = median_cov,
-        sd_cov = sd_cov,
-        stringsAsFactors = FALSE
-      )
-
-      chr_stat
+    cov_stat = lapply(row_idx, function(samp_idx){
+      get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C", add_loci = TRUE)[, c(1, 4), with = FALSE][, .(
+        mean_cov = lapply(.SD, matrixStats::mean2, na.rm = TRUE),
+        median_cov = lapply(.SD, median, na.rm = TRUE),
+        sd_cov = lapply(.SD, sd, na.rm = TRUE)
+      ), by = chr]
     })
 
-    names(stats) = row_chrs
-    stats = data.table::rbindlist(l = stats, use.names = TRUE, fill = TRUE, idcol = "Chromosome")
+    meth_stat = lapply(row_idx, function(samp_idx){
+      get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "M", add_loci = TRUE)[, c(1, 4), with = FALSE][, .(
+        mean_meth = lapply(.SD, matrixStats::mean2, na.rm = TRUE),
+        median_meth = lapply(.SD, median, na.rm = TRUE),
+        sd_meth = lapply(.SD, sd, na.rm = TRUE)
+      ), by = chr]
+    })
 
+    names(cov_stat) = names(meth_stat) = rownames(colData(m))
+    cov_stat = data.table::rbindlist(l = cov_stat, use.names = TRUE, idcol = "Sample_Name")
+    meth_stat = data.table::rbindlist(l = meth_stat, use.names = TRUE, idcol = "Sample_Name")
+    stats = merge(meth_stat, cov_stat, by = c("chr", 'Sample_Name'))
+    colnames(stats)[1] = "Chromosome"
   }else{
-
     if(is_h5(m)){
-      mean_meth = DelayedMatrixStats::colMeans2(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
-      median_meth = DelayedMatrixStats::colMeans2(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
-      sd_meth = DelayedMatrixStats::colSds(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
-      gc(verbose = FALSE)
+      cov_stat = lapply(row_idx, function(samp_idx){
+        me = DelayedMatrixStats::colMeans2(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        med = DelayedMatrixStats::colMedians(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        sd = DelayedMatrixStats::colSds(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        data.table::data.table(mean_cov = me, median_cov = med, sd_cov = sd)
+      })
 
-      if(!skip_cov){
-        cov_mat = get_matrix(m = m, type = "C")
-        #Set uncovered loci to NA (zeros can affect mean and median)
-        cov_mat[cov_mat == 0] = NA
-        mean_cov = DelayedMatrixStats::colMeans2(x = cov_mat, na.rm = TRUE)
-        median_cov = DelayedMatrixStats::colMedians(cov_mat, na.rm = TRUE)
-        sd_cov = DelayedMatrixStats::colSds(cov_mat, na.rm = TRUE)
-        rm(cov_mat)
-        gc(verbose = FALSE)
-      }
+      meth_stat = lapply(row_idx, function(samp_idx){
+        me = DelayedMatrixStats::colMeans2(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        med = DelayedMatrixStats::colMedians(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        sd = DelayedMatrixStats::colSds(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        data.table::data.table(mean_meth = me, median_meth = med, sd_meth = sd)
+      })
+
     }else{
-      mean_meth = matrixStats::colMeans2(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
-      median_meth = matrixStats::colMedians(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
-      sd_meth = matrixStats::colSds(x = get_matrix(m = m, type = "M"), na.rm = TRUE)
-      gc(verbose = FALSE)
+      cov_stat = lapply(row_idx, function(samp_idx){
+        me = matrixStats::colMeans2(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        med = matrixStats::colMedians(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        sd = matrixStats::colSds(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        data.table::data.table(mean_cov = me, median_cov = med, sd_cov = sd)
+      })
 
-      mean_cov = median_cov = sc_cov = NA
-      if(!skip_cov){
-        cov_mat = get_matrix(m = m, type = "C")
-        #Set uncovered loci to NA (zeros can affect mean and median)
-        cov_mat[cov_mat == 0] = NA
-        mean_cov = matrixStats::colMeans2(x = cov_mat, na.rm = TRUE)
-        median_cov = matrixStats::colMedians(cov_mat, na.rm = TRUE)
-        sd_cov = matrixStats::colSds(cov_mat, na.rm = TRUE)
-        rm(cov_mat)
-        gc(verbose = FALSE)
-      }
+      meth_stat = lapply(row_idx, function(samp_idx){
+        me = matrixStats::colMeans2(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        med = matrixStats::colMedians(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        sd = matrixStats::colSds(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        data.table::data.table(mean_meth = me, median_meth = med, sd_meth = sd)
+      })
     }
 
-    stats = data.table(
-      Sample_Name = rownames(colData(x = m)),
-      mean_meth = mean_meth,
-      median_meth = median_meth,
-      sd_meth = sd_meth,
-      mean_cov = mean_cov,
-      median_cov = median_cov,
-      sd_cov = sd_cov,
-      stringsAsFactors = FALSE
-    )
+    names(cov_stat) = names(meth_stat) = rownames(colData(m))
+    cov_stat = data.table::rbindlist(l = cov_stat, use.names = TRUE, idcol = "Sample_Name")
+    meth_stat = data.table::rbindlist(l = meth_stat, use.names = TRUE, idcol = "Sample_Name")
+    stats = merge(meth_stat, cov_stat, by = c("Sample_Name"))
   }
+
+  gc()
+  cat("-Finished in:  ",data.table::timetaken(start_proc_time),"\n")
 
   stats
 }
