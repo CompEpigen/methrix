@@ -85,20 +85,21 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
-#' Order mathrix object by SD
+#' Order methrix object by SD
 #' @details Takes \code{\link{methrix}} object and reorganizes the data by standard deviation
-#' @param m \code{\link{methrix}} objectw
+#' @param m \code{\link{methrix}} object
+#' @param na.rm remove NAs when calculating SD. TRUE by default.
 #' @return An object of class \code{\link{methrix}}
 #' @examples
 #' data("methrix_data")
 #' order_by_sd(m = methrix_data)
 #' @export
-order_by_sd = function(m){
+order_by_sd = function(m, na.rm=TRUE){
 
   if(is_h5(m)){
-    sds = DelayedMatrixStats::rowSds(x = get_matrix(m, type = "M"))
+    sds = DelayedMatrixStats::rowSds(x = get_matrix(m, type = "M"), na.rm = na.rm)
   }else{
-    sds = matrixStats::rowSds(x = get_matrix(m, type = "M"))
+    sds = matrixStats::rowSds(x = get_matrix(m, type = "M"), na.rm = na.rm)
   }
   row_order = order(sds, na.last = TRUE, decreasing = TRUE)
   m = m[row_order,]
@@ -142,10 +143,12 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
     }
 
     m <- m[overlaps$xid, ]
+    r_dat <- r_dat[overlaps$xid, ]
   }
 
   if(!is.null(contigs)) {
     cat("-Subsetting by contigs\n")
+
     selected_rows <- which(r_dat$chr %in% contigs)
 
     if (length(selected_rows) == 0) {
@@ -363,7 +366,7 @@ region_filter = function(m, regions){
 
   target_regions = cast_ranges(regions)
 
-  current_regions <-  data.table::as.data.table(colData(m))
+  current_regions <-  data.table::as.data.table(elementMetadata(m))
   current_regions[,end := start+1]
   data.table::setDT(x = current_regions, key = c("chr", "start", "end"))
   overlap = data.table::foverlaps(x = current_regions, y = target_regions, type = "within", nomatch = NULL, which = TRUE)
@@ -445,6 +448,7 @@ combine_methrix = function(m1, m2, by = c("row", "col")){
 #' data("methrix_data")
 #' get_stats(methrix_data)
 #' @export
+#'
 get_stats = function(m, per_chr = FALSE, skip_cov = TRUE){
 
   #m_sub = remove_uncovered(m = m)
