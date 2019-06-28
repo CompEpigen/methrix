@@ -57,7 +57,7 @@ BiocManager::install("CompEpigen/methrix")
 Test data is 3 stranded WGBS bedgraphs from MethylcTools
 
 ```r
-> meth = methrix::read_bedgraphs(files = bdg_files[1:3], pipeline = "MethylcTools", collapse_starnds = TRUE, vect_batch_size = 3, ref_build = "Hs37d5", ref_cpgs = hs37d5_cpgs)
+> meth = methrix::read_bedgraphs(files = bdg_files[1:3], pipeline = "MethylcTools", collapse_strands = TRUE, vect_batch_size = 3, ref_build = "Hs37d5", ref_cpgs = hs37d5_cpgs)
 # Using MethylcTools as a preset
 # Retained 28,162,972 CpGs after filtering for contigs
 # Processing batch 1 of 1
