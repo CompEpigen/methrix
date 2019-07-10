@@ -263,7 +263,7 @@ methrix2bsseq = function(m){
   n_samps = nrow(SummarizedExperiment::colData(x = m))
   M_clean <- get_matrix(m) * get_matrix(m, type = "C")
   M_clean[is.na(M_clean)] <- 0
-
+  m@assays[[2]][is.na(m@assays[[2]])] <- 0
   #Thanks to Maxi for pointing out the bug related to M estimation
   #To-do: Find solution to avoid matrix multiplication (for small datasets it shouldn't affect)
   b = bsseq::BSseq(M = M_clean,
@@ -332,6 +332,58 @@ region_filter = function(m, regions){
 
   m[-overlap$xid,]
 }
+
+#--------------------------------------------------------------------------------------------------------------------------
+
+#' Masks too high or too low coverage
+#' @details Takes \code{\link{methrix}} object and masks sites with too high or too low coverage
+#'  by putting NA for coverage and beta value. The sites will remain in the object.
+#' @param m \code{\link{methrix}} object
+#' @param low_count The minimal coverage allowed. Everything below, will get masked. Default = NULL, nothing gets masked.
+#' @param high_quantile The quantile limit of coverage. Quantiles are calculated for each sample and everything that belongs to a
+#' higher quantile than the defined will be masked. Default = 0.99.
+#' @return An object of class \code{\link{methrix}}
+#' @examples
+#' data("methrix_data")
+#' mask_methrix(m = methrix_data, low_count = 5, high_quantile = 0.99 )
+#' @export
+
+mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
+
+  start_proc_time = proc.time()
+  if (!is.null(low_count)){
+    row_idx <- which(get_matrix(m = m, type = "C") < low_count, arr.ind = F)
+
+    cat(paste0("-Masked ", format(length(row_idx), big.mark = ","), " CpGs due to low coverage. \n"))
+    m@assays[[1]][row_idx] <- NA
+    m@assays[[2]][row_idx] <- NA
+  }
+
+  if (!is.null(high_quantile)){
+    if (high_quantile>=1 | high_quantile<=0){
+      stop("High quantile should be between 0 and 1. ")
+    }
+    if (is_h5(m)){
+      quantiles <- DelayedMatrixStats::colQuantiles(get_matrix(m = m, type = "C"), probs = high_quantile, na.rm = T)
+    } else {
+      quantiles <- matrixStats::colQuantiles(get_matrix(m = m, type = "C"), probs = high_quantile, na.rm=T)
+    }
+
+    for (quant in seq_along(quantiles)){
+
+      row_idx <- which(get_matrix(m = m, type = "C")[,names(quantiles[quant])] > quantiles[quant], arr.ind = F)
+
+      m@assays[[1]][row_idx, names(quantiles[quant])] <- NA
+      m@assays[[2]][row_idx, names(quantiles[quant])] <- NA
+      cat(paste0("-Masked ", format(length(row_idx), big.mark = ","), " CpGs due to too high in sample ", names(quantiles[quant]), ".\n"))
+    }
+  }
+  cat("-Finished in:  ",data.table::timetaken(start_proc_time),"\n")
+  return(m)
+}
+
+
+
 
 #--------------------------------------------------------------------------------------------------------------------------
 #' Combine methrix objects
