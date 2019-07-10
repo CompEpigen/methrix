@@ -4,7 +4,8 @@
 #' @param meth \code{\link{methrix}} object
 #' @param output_dir Output directory name where the files should be saved. If \code{NULL} creats a \code{tempdir}
 #' @param recal_stats Whether summary statistics should be recalculated? If you are using subsetted methrix object set this to TRUE.
-#' @param plot_beta_dist Default FALSE. This is a time consuming and writes huge density files required for plotting.
+#' @param plot_beta_dist Default TRUE. Can be time consuming.
+#' @param beta_nCpG Number of CpGs rto use for estimating beta value distribution. Default 10000
 #' @param n_thr Default 4. Only used if \code{plot_beta_dist} is TRUE
 #' @return an interactive html report
 #' @examples
@@ -37,7 +38,7 @@ methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_bet
     cat("File already present. Skipping step 1..\n")
   }else{
     if(recal_stats){
-      per_chr_stat = get_stats(m = meth, skip_cov = skip_cov, per_chr = TRUE)
+      per_chr_stat = get_stats(m = meth, per_chr = TRUE)
       gc()
     }else{
       per_chr_stat = meth@metadata$descriptive_stats$chr_stat

@@ -318,7 +318,7 @@ region_filter = function(m, regions){
   start_proc_time = proc.time()
   target_regions = cast_ranges(regions)
 
-  current_regions <-  data.table::as.data.table(colData(m))
+  current_regions <-  data.table::as.data.table(rowData(m))
   current_regions[,end := start+1]
   data.table::setDT(x = current_regions, key = c("chr", "start", "end"))
   overlap = data.table::foverlaps(x = current_regions, y = target_regions, type = "within", nomatch = NULL, which = TRUE)
@@ -471,6 +471,7 @@ get_stats = function(m, per_chr = TRUE){
     meth_stat = data.table::rbindlist(l = meth_stat, use.names = TRUE, idcol = "Sample_Name")
     stats = merge(meth_stat, cov_stat, by = c("chr", 'Sample_Name'))
     colnames(stats)[1] = "Chromosome"
+    stats$Chromosome = factor(x = stats$Chromosome, levels = m@metadata$chrom_sizes$contig)
   }else{
     if(is_h5(m)){
       cov_stat = lapply(row_idx, function(samp_idx){
@@ -481,9 +482,9 @@ get_stats = function(m, per_chr = TRUE){
       })
 
       meth_stat = lapply(row_idx, function(samp_idx){
-        me = DelayedMatrixStats::colMeans2(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
-        med = DelayedMatrixStats::colMedians(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
-        sd = DelayedMatrixStats::colSds(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        me = DelayedMatrixStats::colMeans2(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "M"))
+        med = DelayedMatrixStats::colMedians(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "M"))
+        sd = DelayedMatrixStats::colSds(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "M"))
         data.table::data.table(mean_meth = me, median_meth = med, sd_meth = sd)
       })
 
@@ -496,9 +497,9 @@ get_stats = function(m, per_chr = TRUE){
       })
 
       meth_stat = lapply(row_idx, function(samp_idx){
-        me = matrixStats::colMeans2(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
-        med = matrixStats::colMedians(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
-        sd = matrixStats::colSds(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C"))
+        me = matrixStats::colMeans2(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "M"))
+        med = matrixStats::colMedians(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "M"))
+        sd = matrixStats::colSds(get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "M"))
         data.table::data.table(mean_meth = me, median_meth = med, sd_meth = sd)
       })
     }

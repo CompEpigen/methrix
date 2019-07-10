@@ -5,8 +5,7 @@
 \title{Principal Component Analysis}
 \usage{
 methrix_pca(m, var = "top", top_var = 1000, ranges = NULL,
-  pheno = NULL, do_plot = TRUE, n_pc = 5, do_fast = FALSE,
-  col_palette = "RdYlGn")
+  pheno = NULL, do_plot = TRUE, n_pc = 2, do_fast = FALSE)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
@@ -17,11 +16,11 @@ methrix_pca(m, var = "top", top_var = 1000, ranges = NULL,
 
 \item{ranges}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
 
-\item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the violin plot.}
+\item{pheno}{Column name of colData(m). Default NULL. Will be used as a factor to color different groups}
 
 \item{do_plot}{Should a plot be generated?}
 
-\item{n_pc}{Number of principal components to return. Default 5.}
+\item{n_pc}{Default 2.}
 
 \item{do_fast}{Use the \code{\link{prcomp_irlba}} function for a quick PCA. This might be useful when computing with large datasets.}
 }

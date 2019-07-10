@@ -6,7 +6,7 @@
 #' @param stranded Default FALSE
 #' @param collapse_strands If TRUE collapses CpGs on different crick strand into watson. Deafult FALSE
 #' @param ref_cpgs BSgenome object, or name of the installed BSgenome package, or an output from \code{\link{extract_CPGs}}. Example: BSgenome.Hsapiens.UCSC.hg19
-#' @param ref_build reference genome for bedgraphs. Default "hg19". Only used for additional details. Doesnt affect in any way.
+#' @param ref_build reference genome for bedgraphs. Default NULL. Only used for additional details. Doesnt affect in any way.
 #' @param contigs contigs to restrict genomic CpGs to. Default all autosomes and allosomes - ignoring extra contigs.
 #' @param vect To use vectorized code. Default TRUE, memory intese. Set to FALSE if you have large number of BedGraph files.
 #' @param vect_batch_size Default NULL. Process samples in batches. Applicable only when vect = TRUE
@@ -41,10 +41,10 @@
 #'}
 #'
 
-read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill_CpGs = TRUE, stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL, ref_build = "Unknown", contigs = NULL, vect = TRUE,
+read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill_CpGs = TRUE, stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL, ref_build = NULL, contigs = NULL, vect = TRUE,
                           vect_batch_size = NULL, coldata = NULL, chr_idx = NULL, start_idx = NULL, end_idx = NULL,
                           beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
-                          synced_coordinates=FALSE, file_uncovered=NULL,
+                          synced_coordinates = FALSE, file_uncovered=NULL,
                           n_threads = 1, ideal = FALSE, h5 = FALSE, h5_dir = NULL, h5temp=NULL,
                           verbose = TRUE, bored = TRUE){
 
@@ -101,7 +101,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
 
   #Extract CpG's
   conig_lens = NA
-  if(is(ref_cpgs, 'list') & all(names(ref_cpgs) == c('cpgs', 'contig_lens'))){
+  if(is(ref_cpgs, 'list') & all(names(ref_cpgs) == c('cpgs', 'contig_lens', 'release_name'))){
     conig_lens =  ref_cpgs$contig_lens[contig %in% contigs]
     genome = data.table::copy(x = ref_cpgs$cpgs)
   }else if(any(is(ref_cpgs[1], "character"), is(ref_cpgs[1], "BSgenome"))){
@@ -113,11 +113,6 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
     data.table::setkey(x = genome, chr, start)
   }else{
     stop("Could not figure out the genome class.")
-  }
-
-  if(zero_based) {
-    genome[, start := start - 1]
-    genome[, end := end - 1]
   }
 
   if(verbose){
@@ -178,11 +173,11 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
   if(vect){
     mat_list = vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size, col_data = coldata,
                                  genome = genome, strand_collapse = collapse_strands, thr = n_threads,
-                               contigs = contigs, synced_coordinates = synced_coordinates, file_uncovered=file_uncovered)
+                               contigs = contigs, synced_coordinates = synced_coordinates, file_uncovered = file_uncovered, zero_based = zero_based)
   } else {
     mat_list = non_vect_code(files = files, col_idx = col_idx, coldata = coldata, strand_collapse = collapse_strands,
                              verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, contigs = contigs,
-                             synced_coordinates = synced_coordinates,  file_uncovered=file_uncovered)
+                             synced_coordinates = synced_coordinates,  file_uncovered = file_uncovered, zero_based = zero_based)
   }
 
   if(nrow(mat_list$beta_matrix) != nrow(mat_list$cov_matrix)){
@@ -198,6 +193,10 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
   ref_cpgs_chr = genome[, .N, chr]
 
   descriptive_stats = list(genome_stat = mat_list$genome_stat, chr_stat = mat_list$chr_stat, n_cpgs_covered = mat_list$ncpg)
+
+  if(is.null(ref_build)){
+    ref_build = ref_cpgs$release_name
+  }
 
   m_obj =  create_methrix(beta_mat = mat_list$beta_mat, cov_mat = mat_list$cov_matrix,
                           cpg_loci = genome[,.(chr, start, strand)], is_hdf5 = h5, genome_name = ref_build,
