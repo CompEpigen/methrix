@@ -163,7 +163,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
     }
     if (any(make.names(rownames(coldata), unique = TRUE)!=rownames(coldata))){
       modified <- which(make.names(rownames(coldata), unique = TRUE)!=rownames(coldata))
-      cat("The sample names contained a non-valid character or were duplicated. The following changes were made:")
+      cat("The sample names contained a non-valid character or were duplicated. The following changes were made:\n")
       cat(paste(paste(rownames(coldata)[modified],
                       make.names(rownames(coldata), unique = TRUE)[modified], sep=" => "), collapse = " \n "), "\n")
       rownames(coldata) <- make.names(rownames(coldata), unique = TRUE)
