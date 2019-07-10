@@ -19,6 +19,8 @@
 #' @param U_idx column index for read counts supporting Un-methylation in bedgraph files
 #' @param strand_idx column index for strand information in bedgraph files
 #' @param cov_idx column index for total-coverage in bedgraph files
+#' @param synced_coordinates Are the start and end coordinates of a stranded bedgraph are synchronized between + and - strands? Possible
+#' values: FALSE (default), TRUE if the start coordinates are the start coordinates of the C on the plus strand.
 #' @param n_threads number of threads to use. Default 1. Be-careful - there is a linear increase in memory usage with number of threads. This option is does not work with Windows OS.
 #' @param h5 Should the coverage and methylation matrices be stored as "HDF5Array"
 #' @param h5_dir directory to store H5 based object
@@ -42,6 +44,7 @@
 read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill_CpGs = TRUE, stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL, ref_build = "Unknown", contigs = NULL, vect = TRUE,
                           vect_batch_size = NULL, coldata = NULL, chr_idx = NULL, start_idx = NULL, end_idx = NULL,
                           beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
+                          synced_coordinates=FALSE, file_uncovered=NULL,
                           n_threads = 1, ideal = FALSE, h5 = FALSE, h5_dir = NULL, h5temp=NULL,
                           verbose = TRUE, bored = TRUE){
 
@@ -173,11 +176,13 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
 
   #Summarize bedgraphs and create a matrix
   if(vect){
-    mat_list = vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size,
-                               col_data = coldata,  genome = genome, strand_collapse = collapse_strands, thr = n_threads, contigs = contigs)
+    mat_list = vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size, col_data = coldata,
+                                 genome = genome, strand_collapse = collapse_strands, thr = n_threads,
+                               contigs = contigs, synced_coordinates = synced_coordinates, file_uncovered=file_uncovered)
   } else {
     mat_list = non_vect_code(files = files, col_idx = col_idx, coldata = coldata, strand_collapse = collapse_strands,
-                             verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, contigs = contigs)
+                             verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, contigs = contigs,
+                             synced_coordinates = synced_coordinates,  file_uncovered=file_uncovered)
   }
 
   if(nrow(mat_list$beta_matrix) != nrow(mat_list$cov_matrix)){

@@ -10,8 +10,9 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
   vect = TRUE, vect_batch_size = NULL, coldata = NULL,
   chr_idx = NULL, start_idx = NULL, end_idx = NULL,
   beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL,
-  cov_idx = NULL, n_threads = 1, ideal = FALSE, h5 = FALSE,
-  h5_dir = NULL, h5temp = NULL, verbose = TRUE, bored = TRUE)
+  cov_idx = NULL, synced_coordinates = FALSE, file_uncovered = NULL,
+  n_threads = 1, ideal = FALSE, h5 = FALSE, h5_dir = NULL,
+  h5temp = NULL, verbose = TRUE, bored = TRUE)
 }
 \arguments{
 \item{files}{bedgraph files.}
@@ -51,6 +52,9 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 \item{strand_idx}{column index for strand information in bedgraph files}
 
 \item{cov_idx}{column index for total-coverage in bedgraph files}
+
+\item{synced_coordinates}{Are the start and end coordinates of a stranded bedgraph are synchronized between + and - strands? Possible
+values: FALSE (default), TRUE if the start coordinates are the start coordinates of the C on the plus strand.}
 
 \item{n_threads}{number of threads to use. Default 1. Be-careful - there is a linear increase in memory usage with number of threads. This option is does not work with Windows OS.}
 
