@@ -28,6 +28,8 @@ Creates a detailed interative html summary report from Methrix object.
 If the directory contains required files (from previous run), it directly proceeds to generate html report.
 }
 \examples{
-data("mm9_bsmap")
-methrix::methrix_report(meth = mm9_bsmap)
+\dontrun{
+data("methrix_data")
+methrix::methrix_report(meth = methrix_data)
+}
 }

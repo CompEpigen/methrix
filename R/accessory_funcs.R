@@ -146,11 +146,14 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
   if(zero_based) {
     #Bring bedgraphs to 1-based cordinate
     bdg_dat[, start := start + 1]
-    bdg_dat[, end := end + 1]
   }
 
   #Check for contig prefixes and add them if necessary
-  sample_row_idx = sample(x = 1:nrow(bdg_dat), size = 1000, replace = FALSE)
+  if(nrow(bdg_dat) < 1000){
+    sample_row_idx = sample(x = 1:nrow(bdg_dat), size = as.integer(nrow(bdg_dat)/2), replace = FALSE)
+  }else{
+    sample_row_idx = sample(x = 1:nrow(bdg_dat), size = 1000, replace = FALSE)
+  }
   if(grepl(pattern = "chr", x = genome[1, chr]) != any(grepl(pattern = "chr", x = bdg_dat[sample_row_idx, chr]))){
     if(grepl(pattern = "chr", x = genome[1, chr])){
       bdg_dat[, chr := paste0("chr", chr)]

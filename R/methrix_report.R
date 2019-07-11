@@ -9,8 +9,10 @@
 #' @param n_thr Default 4. Only used if \code{plot_beta_dist} is TRUE
 #' @return an interactive html report
 #' @examples
-#' data("mm9_bsmap")
-#' methrix::methrix_report(meth = mm9_bsmap)
+#' \dontrun{
+#' data("methrix_data")
+#' methrix::methrix_report(meth = methrix_data)
+#' }
 #' @export
 methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_beta_dist = TRUE, beta_nCpG = 10000, n_thr = 4){
 

@@ -4,18 +4,13 @@
 #' @param n_thr Default 4.
 #' @param rm_NA remove NAs
 #' @param force forces to create files if they are existing
-#' @param make_bigWig Default FALSE. Whether to convert bedGraph to BigWig
-#' @param bedtools_path Default NULL. Path to bedtools. Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE
-#' @param bedGraphToBigWig_path Default NULL. Path to bedGraphToBigWig Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE
-#' @param bedClip_path Default NULL. Path to bedClip Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE
 #' @examples
-#' data("mm9_bsmap")
-#' write_bedgraphs(m = mm9_bsmap, output_dir = "./temp")
+#' data("methrix_data")
+#' write_bedgraphs(m = methrix_data, output_dir = "./temp")
 #' @return writes bedgraph files to output
 #' @export
 
-write_bedgraphs = function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE, n_thr = 4, make_BigWig = FALSE,
-                           bedtools_path = NULL, bedGraphToBigWig_path = NULL, bedClip_path = NULL){
+write_bedgraphs = function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE, n_thr = 4){
 
 
   if(!dir.exists(output_dir)){
@@ -37,7 +32,7 @@ write_bedgraphs = function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE, n_
                 if(rm_NA){
                   mat_i = mat_i[complete.cases(mat_i),,]
                 }
-                op_bdg = paste0(output_dir, "/", rownames(colData(m))[i], ".bedGraph")
+                op_bdg = paste0(output_dir, "/", rownames(colData(m))[i], ".bedGraph.gz")
                 if(file.exists(op_bdg)){
                   if(force){
                     cat(paste0("**Writing ", rownames(colData(m))[i], "\n"))
@@ -64,29 +59,4 @@ write_bedgraphs = function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE, n_
                 op_bdg
               })
   cat("----------------------\n")
-
-  if(make_BigWig){
-    if(is.na(m@metadata$chrom_sizes)){
-      stop("meta data contains no chrom_sizes slot.")
-    }
-    cat("*Converting bedGraphs to bigWig:\n")
-    cat("**Checking for bed* binaries\n")
-    bt = check_bedtools(path = bedtools_path)
-    bb = check_bedGraphToBigWig(path = bedGraphToBigWig_path)
-    bc = check_bedClip(path = bedClip_path)
-    cat("**All good\n")
-
-    chr_lens = data.table::copy(x = m@metadata$chrom_sizes)
-    #chr_lens[,start := 1]
-    chrom_sizes = paste0(output_dir, "/", "chrom.sizes")
-    data.table::fwrite(x = chr_lens, file = chrom_sizes, sep = "\t", col.names = FALSE)
-
-    bdg2bw = system.file('extdata', 'bdg2bw.sh', package = 'methrix')
-    lapply(op_bdgs, function(b){
-      cat(paste0("***Converting ", basename(b), "\n"))
-      cmd = paste("bash", bdg2bw, b, chrom_sizes, bt, bc, bb)
-      system(command = cmd, intern = TRUE)
-    })
-    cat("----------------------\n")
-  }
 }

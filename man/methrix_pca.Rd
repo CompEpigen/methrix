@@ -5,7 +5,7 @@
 \title{Principal Component Analysis}
 \usage{
 methrix_pca(m, var = "top", top_var = 1000, ranges = NULL,
-  pheno = NULL, do_plot = TRUE, n_pc = 2, do_fast = FALSE)
+  pheno = NULL, do_plot = TRUE, n_pc = 2)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
@@ -14,15 +14,13 @@ methrix_pca(m, var = "top", top_var = 1000, ranges = NULL,
 
 \item{top_var}{Number of variable CpGs to use. Default 1000 Set it to NULL to use all CpGs (which is not recommended due to memory requirements). This option is mutually exclusive with \code{ranges}.}
 
-\item{ranges}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
+\item{ranges}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object}
 
 \item{pheno}{Column name of colData(m). Default NULL. Will be used as a factor to color different groups}
 
 \item{do_plot}{Should a plot be generated?}
 
 \item{n_pc}{Default 2.}
-
-\item{do_fast}{Use the \code{\link{prcomp_irlba}} function for a quick PCA. This might be useful when computing with large datasets.}
 }
 \value{
 PCA results
@@ -32,5 +30,5 @@ Principal Component Analysis
 }
 \examples{
 data("methrix_data")
-methrix_pca(methrix_data)
+methrix_pca(methrix_data, do_plot = FALSE)
 }

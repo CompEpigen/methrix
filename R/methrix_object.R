@@ -1,17 +1,14 @@
 #' Class methrix
 #' @description S4 class Methrix
-#' @slot beta beta matrix
-#' @slot cov coverage matrix
-#' @slot metadata genome: the name of the BSgenome that was used to extract CpGs, isHDF5: is it stored in HDF5 Array format
-#' @slot sample_annotation sample annotation data frame
-#' @slot position chromosome, start and strand information in a data.table format
+#' @slot assays A list of tw omatrices containing "Methylation" and "Coverage" information
+#' @slot elementMetadata A DataFrame describing rows in correspoding assay matrices.
+#' @slot colData genome: the name of the BSgenome that was used to extract CpGs, isHDF5: is it stored in HDF5 Array format
+#' @slot metadata a list of meta data associated with the assays
+#' @slot NAMES NULL
 #' @exportClass methrix
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
 #'
-
 methrix <- setClass(Class = 'methrix', contains = "SummarizedExperiment")
-# we can include validity checks as well
-# we might need to keep track of the processing steps
 
 setMethod(f = 'show', signature = 'methrix', definition = function(object){
   cat(paste0('An object of class ', class(object), "\n"))

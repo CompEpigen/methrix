@@ -4,12 +4,12 @@
 \alias{save_HDF5_methrix}
 \title{Saves HDF5 methrix object}
 \usage{
-save_HDF5_methrix(m = NULL, dir = "", replace = FALSE, ...)
+save_HDF5_methrix(m = NULL, dir = NULL, replace = FALSE, ...)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
 
-\item{dir}{The directory to use. Created, if not existing.}
+\item{dir}{The directory to use. Created, if not existing. Default NULL}
 
 \item{replace}{Should it overwrite the pre-existing data? FALSE by default.}
 
@@ -23,5 +23,5 @@ Takes \code{\link{methrix}} object and saves it
 }
 \examples{
 data("methrix_data")
-save_HDF5_methrix(methrix_data, dir="/my_methrix_folder", replace=T)
+save_HDF5_methrix(methrix_data, dir = tempdir(), replace=TRUE)
 }

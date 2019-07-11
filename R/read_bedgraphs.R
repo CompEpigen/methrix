@@ -41,11 +41,11 @@
 #'}
 #'
 
-read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill_CpGs = TRUE, stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL, ref_build = NULL, contigs = NULL, vect = TRUE,
+read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL, ref_build = NULL, contigs = NULL, vect = TRUE,
                           vect_batch_size = NULL, coldata = NULL, chr_idx = NULL, start_idx = NULL, end_idx = NULL,
                           beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
-                          synced_coordinates = FALSE, file_uncovered=NULL,
-                          n_threads = 1, ideal = FALSE, h5 = FALSE, h5_dir = NULL, h5temp=NULL,
+                          synced_coordinates = FALSE,
+                          n_threads = 1, h5 = FALSE, h5_dir = NULL, h5temp=NULL,
                           verbose = TRUE, bored = TRUE){
 
   #To-do: One has to check if it works correctly with Bismark and MethylDackel data.
@@ -173,11 +173,11 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, fill
   if(vect){
     mat_list = vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size, col_data = coldata,
                                  genome = genome, strand_collapse = collapse_strands, thr = n_threads,
-                               contigs = contigs, synced_coordinates = synced_coordinates, file_uncovered = file_uncovered, zero_based = zero_based)
+                               contigs = contigs, synced_coordinates = synced_coordinates, zero_based = zero_based)
   } else {
     mat_list = non_vect_code(files = files, col_idx = col_idx, coldata = coldata, strand_collapse = collapse_strands,
                              verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, contigs = contigs,
-                             synced_coordinates = synced_coordinates,  file_uncovered = file_uncovered, zero_based = zero_based)
+                             synced_coordinates = synced_coordinates,  zero_based = zero_based)
   }
 
   if(nrow(mat_list$beta_matrix) != nrow(mat_list$cov_matrix)){

@@ -1,6 +1,7 @@
 #' Extract and summarize methylation or coverage info by regions of interest
 #' @details Takes \code{\link{methrix}} object and summarizes regions
-#' @param regions genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
+#' @param m \code{\link{methrix}} object
+#' @param regions genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object
 #' @param type matrix which needs to be summarized. Coule be `M`, `C`. Default "M"
 #' @param how mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min. Default "mean"
 #' @param na_rm Remove NA's ? Default \code{TRUE}
@@ -8,7 +9,7 @@
 #' @return a coverage or methylation matrix
 #' @examples
 #' data("methrix_data")
-#' get_region_summary2(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103), type = "M", how = "mean")
+#' get_region_summary(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103), type = "M", how = "mean")
 #' @export
 get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm = TRUE, verbose = TRUE){
 
@@ -87,7 +88,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
 #--------------------------------------------------------------------------------------------------------------------------
 #' Order mathrix object by SD
 #' @details Takes \code{\link{methrix}} object and reorganizes the data by standard deviation
-#' @param m \code{\link{methrix}} objectw
+#' @param m \code{\link{methrix}} object
 #' @return An object of class \code{\link{methrix}}
 #' @examples
 #' data("methrix_data")
@@ -110,7 +111,7 @@ order_by_sd = function(m){
 #' Subsets \code{\link{methrix}} object based on given conditions.
 #' @details Takes \code{\link{methrix}} object and filters CpGs based on coverage statistics
 #' @param m \code{\link{methrix}} object
-#' @param regions genomic regions to subset by. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
+#' @param regions genomic regions to subset by. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object
 #' @param contigs chromosome names to subset by
 #' @param samples sample names to subset by
 #' @examples
@@ -248,7 +249,7 @@ get_matrix= function(m, type = "M", add_loci = FALSE){
 #--------------------------------------------------------------------------------------------------------------------------
 
 #' Convert methrix to bsseq object
-#' @details Takes \code{\link{methrix}} object and returns a \code{\link{BSseq}} object
+#' @details Takes \code{\link{methrix}} object and returns a \code{BSseq} object
 #' @param m \code{\link{methrix}} object
 #' @return An object of class \code{\link{BSseq}}
 #' @examples
@@ -305,7 +306,7 @@ remove_uncovered = function(m){
 #' Filter matrices by region
 #' @details Takes \code{\link{methrix}} object and filters CpGs based on supplied regions in data.table or GRanges format
 #' @param m \code{\link{methrix}} object
-#' @param regions genomic regions to filter-out. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object
+#' @param regions genomic regions to filter-out. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object
 #' @return An object of class \code{\link{methrix}}
 #' @examples
 #' data("methrix_data")
@@ -352,7 +353,7 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
 
   start_proc_time = proc.time()
   if (!is.null(low_count)){
-    row_idx <- which(get_matrix(m = m, type = "C") < low_count, arr.ind = F)
+    row_idx <- which(get_matrix(m = m, type = "C") < low_count, arr.ind = FALSE)
 
     cat(paste0("-Masked ", format(length(row_idx), big.mark = ","), " CpGs due to low coverage. \n"))
     m@assays[[1]][row_idx] <- NA
@@ -364,14 +365,14 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
       stop("High quantile should be between 0 and 1. ")
     }
     if (is_h5(m)){
-      quantiles <- DelayedMatrixStats::colQuantiles(get_matrix(m = m, type = "C"), probs = high_quantile, na.rm = T)
+      quantiles <- DelayedMatrixStats::colQuantiles(get_matrix(m = m, type = "C"), probs = high_quantile, na.rm = TRUE)
     } else {
-      quantiles <- matrixStats::colQuantiles(get_matrix(m = m, type = "C"), probs = high_quantile, na.rm=T)
+      quantiles <- matrixStats::colQuantiles(get_matrix(m = m, type = "C"), probs = high_quantile, na.rm=TRUE)
     }
 
     for (quant in seq_along(quantiles)){
 
-      row_idx <- which(get_matrix(m = m, type = "C")[,names(quantiles[quant])] > quantiles[quant], arr.ind = F)
+      row_idx <- which(get_matrix(m = m, type = "C")[,names(quantiles[quant])] > quantiles[quant], arr.ind = FALSE)
 
       m@assays[[1]][row_idx, names(quantiles[quant])] <- NA
       m@assays[[2]][row_idx, names(quantiles[quant])] <- NA
@@ -383,13 +384,11 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
 }
 
 
-
-
 #--------------------------------------------------------------------------------------------------------------------------
 #' Combine methrix objects
 #' @details Takes two \code{\link{methrix}} objects and combines them row- or column-wise
-#' @param m1 \code{\link{methrix}} object
-#' @param m1 \code{\link{methrix}} object
+#' @param m1 Frist \code{\link{methrix}} object
+#' @param m2 Second \code{\link{methrix}} object
 #' @param by The direction of combine. "column" (cbind) combines samples with same regions, "row" combines different regions,
 #' e.g. different chromosomes.
 #' @return An object of class \code{\link{methrix}}
@@ -440,6 +439,7 @@ combine_methrix = function(m1, m2, by = c("row", "col")){
 #' @examples
 #' data("methrix_data")
 #' get_stats(methrix_data)
+#' @return data.table of summary stats
 #' @export
 get_stats = function(m, per_chr = TRUE){
 
@@ -517,39 +517,25 @@ get_stats = function(m, per_chr = TRUE){
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
-#' Extract CpGs covered per chromosome information
-#' @details Takes \code{\link{methrix}} object and returns a table of CpGs covered per chromosome
-#' @param m \code{\link{methrix}} object
-#' @examples
-#' data("methrix_data")
-#' get_chr_summary(methrix_data)
-#' @export
-get_chr_summary = function(m = NULL){
-  chr_tbl = table(rowData(x = m)[,"chr"])
-  chr_tbl = data.table::data.table(chr_tbl)
-  names(chr_tbl) = c("chr", "n_CpG")
-  chr_tbl = merge(chr_tbl, m@metadata$ref_CpG, by = 'chr')
-  names(chr_tbl) = c('chr', 'n_CpG', 'n_ref_CpG')
-  chr_tbl[,percent_ref_CpG_covered := round(n_CpG/n_ref_CpG, digits = 4) * 100]
-  chr_tbl
-}
-
-
-#--------------------------------------------------------------------------------------------------------------------------
 #' Saves HDF5 methrix object
 #' @details Takes \code{\link{methrix}} object and saves it
 #' @param m \code{\link{methrix}} object
-#' @param dir The directory to use. Created, if not existing.
+#' @param dir The directory to use. Created, if not existing. Default NULL
 #' @param replace Should it overwrite the pre-existing data? FALSE by default.
 #' @param ... Parameters to pass to saveHDF5SummarizedExperiment
 #' @examples
 #' data("methrix_data")
-#' save_HDF5_methrix(methrix_data, dir="/my_methrix_folder", replace=T)
+#' save_HDF5_methrix(methrix_data, dir = tempdir(), replace=TRUE)
+#' @return NULL
 #' @export
-save_HDF5_methrix = function(m=NULL, dir="", replace=FALSE, ...){
+save_HDF5_methrix = function(m = NULL, dir = NULL, replace = FALSE, ...){
 
-  if (class(m)=="methrix" && is_h5(m)){
-    HDF5Array::saveHDF5SummarizedExperiment(x=m, dir=dir, replace = replace, ...)
+  if(is.null(dir)){
+    stop("Please provide an target directory to save the results")
+  }
+
+  if (is(m, "methrix") && is_h5(m)){
+    HDF5Array::saveHDF5SummarizedExperiment(x = m, dir = dir, replace = replace, ...)
   } else {
     stop("The object is not a mthrix object or not in an HDF5 format. ")
   }
@@ -559,15 +545,17 @@ save_HDF5_methrix = function(m=NULL, dir="", replace=FALSE, ...){
 #--------------------------------------------------------------------------------------------------------------------------
 #' Loads HDF5 methrix object
 #' @details Takes  directory with a previously saved HDF5Array format \code{\link{methrix}} object and loads it
-#' @param dir The directory to read in from.
+#' @param dir The directory to read in from. Default NULL
 #' @param ... Parameters to pass to loadHDF5SummarizedExperiment
 #' @return An object of class \code{\link{methrix}}
-#' @examples
-#' load_HDF5_methrix(dir="/my_methrix_folder")
 #' @export
-load_HDF5_methrix = function(dir="", ...){
+load_HDF5_methrix = function(dir = NULL, ...){
 
-  m <- HDF5Array::loadHDF5SummarizedExperiment(dir=dir,  ...)
+  if(is.null(dir)){
+    stop("Please provide the target directory containing ")
+  }
+
+  m <- HDF5Array::loadHDF5SummarizedExperiment(dir = dir,  ...)
   m <- as(m, "methrix")
   return(m)
 }

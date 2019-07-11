@@ -4,10 +4,10 @@
 \alias{load_HDF5_methrix}
 \title{Loads HDF5 methrix object}
 \usage{
-load_HDF5_methrix(dir = "", ...)
+load_HDF5_methrix(dir = NULL, ...)
 }
 \arguments{
-\item{dir}{The directory to read in from.}
+\item{dir}{The directory to read in from. Default NULL}
 
 \item{...}{Parameters to pass to loadHDF5SummarizedExperiment}
 }
@@ -19,7 +19,4 @@ Loads HDF5 methrix object
 }
 \details{
 Takes  directory with a previously saved HDF5Array format \code{\link{methrix}} object and loads it
-}
-\examples{
-load_HDF5_methrix(dir="/my_methrix_folder")
 }

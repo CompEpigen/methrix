@@ -18,13 +18,18 @@ plot_pca(pca_res, m = NULL, col_anno = NULL, shape_anno = NULL,
 
 \item{pc_x}{Default "PC1"}
 
-\item{show_labels}{Default FLASE}
+\item{pc_y}{Default "PC2"}
 
-\item{pc_x}{Default "PC2"}
+\item{show_labels}{Default FLASE}
 }
 \value{
 ggplot2 object
 }
 \description{
 Plot PCA results
+}
+\examples{
+data("methrix_data")
+mpc = methrix_pca(methrix_data, do_plot = FALSE)
+plot_pca(mpc)
 }

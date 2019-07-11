@@ -5,8 +5,7 @@
 \title{Writes bedGraphs from methrix object}
 \usage{
 write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
-  n_thr = 4, make_BigWig = FALSE, bedtools_path = NULL,
-  bedGraphToBigWig_path = NULL, bedClip_path = NULL)
+  n_thr = 4)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
@@ -18,14 +17,6 @@ write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
 \item{force}{forces to create files if they are existing}
 
 \item{n_thr}{Default 4.}
-
-\item{bedtools_path}{Default NULL. Path to bedtools. Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE}
-
-\item{bedGraphToBigWig_path}{Default NULL. Path to bedGraphToBigWig Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE}
-
-\item{bedClip_path}{Default NULL. Path to bedClip Default looks in $PATH. Only applicable if \code{make_bigWig} = TRUE}
-
-\item{make_bigWig}{Default FALSE. Whether to convert bedGraph to BigWig}
 }
 \value{
 writes bedgraph files to output
@@ -34,6 +25,6 @@ writes bedgraph files to output
 Writes bedGraphs from methrix object
 }
 \examples{
-data("mm9_bsmap")
-write_bedgraphs(m = mm9_bsmap, output_dir = "./temp")
+data("methrix_data")
+write_bedgraphs(m = methrix_data, output_dir = "./temp")
 }

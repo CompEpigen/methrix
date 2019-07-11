@@ -9,7 +9,7 @@ subset_methrix(m, regions = NULL, contigs = NULL, samples = NULL)
 \arguments{
 \item{m}{\code{\link{methrix}} object}
 
-\item{regions}{genomic regions to subset by. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
+\item{regions}{genomic regions to subset by. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object}
 
 \item{contigs}{chromosome names to subset by}
 

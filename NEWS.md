@@ -1,3 +1,6 @@
+# methrix 0.9.92
+* More stable code
+
 # methrix 0.9.91
 * Added summary statistics function
 * Improvements to PCA

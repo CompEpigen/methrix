@@ -16,7 +16,7 @@ An object of class \code{\link{BSseq}}
 Convert methrix to bsseq object
 }
 \details{
-Takes \code{\link{methrix}} object and returns a \code{\link{BSseq}} object
+Takes \code{\link{methrix}} object and returns a \code{BSseq} object
 }
 \examples{
 \dontrun{
