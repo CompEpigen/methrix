@@ -1,0 +1,160 @@
+---
+title: "Methrix Summary"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    self_contained: yes
+    css: custom.css
+    theme: sandstone
+    highlight: tango
+params:
+  n_covered_tsv: NULL
+  n_covered_by_all_samples_tsv: NULL
+  mc_per_chr_stat: NULL
+  mc_per_sample_stat: NULL
+  chr_lens: NULL
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+<img src="logo_large_hexagon.gif" height="150" width="150" style="position:absolute;top:30px;right:0px;" />
+
+```{r}
+library(ggplot2)
+library(plotly)
+library(data.table)
+```
+
+## Reference CpGs covered {.tabset}
+### Raw
+```{r}
+n_covered = data.table::fread(input = params$n_covered_tsv)
+n_covered[, fraction := n_covered/total_CpGs]
+
+contig_lens = data.table::fread(input = params$chr_lens)
+
+chr_order = contig_lens$contig[contig_lens$contig %in% unique(n_covered[,chr])]
+n_covered[, chr := factor(as.character(chr), levels = chr_order)]
+
+p = ggplot(data = n_covered, aes(x = chr, y = n_covered, label = Sample_Name))+geom_boxplot()+geom_jitter(size = 0.6)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+plotly::ggplotly(p = p)
+```
+
+### Fraction
+```{r}
+p = ggplot(data = n_covered, aes(x = chr, y = fraction, label = Sample_Name))+geom_boxplot()+geom_jitter(size = 0.6)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+plotly::ggplotly(p = p)
+```
+Number of reference CpGs covered by each sample in each chromosome
+
+## Reference CpGs covered by all {.tabset}
+### Raw
+```{r}
+#n_covered_all = data.table::fread(input = "n_covered_by_all_samples.tsv")
+n_covered_all = data.table::fread(input = params$n_covered_by_all_samples_tsv)
+n_covered_all[,chr := factor(as.character(chr), levels = rev(chr_order))]
+p = ggplot(data = n_covered_all, aes(x = chr, y = n_CpG, label = n_CpG))+geom_bar(stat = 'identity')+coord_flip()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+theme_minimal()
+plotly::ggplotly(p = p)
+```
+
+### Fraction
+```{r}
+p = ggplot(data = n_covered_all, aes(x = chr, y = fract_CpG, label = fract_CpG))+geom_bar(stat = 'identity')+coord_flip()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+ylim(0, 1)+theme_minimal()
+plotly::ggplotly(p = p)
+```
+Number of reference CpGs covered by all samples
+
+## Chromosome-wise Methylation {.tabset}
+### Mean
+```{r}
+#m_stat = data.table::fread(input = "m_per_chr.tsv")
+m_stat = data.table::fread(input = params$mc_per_chr_stat)
+m_stat[,Chromosome := factor(as.character(Chromosome), levels = chr_order)]
+
+p = ggplot(data = m_stat, aes(x = mean_meth, y = Sample_Name, color = Chromosome, label = Sample_Name))+geom_point()+xlim(0, 1)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+plotly::ggplotly(p = p)
+```
+
+### Median
+```{r}
+p = ggplot(data = m_stat, aes(x = median_meth, y = Sample_Name, color = Chromosome, label = Sample_Name))+geom_point()+xlim(0, 1)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+plotly::ggplotly(p = p)
+```
+
+## Chromosome-wise depth of coverage {.tabset}
+### Mean
+```{r}
+p = ggplot(data = m_stat, aes(x = mean_cov, y = Sample_Name, color = Chromosome, label = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+plotly::ggplotly(p = p)
+```
+
+### Median
+```{r}
+p = ggplot(data = m_stat, aes(x = median_meth, y = Sample_Name, color = Chromosome, label = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+
+plotly::ggplotly(p = p)
+```
+
+
+## Genome-wide Methylation {.tabset}
+### Mean
+```{r}
+#global_meth = data.table::fread(input = "global_meth_per_samp.tsv")
+global_meth = data.table::fread(input = params$mc_per_sample_stat)
+p = ggplot(data = global_meth, aes(x = mean_meth, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)+ theme(legend.position = "none")
+
+plotly::ggplotly(p = p)
+```
+
+### Median
+```{r}
+p =  ggplot(data = global_meth, aes(x = median_meth, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+xlim(0, 1)+ theme(legend.position = "none")
+
+plotly::ggplotly(p = p)
+```
+
+## Genome-wide depth of coverage {.tabset}
+### Mean
+```{r}
+p = ggplot(data = global_meth, aes(x = mean_cov, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+ theme(legend.position = "none")
+
+plotly::ggplotly(p = p)
+```
+
+### Median
+```{r}
+p =  ggplot(data = global_meth, aes(x = median_cov, y = Sample_Name, color = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())+ theme(legend.position = "none")
+
+plotly::ggplotly(p = p)
+```
+
+## Beta value distribution
+```{r, eval=TRUE}
+dens_files = list.files(pattern = "*_density\\.tsv\\.gz$", path = normalizePath(dirname(path = params$mc_per_sample_stat)), full.names = TRUE)
+dens_files = normalizePath(path = dens_files)
+
+if(length(dens_files) > 0){
+  
+  if(length(dens_files) <= 12){
+    cols = c("#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#FDB462", 
+            "#B3DE69", "#FCCDE5", "#D9D9D9", "#BC80BD", "#CCEBC5", "#FFED6F")
+  }else{
+    cols = sample(x = colors(), size = length(dens_files), replace = FALSE)
+  }
+  
+  dens_dat = lapply(dens_files, data.table::fread)
+  names(dens_dat) = gsub(pattern = "_density.tsv.gz", replacement = "", x = basename(dens_files))
+  dens_dat = data.table::rbindlist(l = dens_dat, idcol = "Sample_Name", use.names = TRUE, fill = TRUE)
+  p = ggplot(dens_dat, aes(x = x, y = y, color = Sample_Name))+geom_line()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+  plotly::ggplotly(p = p)
+}
+```
+
