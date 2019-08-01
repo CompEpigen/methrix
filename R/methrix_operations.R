@@ -34,7 +34,8 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
   overlap_indices = data.table::foverlaps(x = r_dat, y = target_regions, type = "any", nomatch = NULL, which = TRUE)
 
   if(nrow(overlap_indices) == 0){
-    stop("No overlaps detected")
+    warning("No overlaps detected")
+    return(NULL)
   }
 
   overlap_indices[,yid := paste0("rid_", yid)]
@@ -50,7 +51,8 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
   }
 
   if(nrow(overlap_indices) != nrow(dat)){
-    stop("Something went wrong")
+    warning("Something went wrong")
+    return(NULL)
   }
 
   dat = cbind(overlap_indices, dat)
