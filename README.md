@@ -100,6 +100,7 @@ methrix_report()    #Create a detailed interative html summary report from methr
 methrix2bsseq()     #Convert methrix to bsseq object
 region_filter()	    #Filter matrices by region
 remove_uncovered()	#Remove loci that are uncovered across all samples
+coverage_filter()   #Filters methrix object based on coverage
 methrix_pca()	      #Principal Component Analysis
 subset_methrix	    #Subsets 'methrix' object based on given conditions.
 get_stats()	        #Estimate descriptive statistics of the object
