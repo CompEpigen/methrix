@@ -46,7 +46,7 @@ extract_CPGs = function(ref_genome = NULL, bored = TRUE){
   }
 
   ref_genome = BSgenome::getBSgenome(genome = ref_genome)
-  ref_build = attributes(x = ref_genome)$release_name
+  ref_build = attributes(x = ref_genome)$provider_version
   chrom_sizes = data.table::data.table(contig = names(seqlengths(x = ref_genome)), length = seqlengths(x = ref_genome))
   chrs = names(ref_genome)
 
