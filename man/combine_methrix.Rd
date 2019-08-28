@@ -7,12 +7,12 @@
 combine_methrix(m1, m2, by = c("row", "col"))
 }
 \arguments{
-\item{m1}{\code{\link{methrix}} object}
+\item{m1}{Frist \code{\link{methrix}} object}
+
+\item{m2}{Second \code{\link{methrix}} object}
 
 \item{by}{The direction of combine. "column" (cbind) combines samples with same regions, "row" combines different regions,
 e.g. different chromosomes.}
-
-\item{m1}{\code{\link{methrix}} object}
 }
 \value{
 An object of class \code{\link{methrix}}

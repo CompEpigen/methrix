@@ -6,7 +6,7 @@
 #' @export
 #' @return a list of data.table containing number of CpG's and contig lengths
 #' @examples
-#' mm9_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19", bored = FALSE)
+#' hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19", bored = FALSE)
 
 extract_CPGs = function(ref_genome = NULL, bored = TRUE){
 
@@ -46,6 +46,7 @@ extract_CPGs = function(ref_genome = NULL, bored = TRUE){
   }
 
   ref_genome = BSgenome::getBSgenome(genome = ref_genome)
+  ref_build = attributes(x = ref_genome)$provider_version
   chrom_sizes = data.table::data.table(contig = names(seqlengths(x = ref_genome)), length = seqlengths(x = ref_genome))
   chrs = names(ref_genome)
 
@@ -67,5 +68,5 @@ extract_CPGs = function(ref_genome = NULL, bored = TRUE){
   data.table::setkey(x = cpgs, "chr", "start")
   cat(paste0("-Done. Extracted ", format(nrow(cpgs), big.mark = ','), " CpGs from ", length(chrs), " contigs.\n"))
 
-  return(list(cpgs = cpgs, contig_lens = chrom_sizes))
+  return(list(cpgs = cpgs, contig_lens = chrom_sizes, release_name = ref_build))
 }

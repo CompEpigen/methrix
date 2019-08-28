@@ -14,7 +14,6 @@
 #' @param chrWise Compute job chromosome-wise and compute FDR adjusted p-values afterwards? Default FALSE.
 #' @param ncore Number of cores if executed parallel. Default 1.
 #' @return list of DMRs
-#' @export
 
 methrix_differential <- function(m, pheno = NULL, smooth = FALSE, s_span = 500, delta = 0.1, p = 0.05,
                                  minlen = 50, minCG = 3, mergeDis = 500, pct.sig = 0.5, parallel = FALSE, chrWise = FALSE, ncore = 1){

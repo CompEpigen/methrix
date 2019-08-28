@@ -11,6 +11,9 @@ get_stats(m, per_chr = TRUE)
 
 \item{per_chr}{Estimate stats per chromosome. Default FALSE}
 }
+\value{
+data.table of summary stats
+}
 \description{
 Estimate descriptive statistics
 }

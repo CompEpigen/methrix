@@ -5,14 +5,13 @@
 \title{Versatile BedGraph reader.}
 \usage{
 read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
-  fill_CpGs = TRUE, stranded = FALSE, collapse_strands = FALSE,
-  ref_cpgs = NULL, ref_build = "Unknown", contigs = NULL,
-  vect = TRUE, vect_batch_size = NULL, coldata = NULL,
-  chr_idx = NULL, start_idx = NULL, end_idx = NULL,
-  beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL,
-  cov_idx = NULL, synced_coordinates = FALSE, file_uncovered = NULL,
-  n_threads = 1, ideal = FALSE, h5 = FALSE, h5_dir = NULL,
-  h5temp = NULL, verbose = TRUE, bored = TRUE)
+  stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL,
+  ref_build = NULL, contigs = NULL, vect = TRUE,
+  vect_batch_size = NULL, coldata = NULL, chr_idx = NULL,
+  start_idx = NULL, end_idx = NULL, beta_idx = NULL, M_idx = NULL,
+  U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
+  synced_coordinates = FALSE, n_threads = 1, h5 = FALSE,
+  h5_dir = NULL, h5temp = NULL, verbose = TRUE, bored = TRUE)
 }
 \arguments{
 \item{files}{bedgraph files.}
@@ -27,7 +26,7 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 
 \item{ref_cpgs}{BSgenome object, or name of the installed BSgenome package, or an output from \code{\link{extract_CPGs}}. Example: BSgenome.Hsapiens.UCSC.hg19}
 
-\item{ref_build}{reference genome for bedgraphs. Default "hg19". Only used for additional details. Doesnt affect in any way.}
+\item{ref_build}{reference genome for bedgraphs. Default NULL. Only used for additional details. Doesnt affect in any way.}
 
 \item{contigs}{contigs to restrict genomic CpGs to. Default all autosomes and allosomes - ignoring extra contigs.}
 

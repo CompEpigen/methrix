@@ -14,7 +14,9 @@ methrix_report(meth, output_dir = NULL, recal_stats = FALSE,
 
 \item{recal_stats}{Whether summary statistics should be recalculated? If you are using subsetted methrix object set this to TRUE.}
 
-\item{plot_beta_dist}{Default FALSE. This is a time consuming and writes huge density files required for plotting.}
+\item{plot_beta_dist}{Default TRUE. Can be time consuming.}
+
+\item{beta_nCpG}{Number of CpGs rto use for estimating beta value distribution. Default 10000}
 
 \item{n_thr}{Default 4. Only used if \code{plot_beta_dist} is TRUE}
 }
@@ -26,6 +28,8 @@ Creates a detailed interative html summary report from Methrix object.
 If the directory contains required files (from previous run), it directly proceeds to generate html report.
 }
 \examples{
-data("mm9_bsmap")
-methrix::methrix_report(meth = mm9_bsmap)
+\dontrun{
+data("methrix_data")
+methrix::methrix_report(meth = methrix_data)
+}
 }

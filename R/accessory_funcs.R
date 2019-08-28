@@ -109,7 +109,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
 
 #Read bedgraphs, and add missing info
 read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_collapse = FALSE, fill_cpgs = TRUE, contigs = contigs,
-                    synced_coordinates = synced_coordinates, file_uncovered){
+                    synced_coordinates = synced_coordinates, file_uncovered = NULL, zero_based = TRUE){
 
   cat(paste0("-Processing:    ", basename(bdg), "\n"))
   bdg_dat = suppressWarnings(data.table::fread(file = bdg, sep = "\t", colClasses = col_list$col_classes, verbose = FALSE, showProgress = FALSE))
@@ -143,8 +143,17 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
   bdg_dat[, chr := as.character(chr)]
   bdg_dat[, start := as.integer(start)]
 
+  if(zero_based) {
+    #Bring bedgraphs to 1-based cordinate
+    bdg_dat[, start := start + 1]
+  }
+
   #Check for contig prefixes and add them if necessary
-  sample_row_idx = sample(x = 1:nrow(bdg_dat), size = 1000, replace = FALSE)
+  if(nrow(bdg_dat) < 1000){
+    sample_row_idx = sample(x = 1:nrow(bdg_dat), size = as.integer(nrow(bdg_dat)/2), replace = FALSE)
+  }else{
+    sample_row_idx = sample(x = 1:nrow(bdg_dat), size = 1000, replace = FALSE)
+  }
   if(grepl(pattern = "chr", x = genome[1, chr]) != any(grepl(pattern = "chr", x = bdg_dat[sample_row_idx, chr]))){
     if(grepl(pattern = "chr", x = genome[1, chr])){
       bdg_dat[, chr := paste0("chr", chr)]
@@ -159,8 +168,8 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
     bdg_dat = bdg_dat[chr %in% as.character(contigs)]
   }
 
-  if (synced_coordinates){
-    bdg_dat = bdg_dat[strand=="-", start := start+1L]
+  if(synced_coordinates){
+    bdg_dat = bdg_dat[strand == "-", start := start + 1L]
   }
 
   data.table::setkey(x = bdg_dat, "chr", "start")
@@ -168,13 +177,10 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
 
   missing_cpgs = genome[!bdg_dat[,list(chr, start)], on = c("chr", "start")]
 
+  #Write missing CpGs to an op_dir
   if (!is.null(file_uncovered) && nrow(missing_cpgs) > 0){
-
-    fwrite(missing_cpgs, paste0(file_uncovered, gsub("\\.[[:alpha:]]+(\\.gz)?$", "",basename(bdg)), "_uncovered.bed"), sep = "\t", row.names = F)
-
+    fwrite(x = missing_cpgs, file = paste0(file_uncovered, gsub("\\.[[:alnum:]]+(\\.gz)?$", "",basename(bdg)), "_uncovered.bed"), sep = "\t", row.names = FALSE)
   }
-
-
 
   if(verbose){
     if(nrow(missing_cpgs) > 0){
@@ -238,7 +244,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
 
 #Process samples in batches. Batches are processed in vectorized manner (ideal for large number of samples)
 vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome = NULL, strand_collapse = FALSE, thr = 1, contigs = contigs,
-                           synced_coordinates,  file_uncovered){
+                           synced_coordinates,  file_uncovered = NULL, zero_based = TRUE){
   batches = split(files, ceiling(seq_along(files)/batch_size))
   batches_samp_names = split(rownames(col_data), ceiling(seq_along(rownames(col_data))/batch_size))
 
@@ -258,10 +264,10 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
         warning("Windows doesn't support parallel processing. Setting n_threads to 1.")
       }
       bdgs = lapply(batch_files, read_bdg, col_list = col_idx, genome = genome, strand_collapse = strand_collapse,
-                    contigs = contigs, synced_coordinates = synced_coordinates, file_uncovered=file_uncovered)
+                    contigs = contigs, synced_coordinates = synced_coordinates, file_uncovered=file_uncovered, zero_based = zero_based)
     }else {
       bdgs = parallel::mclapply(batch_files, read_bdg, col_list = col_idx, genome = genome, strand_collapse = strand_collapse, mc.cores = thr, contigs = contigs,
-                                synced_coordinates = synced_coordinates,  file_uncovered=file_uncovered)}
+                                synced_coordinates = synced_coordinates,  file_uncovered=file_uncovered, zero_based = zero_based)}
     names(bdgs) = samp_names
 
     if(i == 1){
@@ -298,7 +304,7 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
 
 #Use for loop for sample-by-sample processing, memory efficient, uses HDF5Array
 non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL, h5temp = NULL, h5 = FALSE, strand_collapse = FALSE,
-                         contigs = contigs, synced_coordinates, file_uncovered){
+                         contigs = contigs, synced_coordinates, file_uncovered = NULL, zero_based = TRUE){
   if ( strand_collapse){
     dimension <- as.integer(nrow(genome)/2)
   } else {
@@ -347,7 +353,7 @@ non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL
     #browser()
     for(i in seq_along(files)){
       b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse,
-                   contigs = contigs,  synced_coordinates = synced_coordinates, file_uncovered=file_uncovered)
+                   contigs = contigs,  synced_coordinates = synced_coordinates, file_uncovered=file_uncovered, zero_based = zero_based)
       DelayedArray::write_block(block=as.matrix(b$bdg[, .(beta)]), viewport = grid[[i]], x = M_sink)
       DelayedArray::write_block(block=as.matrix(b$bdg[, .(cov)]), viewport = grid[[i]], x = cov_sink)
       genome_stat_final = rbind(genome_stat_final, b$genome_stat[, Sample_Name := rownames(coldata)[i]])
@@ -362,7 +368,7 @@ non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL
     for(i in seq_along(files)){
       if(i == 1){
         b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse,
-                     contigs = contigs,  synced_coordinates = synced_coordinates, file_uncovered=file_uncovered)
+                     contigs = contigs,  synced_coordinates = synced_coordinates, file_uncovered=file_uncovered, zero_based = TRUE)
         beta_mat = b$bdg[,.(chr, start, beta)]
         cov_mat = b$bdg[,.(chr, start, cov)]
         genome_stat_final = b$genome_stat[,Sample_Name := rownames(coldata)[i]]
@@ -370,7 +376,7 @@ non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL
         ncpg_final = b$ncpg[,Sample_Name := rownames(coldata)[i]]
       }else{
         b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome, strand_collapse = strand_collapse,
-                     contigs = contigs,  synced_coordinates = synced_coordinates, file_uncovered=file_uncovered)
+                     contigs = contigs,  synced_coordinates = synced_coordinates, file_uncovered=file_uncovered, zero_based = TRUE)
         beta_mat = cbind(beta_mat, b$bdg[,.(beta)])
         cov_mat = cbind(cov_mat, b$bdg[,.(cov)])
         genome_stat_final = rbind(genome_stat_final, b$genome_stat[, Sample_Name := rownames(coldata)[i]])
@@ -441,6 +447,24 @@ giveme_this = function(mat, stat = "mean", na_rm = TRUE, ish5 = FALSE){
   }
 
   res
+}
+
+#--------------------------------------------------------------------------------------------------------------------------
+#Tiny script to get axis and limits
+get_y_lims = function(vec){
+
+  y_lims = range(vec)
+  y_at = pretty(y_lims)
+
+  if(y_at[1] > min(vec, na.rm = TRUE)){
+    y_at[1] = min(vec, na.rm = TRUE)
+  }
+  if(y_at[length(y_at)] < max(vec, na.rm = TRUE)){
+    y_at[length(y_at)] = max(vec, na.rm = TRUE)
+  }
+  y_lims = range(y_at, na.rm = TRUE)
+
+  list(y_lims = y_lims, y_at = y_at)
 }
 
 #Older implementation of get_region_summary - takes almost twice the memory. Backing it up here

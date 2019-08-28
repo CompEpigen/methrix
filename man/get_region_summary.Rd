@@ -8,7 +8,9 @@ get_region_summary(m, regions = NULL, type = "M", how = "mean",
   na_rm = TRUE, verbose = TRUE)
 }
 \arguments{
-\item{regions}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{\link{GRanges}} object}
+\item{m}{\code{\link{methrix}} object}
+
+\item{regions}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object}
 
 \item{type}{matrix which needs to be summarized. Coule be `M`, `C`. Default "M"}
 
@@ -29,5 +31,5 @@ Takes \code{\link{methrix}} object and summarizes regions
 }
 \examples{
 data("methrix_data")
-get_region_summary2(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103), type = "M", how = "mean")
+get_region_summary(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103), type = "M", how = "mean")
 }

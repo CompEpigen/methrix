@@ -11,14 +11,14 @@ S4 class Methrix
 \section{Slots}{
 
 \describe{
-\item{\code{beta}}{beta matrix}
+\item{\code{assays}}{A list of tw omatrices containing "Methylation" and "Coverage" information}
 
-\item{\code{cov}}{coverage matrix}
+\item{\code{elementMetadata}}{A DataFrame describing rows in correspoding assay matrices.}
 
-\item{\code{metadata}}{genome: the name of the BSgenome that was used to extract CpGs, isHDF5: is it stored in HDF5 Array format}
+\item{\code{colData}}{genome: the name of the BSgenome that was used to extract CpGs, isHDF5: is it stored in HDF5 Array format}
 
-\item{\code{sample_annotation}}{sample annotation data frame}
+\item{\code{metadata}}{a list of meta data associated with the assays}
 
-\item{\code{position}}{chromosome, start and strand information in a data.table format}
+\item{\code{NAMES}}{NULL}
 }}
 
