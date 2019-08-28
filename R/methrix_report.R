@@ -95,7 +95,13 @@ methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_bet
   if(file.exists(of4)){
     cat("File already present. Skipping step 4..\n")
   }else{
-    na_vec = apply(get_matrix(meth, type = "M"), MARGIN = 1, anyNA)
+    #na_vec = apply(get_matrix(meth, type = "M"), MARGIN = 1, anyNA)
+    if (is_h5(meth)){
+      na_vec <- DelayedMatrixStats::rowAnyNAs(get_matrix(meth, type = "M"))
+    } else {
+      na_vec <- matrixStats::rowAnyNAs(get_matrix(meth, type = "M"))
+    }
+
     mf_chr_summary = as.data.frame(table(rowData(x = meth)[,"chr"], na_vec))
 
     if(!plot_beta_dist){
