@@ -65,7 +65,7 @@ methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_bet
   }
 
   #n CpGs covered per chromomse
-  cat(paste0("Step 3 of 5: Reference CpGs coevered per chromosome\n"))
+  cat(paste0("Step 3 of 5: Reference CpGs covered per chromosome\n"))
   of3 = suppressWarnings(normalizePath(file.path(output_dir, "n_covered_per_chr.tsv")))
   contig_nCpGs = meth@metadata$ref_CpG
   colnames(contig_nCpGs) = c("chr", "total_CpGs")

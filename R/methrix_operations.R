@@ -539,7 +539,7 @@ save_HDF5_methrix = function(m = NULL, dir = NULL, replace = FALSE, ...){
   if (is(m, "methrix") && is_h5(m)){
     HDF5Array::saveHDF5SummarizedExperiment(x = m, dir = dir, replace = replace, ...)
   } else {
-    stop("The object is not a mthrix object or not in an HDF5 format. ")
+    stop("The object is not a methrix object or not in an HDF5 format. ")
   }
 
 }

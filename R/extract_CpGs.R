@@ -17,7 +17,7 @@ extract_CPGs = function(ref_genome = NULL, bored = TRUE){
     if(nrow(gnoms_installed) == 0){
       stop("Could not find any installed BSgenomes.\nUse BSgenome::available.genomes() for options.")
     }else{
-      message("Found following BSgenome installtions. Use the required 'pkgname'.")
+      message("Found following BSgenome installations. Use the required 'pkgname'.")
       print(gnoms_installed)
       stop()
       #ref_genome = gnoms_installed[,pkgname][1]
@@ -28,7 +28,7 @@ extract_CPGs = function(ref_genome = NULL, bored = TRUE){
       if(nrow(gnoms_installed) == 0){
         stop("Could not find any installed BSgenomes either.\nUse BSgenome::available.genomes() for options.")
       }else{
-        message("Found following BSgenome installtions. Provide the correct 'pkgname'")
+        message("Found following BSgenome installations. Provide the correct 'pkgname'")
         print(gnoms_installed)
         stop()
       }
