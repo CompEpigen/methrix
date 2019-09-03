@@ -400,7 +400,7 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
         m@assays[[2]][row_idx, names(quantiles[quant])] <- NA
       }
 
-      cat(paste0("-Masked ", length(row_idx), " CpGs due to too high in sample ", names(quantiles[quant]), ".\n"))
+      cat(paste0("-Masked ", length(row_idx), " CpGs due to too high coverage in sample ", names(quantiles[quant]), ".\n"))
     }
   }
   cat("-Finished in:  ",data.table::timetaken(start_proc_time),"\n")
