@@ -292,8 +292,12 @@ methrix2bsseq = function(m){
 remove_uncovered = function(m){
 
   start_proc_time = proc.time()
-  row_idx = data.table::as.data.table(which(is.na(get_matrix(m = m, type = "C")), arr.ind = TRUE))[,.N,row][N == ncol(m), row]
 
+  if (is_h5(m)) {
+    row_idx = data.table::as.data.table(which(is.na(get_matrix(m = m, type = "C")), arr.ind = TRUE))[, .N, V1][N == ncol(m), V1]
+  } else {
+    row_idx = data.table::as.data.table(which(is.na(get_matrix(m = m, type = "C")), arr.ind = TRUE))[, .N, row][N == ncol(m), row]
+  }
   cat(paste0("-Removed ", format(length(row_idx), big.mark = ","),
              " [", round(length(row_idx)/nrow(m) * 100, digits = 2), "%] uncovered loci of ",
              format(nrow(m), big.mark = ","), " sites\n"))
