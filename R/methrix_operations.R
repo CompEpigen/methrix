@@ -379,17 +379,28 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
     }
     if (is_h5(m)){
       quantiles <- DelayedMatrixStats::colQuantiles(get_matrix(m = m, type = "C"), probs = high_quantile, na.rm = TRUE)
+      qnames <- rownames(quantiles)
+      quantiles <- as.vector(quantiles)
+      names(quantiles) <- qnames
     } else {
       quantiles <- matrixStats::colQuantiles(get_matrix(m = m, type = "C"), probs = high_quantile, na.rm=TRUE)
     }
 
     for (quant in seq_along(quantiles)){
 
-      row_idx <- which(get_matrix(m = m, type = "C")[,names(quantiles[quant])] > quantiles[quant], arr.ind = FALSE)
+      if (is_h5(m)){
 
-      m@assays[[1]][row_idx, names(quantiles[quant])] <- NA
-      m@assays[[2]][row_idx, names(quantiles[quant])] <- NA
-      cat(paste0("-Masked ", format(length(row_idx), big.mark = ","), " CpGs due to too high in sample ", names(quantiles[quant]), ".\n"))
+        row_idx <- which(get_matrix(m = m, type = "C")[,which(rownames(m@colData)==names(quantiles[quant]))] > quantiles[quant], arr.ind = FALSE)
+        m@assays[[1]][row_idx, which(rownames(meth@colData)==names(quantiles[quant]))] <- NA
+        m@assays[[2]][row_idx, which(rownames(meth@colData)==names(quantiles[quant]))] <- NA
+
+      } else {
+        row_idx <- which(get_matrix(m = m, type = "C")[,names(quantiles[quant])] > quantiles[quant], arr.ind = FALSE)
+        m@assays[[1]][row_idx, names(quantiles[quant])] <- NA
+        m@assays[[2]][row_idx, names(quantiles[quant])] <- NA
+      }
+
+      cat(paste0("-Masked ", length(row_idx), " CpGs due to too high in sample ", names(quantiles[quant]), ".\n"))
     }
   }
   cat("-Finished in:  ",data.table::timetaken(start_proc_time),"\n")
