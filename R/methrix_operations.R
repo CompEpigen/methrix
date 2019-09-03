@@ -355,11 +355,18 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
 
   start_proc_time = proc.time()
   if (!is.null(low_count)){
+
     row_idx <- which(get_matrix(m = m, type = "C") < low_count, arr.ind = FALSE)
 
     cat(paste0("-Masked ", format(length(row_idx), big.mark = ","), " CpGs due to low coverage. \n"))
-    m@assays[[1]][row_idx] <- NA
-    m@assays[[2]][row_idx] <- NA
+    if (is_h5(m)) {
+      m@assays[[1]][get_matrix(m = m, type = "C") < low_count] <- NA
+      m@assays[[2]][get_matrix(m = m, type = "C") < low_count] <- NA
+    } else {
+      m@assays[[1]][row_idx] <- NA
+      m@assays[[2]][row_idx] <- NA
+    }
+
   }
 
   if (!is.null(high_quantile)){
