@@ -3,6 +3,9 @@ title: "Methrix tutorial"
 author: "CompEpigen"
 date: "`r Sys.Date()`"
 output: 
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
   html_document:
     toc: true
     toc_depth: 3
@@ -20,6 +23,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+options(tinytex.verbose = TRUE)
 ```
 
 <img src="logo_large_hexagon.gif" height="100" width="100" style="position:absolute;top:30px;right:0px;" />
@@ -172,7 +176,7 @@ plot_stats(plot_dat = meth_stats, what = "M", stat = "mean")
 ```
 
 ## PCA
-```{r}
+```{r, dev='CairoPDF'}
 mpca = methrix_pca(m = meth, do_plot = FALSE)
 
 #Plot PCA results

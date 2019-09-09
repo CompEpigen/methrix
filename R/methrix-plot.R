@@ -309,7 +309,7 @@ plot_pca = function(pca_res, m = NULL, col_anno = NULL, shape_anno = NULL, pc_x 
   }
 
   pca_gg = pca_gg+xlab(label = x_lab)+ylab(label = y_lab)+
-    theme_classic(base_size = 12, base_family = "bold")+
+    theme_classic(base_size = 12)+
     theme(axis.text.x = element_text(colour = "black", size = 12), axis.text.y = element_text(colour = "black", size = 12))
 
   if(show_labels){
