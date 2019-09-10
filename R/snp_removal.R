@@ -26,7 +26,7 @@ if (grepl("hg19|GRCh37|Hs37|hs37",  genome)){
   mafdb <- MafDb.1Kgenomes.phase3.hs37d5::MafDb.1Kgenomes.phase3.hs37d5} else {
     stop("Packages MafDb.1Kgenomes.phase3.hs37d5 and/or GenomicScores not found. Please install them before proceed.")
   }
-} else if (grepl("hg38|GRCh38",  genome)) {
+} else if (grepl("hg38|GRCh38|Hs38|hs38",  genome)) {
   if (requireNamespace("MafDb.1Kgenomes.phase3.GRCh38", quietly = TRUE) & requireNamespace("GenomicScores", quietly = TRUE)){
   cat("Used SNP database: MafDb.1Kgenomes.phase3.hs38. \n")
   #snps <- SNPlocs.Hsapiens.dbSNP151.GRCh38::SNPlocs.Hsapiens.dbSNP151.GRCh38

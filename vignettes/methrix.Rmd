@@ -176,7 +176,7 @@ plot_stats(plot_dat = meth_stats, what = "M", stat = "mean")
 ```
 
 ## PCA
-```{r, dev='CairoPDF'}
+```{r}
 mpca = methrix_pca(m = meth, do_plot = FALSE)
 
 #Plot PCA results

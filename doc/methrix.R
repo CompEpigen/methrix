@@ -7,10 +7,9 @@ options(tinytex.verbose = TRUE)
 
 ## ---- message=FALSE, warning=FALSE---------------------------------------
 #Load library
-library(extrafont)
 library(methrix)
 #Genome of your preference to work with
-library(BSgenome.Hsapiens.UCSC.hg19) 
+library(BSgenome.Hsapiens.UCSC.hg19)
 
 ## ------------------------------------------------------------------------
 #Example bedgraph files
@@ -23,7 +22,13 @@ bdg_files = list.files(
 print(bdg_files)
 
 #Generate some sample annotation table
-sample_anno = data.frame(row.names = gsub(pattern = "\\.bdg\\.gz$", replacement = "", x = basename(bdg_files)), Condition = c("Cancer", 'Cancer', "Normal", "Normal"), stringsAsFactors = FALSE)
+sample_anno = data.frame(
+  row.names = gsub(
+    pattern = "\\.bdg\\.gz$",
+    replacement = "",
+    x = basename(bdg_files)),
+  Condition = c("Cancer", 'Cancer', "Normal", "Normal"),
+  stringsAsFactors = FALSE)
 
 print(sample_anno)
 
@@ -41,7 +46,7 @@ meth = methrix::read_bedgraphs(
   M_idx = 3,
   U_idx = 4,
   stranded = TRUE,
-  collapse_strands = TRUE, 
+  collapse_strands = TRUE,
   coldata = sample_anno
 )
 
@@ -80,7 +85,7 @@ methrix::coverage_filter(m = meth, cov_thr = 3, min_samples = 2)
 methrix::subset_methrix(m = meth, contigs = "chr21")
 
 ## ------------------------------------------------------------------------
-#e.g; Retain sites only in TP53 loci 
+#e.g; Retain sites only in TP53 loci
 target_loci = data.table::data.table(chr = "chr21", start = 27867971, end =  27868103)
 print(target_loci)
 
@@ -102,7 +107,7 @@ plot_stats(plot_dat = meth_stats, what = "C", stat = "mean")
 #Draw mean methylation per sample
 plot_stats(plot_dat = meth_stats, what = "M", stat = "mean")
 
-## ---- dev='CairoPDF'-----------------------------------------------------
+## ------------------------------------------------------------------------
 mpca = methrix_pca(m = meth, do_plot = FALSE)
 
 #Plot PCA results

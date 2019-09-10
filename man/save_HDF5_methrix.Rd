@@ -22,6 +22,8 @@ Saves HDF5 methrix object
 Takes \code{\link{methrix}} object and saves it
 }
 \examples{
-data("methrix_data")
-save_HDF5_methrix(methrix_data, dir = tempdir(), replace=TRUE)
+\dontrun{
+data("methrix_data_h5")
+save_HDF5_methrix(methrix_data_h5, dir = tempdir(), replace=TRUE)
+}
 }

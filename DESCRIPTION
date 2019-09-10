@@ -20,6 +20,9 @@ Suggests:
     DSS,
     bsseq,
     plotly,
-    BSgenome.Mmusculus.UCSC.mm9
+    BSgenome.Mmusculus.UCSC.mm9,
+    MafDb.1Kgenomes.phase3.GRCh38,
+    MafDb.1Kgenomes.phase3.hs37d5,
+    GenomicScores
 VignetteBuilder: knitr
 biocViews: DNAMethylation

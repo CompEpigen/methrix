@@ -2,7 +2,7 @@
 % Please edit documentation in R/mehtrix-differential.R
 \name{methrix_differential}
 \alias{methrix_differential}
-\title{Differential Methylation Calling with DSS}
+\title{Differential Methylation Calling with \code{\link{DSS}}}
 \usage{
 methrix_differential(m, pheno = NULL, smooth = FALSE, s_span = 500,
   delta = 0.1, p = 0.05, minlen = 50, minCG = 3, mergeDis = 500,
@@ -39,7 +39,7 @@ methrix_differential(m, pheno = NULL, smooth = FALSE, s_span = 500,
 list of DMRs
 }
 \description{
-Differential Methylation Calling with DSS
+Differential Methylation Calling with \code{\link{DSS}}
 }
 \details{
 Wrapper function for differential methylation calling using \code{\link{DSS}}

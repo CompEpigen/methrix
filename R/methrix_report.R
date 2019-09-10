@@ -161,5 +161,5 @@ methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_bet
                                                                          chr_lens = of5))
   browseURL(url = paste0(output_dir, "/methrix_reports.html"))
 
-  cat(data.table:::timetaken(started.at = start_proc_time), sep = "\n")
+  cat(data.table::timetaken(started.at = start_proc_time), sep = "\n")
 }

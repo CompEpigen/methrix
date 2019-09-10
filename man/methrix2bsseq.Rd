@@ -2,7 +2,7 @@
 % Please edit documentation in R/methrix_operations.R
 \name{methrix2bsseq}
 \alias{methrix2bsseq}
-\title{Convert methrix to bsseq object}
+\title{Convert \code{\link{methrix}} to \code{\link{bsseq}} object}
 \usage{
 methrix2bsseq(m)
 }
@@ -10,13 +10,13 @@ methrix2bsseq(m)
 \item{m}{\code{\link{methrix}} object}
 }
 \value{
-An object of class \code{\link{BSseq}}
+An object of class \code{\link{bsseq}}
 }
 \description{
-Convert methrix to bsseq object
+Convert \code{\link{methrix}} to \code{\link{bsseq}} object
 }
 \details{
-Takes \code{\link{methrix}} object and returns a \code{BSseq} object
+Takes \code{\link{methrix}} object and returns a \code{\link{bsseq}} object
 }
 \examples{
 \dontrun{

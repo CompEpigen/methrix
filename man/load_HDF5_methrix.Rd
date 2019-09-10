@@ -20,3 +20,9 @@ Loads HDF5 methrix object
 \details{
 Takes  directory with a previously saved HDF5Array format \code{\link{methrix}} object and loads it
 }
+\examples{
+\dontrun{
+data("methrix_data_h5")
+load_HDF5_methrix(methrix_data_h5, dir = tempdir(), replace=TRUE)
+}
+}

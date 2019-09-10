@@ -1,4 +1,4 @@
-#' Differential Methylation Calling with DSS
+#' Differential Methylation Calling with \code{\link{DSS}}
 #' @details Wrapper function for differential methylation calling using \code{\link{DSS}}
 #' @param m Input \code{\link{methrix}} object.
 #' @param pheno Column name of colData(m). The values of this column will be used as classes to call differential methylation.
