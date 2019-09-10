@@ -33,5 +33,5 @@ variability in the population, therefore the corresponding CpG site won't be rem
 }
 \examples{
 data("methrix_data")
-remove_snps(m = methrix_data, maf_threshold=0.01, reduce_filtering=T, forced=T)
+remove_snps(m = methrix_data, maf_threshold=0.01)
 }

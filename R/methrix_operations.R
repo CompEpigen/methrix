@@ -169,10 +169,14 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
   }
 
 
-  if(is_h5(m)){
-    n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
-  } else {
-    n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))}
+  # if(is_h5(m)){
+  #   n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
+  # } else {
+  #   n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))}
+  # se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
+  #                                     Summary = c(ncol(m), format(nrow(m), big.mark = ","),
+  #                                                 n_non_covered, length(unique(m@elementMetadata$chr)), m@metadata$genome, m@metadata$is_h5))
+  # m@metadata$summary <- se_summary
 
   return(m)
 }
@@ -442,15 +446,15 @@ combine_methrix = function(m1, m2, by = c("row", "col")){
     }
   }
   gc()
-  if(is_h5(m)){
-    n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
-  } else {
-    n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))}
-
-  se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
-                                      Summary = c(ncol(m), format(nrow(m), big.mark = ","),
-                                                  n_non_covered, length(unique(m@elementMetadata$chr)), m@metadata$genome, m@metadata$is_h5))
-  m@metadata$summary <- se_summary
+  # if(is_h5(m)){
+  #   n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
+  # } else {
+  #   n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))}
+  #
+  # se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
+  #                                     Summary = c(ncol(m), format(nrow(m), big.mark = ","),
+  #                                                 n_non_covered, length(unique(m@elementMetadata$chr)), m@metadata$genome, m@metadata$is_h5))
+  # m@metadata$summary <- se_summary
   return(m)
 }
 
@@ -548,8 +552,10 @@ get_stats = function(m, per_chr = TRUE){
 #' @param replace Should it overwrite the pre-existing data? FALSE by default.
 #' @param ... Parameters to pass to saveHDF5SummarizedExperiment
 #' @examples
-#' data("methrix_data")
-#' save_HDF5_methrix(methrix_data, dir = tempdir(), replace=TRUE)
+#' \dontrun{
+#' data("methrix_data_h5")
+#' save_HDF5_methrix(methrix_data_h5, dir = tempdir(), replace=TRUE)
+#' }
 #' @return NULL
 #' @export
 save_HDF5_methrix = function(m = NULL, dir = NULL, replace = FALSE, ...){
@@ -572,6 +578,11 @@ save_HDF5_methrix = function(m = NULL, dir = NULL, replace = FALSE, ...){
 #' @param dir The directory to read in from. Default NULL
 #' @param ... Parameters to pass to loadHDF5SummarizedExperiment
 #' @return An object of class \code{\link{methrix}}
+#' @examples
+#' \dontrun{
+#' data("methrix_data_h5")
+#' load_HDF5_methrix(methrix_data_h5, dir = tempdir(), replace=TRUE)
+#' }
 #' @export
 load_HDF5_methrix = function(dir = NULL, ...){
 
