@@ -134,7 +134,7 @@ plot_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.adju
   p = ggplot2::ggplot(plot.data, ggplot2::aes(Meth, color = variable)) + geom_density(lwd = 1, position = "stack")+
     ggplot2::theme_classic() +
     ggplot2::xlab("Methylation")+ggplot2::theme_classic(base_size = 14)+
-    ggplot2::scale_fill_brewer(type = "div", palette = col_palette)+
+    ggplot2::scale_color_brewer(type = "div", palette = col_palette)+
     ggplot2::xlab(expression(beta*"-Value"))+theme(axis.title.x = element_blank(), axis.text.x = element_text(size = 12, colour = "black"),
                                                    axis.text.y = element_text(size = 12, colour = "black"), axis.title.y = element_blank(),
                                                    legend.title = element_blank())
