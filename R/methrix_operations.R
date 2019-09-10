@@ -250,10 +250,10 @@ get_matrix= function(m, type = "M", add_loci = FALSE){
 
 #--------------------------------------------------------------------------------------------------------------------------
 
-#' Convert methrix to bsseq object
-#' @details Takes \code{\link{methrix}} object and returns a \code{BSseq} object
+#' Convert \code{\link{methrix}} to \code{\link{bsseq}} object
+#' @details Takes \code{\link{methrix}} object and returns a \code{\link{bsseq}} object
 #' @param m \code{\link{methrix}} object
-#' @return An object of class \code{\link{BSseq}}
+#' @return An object of class \code{\link{bsseq}}
 #' @examples
 #' \dontrun{
 #' data("methrix_data")
@@ -391,8 +391,8 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
       if (is_h5(m)){
 
         row_idx <- which(get_matrix(m = m, type = "C")[,which(rownames(m@colData)==names(quantiles[quant]))] > quantiles[quant], arr.ind = FALSE)
-        m@assays[[1]][row_idx, which(rownames(meth@colData)==names(quantiles[quant]))] <- NA
-        m@assays[[2]][row_idx, which(rownames(meth@colData)==names(quantiles[quant]))] <- NA
+        m@assays[[1]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <- NA
+        m@assays[[2]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <- NA
 
       } else {
         row_idx <- which(get_matrix(m = m, type = "C")[,names(quantiles[quant])] > quantiles[quant], arr.ind = FALSE)
