@@ -90,10 +90,6 @@ print(removed_snps[, .N])
 m <- m[-snp_rows,]
 
 
-if(is_h5(m)){
-  n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
-} else {
-  n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))}
 gc()
 return(m)
 
