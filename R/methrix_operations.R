@@ -367,13 +367,13 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
     row_idx <- which(get_matrix(m = m, type = "C") < low_count, arr.ind = FALSE)
 
     cat(paste0("-Masked ", format(length(row_idx), big.mark = ","), " CpGs due to low coverage. \n"))
-    if (is_h5(m)) {
-      m@assays[[1]][get_matrix(m = m, type = "C") < low_count] <- NA
-      m@assays[[2]][get_matrix(m = m, type = "C") < low_count] <- NA
-    } else {
+     if (is_h5(m)) {
+       m@assays[[1]][m@assays[[2]] < low_count] <- NA
+       m@assays[[2]][m@assays[[2]] < low_count] <- NA
+     } else {
       m@assays[[1]][row_idx] <- NA
       m@assays[[2]][row_idx] <- NA
-    }
+     }
 
   }
 
@@ -382,27 +382,26 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
       stop("High quantile should be between 0 and 1. ")
     }
     if (is_h5(m)){
-      quantiles <- DelayedMatrixStats::colQuantiles(get_matrix(m = m, type = "C"), probs = high_quantile, na.rm = TRUE)
-      qnames <- rownames(quantiles)
+      quantiles <- DelayedMatrixStats::colQuantiles(m@assays[[2]], probs = high_quantile, na.rm = TRUE)
       quantiles <- as.vector(quantiles)
-      names(quantiles) <- qnames
+      names(quantiles) <- rownames(m@colData)
     } else {
-      quantiles <- matrixStats::colQuantiles(get_matrix(m = m, type = "C"), probs = high_quantile, na.rm=TRUE)
+      quantiles <- matrixStats::colQuantiles(m@assays[[2]], probs = high_quantile, na.rm=TRUE)
+      quantiles <- as.vector(quantiles)
+      names(quantiles) <- rownames(m@colData)
     }
 
     for (quant in seq_along(quantiles)){
+      row_idx <- which(m@assays[[2]][,which(rownames(m@colData)==names(quantiles[quant]))] > quantiles[quant], arr.ind = FALSE)
 
-      if (is_h5(m)){
+     # if (is_h5(m)){
+        m@assays[[1]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <-as.double(NA)
+        m@assays[[2]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <- as.integer(NA)
 
-        row_idx <- which(get_matrix(m = m, type = "C")[,which(rownames(m@colData)==names(quantiles[quant]))] > quantiles[quant], arr.ind = FALSE)
-        m@assays[[1]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <- NA
-        m@assays[[2]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <- NA
-
-      } else {
-        row_idx <- which(get_matrix(m = m, type = "C")[,names(quantiles[quant])] > quantiles[quant], arr.ind = FALSE)
-        m@assays[[1]][row_idx, names(quantiles[quant])] <- NA
-        m@assays[[2]][row_idx, names(quantiles[quant])] <- NA
-      }
+     # } else {
+       # m@assays[[1]][row_idx, names(quantiles[quant])] <- NA
+      #  m@assays[[2]][row_idx, names(quantiles[quant])] <- NA
+      #}
 
       cat(paste0("-Masked ", length(row_idx), " CpGs due to too high coverage in sample ", names(quantiles[quant]), ".\n"))
     }
