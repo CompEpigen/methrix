@@ -597,3 +597,61 @@ load_HDF5_methrix = function(dir = NULL, ...){
   m <- as(m, "methrix")
   return(m)
 }
+
+#--------------------------------------------------------------------------------------------------------------------------
+#' Converts HDF5 methrix object to standard in-memory object.
+#' @details Takes a \code{\link{methrix}} object and returns with the same object with in-memory assay slots.
+#' @param m An object of class \code{\link{methrix}}, HDF5 format
+#' @return An object of class \code{\link{methrix}}
+#' @examples
+#' \dontrun{
+#' data(methrix_data)
+#' m2 <- convert_methrix(m=methrix_data)
+#' m <- convert_HDF5_methrix(m=m2)
+#' }
+#' @export
+convert_HDF5_methrix = function(m = NULL){
+
+  if(is.null(m) | class(m)!="methrix"){
+    stop("No or not valid input data provided.")
+  }
+  if(!is_h5(m)){
+    stop("The input data is not in HDF5 format. No conversion happened.")
+  }
+
+  m@assays[[1]] <- as.matrix(m@assays[[1]])
+  m@assays[[2]] <- as.matrix(m@assays[[2]])
+  m@metadata$is_h5 <- FALSE
+  return(m)
+}
+
+#--------------------------------------------------------------------------------------------------------------------------
+#' Converts HDF5 methrix object to standard in-memory object.
+#' @details Takes a \code{\link{methrix}} object and returns with the same object with delayed array assay slots
+#' with HDF5 backend. Might take long time!
+#' @param m An object of class \code{\link{methrix}}
+#' @return An object of class \code{\link{methrix}}, HDF5 format
+#' @examples
+#' \dontrun{
+#' data(methrix_data)
+#' m2 <- convert_methrix(m=methrix_data)
+#' }
+#' @export
+convert_methrix = function(m = NULL){
+
+  if(is.null(m) | class(m)!="methrix"){
+    stop("No or not valid input data provided.")
+  }
+  if(is_h5(m)){
+    stop("The input data is already in HDF5 format. No conversion happened.")
+  }
+
+  m <- methrix:::create_methrix(beta_mat = m@assays[[1]], cov_mat = m@assays[[2]],
+                           cpg_loci = m@elementMetadata,is_hdf5 = T, genome_name = m@metadata$genome,
+                           col_data = m@colData, chrom_sizes = m@metadata$chrom_sizes,
+                           ref_cpg_dt = m@metadata$ref_CpG, desc = m@metadata$descriptive_stats)
+return(m)
+}
+
+
+
