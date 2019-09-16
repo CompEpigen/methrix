@@ -493,7 +493,9 @@ get_stats = function(m, per_chr = TRUE){
       ), by = chr]
     })
 
-    names(cov_stat) = names(meth_stat) = rownames(colData(m))
+    names(meth_stat) = rownames(colData(m))[as.numeric(names(meth_stat))]
+    names(cov_stat) = rownames(colData(m))[as.numeric(names(cov_stat))]
+
     cov_stat = data.table::rbindlist(l = cov_stat, use.names = TRUE, idcol = "Sample_Name")
     meth_stat = data.table::rbindlist(l = meth_stat, use.names = TRUE, idcol = "Sample_Name")
     stats = merge(meth_stat, cov_stat, by = c("chr", 'Sample_Name'))
@@ -531,7 +533,9 @@ get_stats = function(m, per_chr = TRUE){
       })
     }
 
-    names(cov_stat) = names(meth_stat) = rownames(colData(m))
+    names(meth_stat) = rownames(colData(m))[as.numeric(names(meth_stat))]
+    names(cov_stat) = rownames(colData(m))[as.numeric(names(cov_stat))]
+
     cov_stat = data.table::rbindlist(l = cov_stat, use.names = TRUE, idcol = "Sample_Name")
     meth_stat = data.table::rbindlist(l = meth_stat, use.names = TRUE, idcol = "Sample_Name")
     stats = merge(meth_stat, cov_stat, by = c("Sample_Name"))
