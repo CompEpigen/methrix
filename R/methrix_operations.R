@@ -626,7 +626,7 @@ convert_HDF5_methrix = function(m = NULL){
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
-#' Converts HDF5 methrix object to standard in-memory object.
+#' Converts an in-memory object to an on-disk HDF5 object.
 #' @details Takes a \code{\link{methrix}} object and returns with the same object with delayed array assay slots
 #' with HDF5 backend. Might take long time!
 #' @param m An object of class \code{\link{methrix}}
@@ -646,7 +646,7 @@ convert_methrix = function(m = NULL){
     stop("The input data is already in HDF5 format. No conversion happened.")
   }
 
-  m <- methrix:::create_methrix(beta_mat = m@assays[[1]], cov_mat = m@assays[[2]],
+  m <- create_methrix(beta_mat = m@assays[[1]], cov_mat = m@assays[[2]],
                            cpg_loci = m@elementMetadata,is_hdf5 = T, genome_name = m@metadata$genome,
                            col_data = m@colData, chrom_sizes = m@metadata$chrom_sizes,
                            ref_cpg_dt = m@metadata$ref_CpG, desc = m@metadata$descriptive_stats)
