@@ -41,7 +41,7 @@
 #'}
 #'
 
-read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL, ref_build = NULL, contigs = NULL, vect = TRUE,
+read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL, ref_build = NULL, contigs = NULL, vect = FALSE,
                           vect_batch_size = NULL, coldata = NULL, chr_idx = NULL, start_idx = NULL, end_idx = NULL,
                           beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
                           synced_coordinates = FALSE,
