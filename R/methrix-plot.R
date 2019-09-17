@@ -45,7 +45,7 @@ plot_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, col_pale
 
   if (!is.null(pheno)) {
     if (pheno %in% colnames(colData(m))) {
-      colnames(meth_sub) <- m@colData[, pheno]
+      colnames(meth_sub) <- as.character(m@colData[, pheno])
     } else {
       stop("Please provide a valid phenotype annotation column.")
     }
