@@ -556,8 +556,9 @@ get_stats = function(m, per_chr = TRUE){
 #' @param ... Parameters to pass to saveHDF5SummarizedExperiment
 #' @examples
 #' \dontrun{
-#' data("methrix_data_h5")
-#' save_HDF5_methrix(methrix_data_h5, dir = tempdir(), replace=TRUE)
+#' data("methrix_data")
+#' methrix_data_h5 <- convert_methrix(m=methrix_data)
+#' save_HDF5_methrix(methrix_data_h5, dir = getwd(), replace=TRUE)
 #' }
 #' @return NULL
 #' @export
@@ -583,8 +584,7 @@ save_HDF5_methrix = function(m = NULL, dir = NULL, replace = FALSE, ...){
 #' @return An object of class \code{\link{methrix}}
 #' @examples
 #' \dontrun{
-#' data("methrix_data_h5")
-#' load_HDF5_methrix(methrix_data_h5, dir = tempdir(), replace=TRUE)
+#' load_HDF5_methrix( dir = getwd())
 #' }
 #' @export
 load_HDF5_methrix = function(dir = NULL, ...){
