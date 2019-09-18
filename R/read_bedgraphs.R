@@ -8,7 +8,7 @@
 #' @param ref_cpgs BSgenome object, or name of the installed BSgenome package, or an output from \code{\link{extract_CPGs}}. Example: BSgenome.Hsapiens.UCSC.hg19
 #' @param ref_build reference genome for bedgraphs. Default NULL. Only used for additional details. Doesnt affect in any way.
 #' @param contigs contigs to restrict genomic CpGs to. Default all autosomes and allosomes - ignoring extra contigs.
-#' @param vect To use vectorized code. Default TRUE, memory intese. Set to FALSE if you have large number of BedGraph files.
+#' @param vect To use vectorized code. Default FALSE. Set to TRUE if you don't have large number of BedGraph files.
 #' @param vect_batch_size Default NULL. Process samples in batches. Applicable only when vect = TRUE
 #' @param coldata An optional DataFrame describing the samples. Row names, if present, become the column names of the matrix. If NULL, then a DataFrame will be created with basename of files used as the row names.
 #' @param chr_idx column index for chromosome in bedgraph files

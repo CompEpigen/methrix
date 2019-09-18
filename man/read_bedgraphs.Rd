@@ -6,7 +6,7 @@
 \usage{
 read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
   stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL,
-  ref_build = NULL, contigs = NULL, vect = TRUE,
+  ref_build = NULL, contigs = NULL, vect = FALSE,
   vect_batch_size = NULL, coldata = NULL, chr_idx = NULL,
   start_idx = NULL, end_idx = NULL, beta_idx = NULL, M_idx = NULL,
   U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
@@ -30,7 +30,7 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 
 \item{contigs}{contigs to restrict genomic CpGs to. Default all autosomes and allosomes - ignoring extra contigs.}
 
-\item{vect}{To use vectorized code. Default TRUE, memory intese. Set to FALSE if you have large number of BedGraph files.}
+\item{vect}{To use vectorized code. Default FALSE. Set to TRUE if you don't have large number of BedGraph files.}
 
 \item{vect_batch_size}{Default NULL. Process samples in batches. Applicable only when vect = TRUE}
 
