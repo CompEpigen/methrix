@@ -18,5 +18,7 @@ a list of data.table containing number of CpG's and contig lengths
 Extracts all CpGs from a genome
 }
 \examples{
+\dontrun{
 hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19", bored = FALSE)
+}
 }

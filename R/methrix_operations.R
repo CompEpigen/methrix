@@ -254,10 +254,10 @@ get_matrix= function(m, type = "M", add_loci = FALSE){
 
 #--------------------------------------------------------------------------------------------------------------------------
 
-#' Convert \code{\link{methrix}} to \code{\link{bsseq}} object
-#' @details Takes \code{\link{methrix}} object and returns a \code{\link{bsseq}} object
+#' Convert \code{\link{methrix}} to \code{bsseq} object
+#' @details Takes \code{\link{methrix}} object and returns a \code{bsseq} object
 #' @param m \code{\link{methrix}} object
-#' @return An object of class \code{\link{bsseq}}
+#' @return An object of class \code{bsseq}
 #' @examples
 #' \dontrun{
 #' data("methrix_data")
@@ -409,7 +409,6 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
   cat("-Finished in:  ",data.table::timetaken(start_proc_time),"\n")
   return(m)
 }
-
 
 #--------------------------------------------------------------------------------------------------------------------------
 #' Combine methrix objects
@@ -604,11 +603,9 @@ load_HDF5_methrix = function(dir = NULL, ...){
 #' @param m An object of class \code{\link{methrix}}, HDF5 format
 #' @return An object of class \code{\link{methrix}}
 #' @examples
-#' \dontrun{
 #' data(methrix_data)
 #' m2 <- convert_methrix(m=methrix_data)
 #' m <- convert_HDF5_methrix(m=m2)
-#' }
 #' @export
 convert_HDF5_methrix = function(m = NULL){
 
@@ -632,10 +629,8 @@ convert_HDF5_methrix = function(m = NULL){
 #' @param m An object of class \code{\link{methrix}}
 #' @return An object of class \code{\link{methrix}}, HDF5 format
 #' @examples
-#' \dontrun{
 #' data(methrix_data)
 #' m2 <- convert_methrix(m=methrix_data)
-#' }
 #' @export
 convert_methrix = function(m = NULL){
 
@@ -647,11 +642,8 @@ convert_methrix = function(m = NULL){
   }
 
   m <- create_methrix(beta_mat = m@assays[[1]], cov_mat = m@assays[[2]],
-                           cpg_loci = m@elementMetadata,is_hdf5 = T, genome_name = m@metadata$genome,
+                           cpg_loci = m@elementMetadata,is_hdf5 = TRUE, genome_name = m@metadata$genome,
                            col_data = m@colData, chrom_sizes = m@metadata$chrom_sizes,
                            ref_cpg_dt = m@metadata$ref_CpG, desc = m@metadata$descriptive_stats)
 return(m)
 }
-
-
-

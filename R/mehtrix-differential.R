@@ -1,9 +1,9 @@
-#' Differential Methylation Calling with \code{\link{DSS}}
-#' @details Wrapper function for differential methylation calling using \code{\link{DSS}}
+#' Differential Methylation Calling with \code{DSS}
+#' @details Wrapper function for differential methylation calling using \code{DSS}
 #' @param m Input \code{\link{methrix}} object.
 #' @param pheno Column name of colData(m). The values of this column will be used as classes to call differential methylation.
 #' @param smooth Should the methylation values be smoothed?
-#' @param s_span Smoothing span. See \code{\link{DMLtest}}. Default 500.
+#' @param s_span Smoothing span. See \code{DMLtest}. Default 500.
 #' @param delta Methylation difference to call a DML/DMR significant. Default 0.1.
 #' @param p P-value cut-off. Default 0.05.
 #' @param minlen Minimal length of a DMR. Default 50 bp.

@@ -2,7 +2,7 @@
 % Please edit documentation in R/mehtrix-differential.R
 \name{methrix_differential}
 \alias{methrix_differential}
-\title{Differential Methylation Calling with \code{\link{DSS}}}
+\title{Differential Methylation Calling with \code{DSS}}
 \usage{
 methrix_differential(m, pheno = NULL, smooth = FALSE, s_span = 500,
   delta = 0.1, p = 0.05, minlen = 50, minCG = 3, mergeDis = 500,
@@ -15,7 +15,7 @@ methrix_differential(m, pheno = NULL, smooth = FALSE, s_span = 500,
 
 \item{smooth}{Should the methylation values be smoothed?}
 
-\item{s_span}{Smoothing span. See \code{\link{DMLtest}}. Default 500.}
+\item{s_span}{Smoothing span. See \code{DMLtest}. Default 500.}
 
 \item{delta}{Methylation difference to call a DML/DMR significant. Default 0.1.}
 
@@ -39,8 +39,8 @@ methrix_differential(m, pheno = NULL, smooth = FALSE, s_span = 500,
 list of DMRs
 }
 \description{
-Differential Methylation Calling with \code{\link{DSS}}
+Differential Methylation Calling with \code{DSS}
 }
 \details{
-Wrapper function for differential methylation calling using \code{\link{DSS}}
+Wrapper function for differential methylation calling using \code{DSS}
 }

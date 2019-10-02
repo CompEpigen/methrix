@@ -23,7 +23,8 @@ Takes \code{\link{methrix}} object and saves it
 }
 \examples{
 \dontrun{
-data("methrix_data_h5")
-save_HDF5_methrix(methrix_data_h5, dir = tempdir(), replace=TRUE)
+data("methrix_data")
+methrix_data_h5 <- convert_methrix(m=methrix_data)
+save_HDF5_methrix(methrix_data_h5, dir = getwd(), replace=TRUE)
 }
 }

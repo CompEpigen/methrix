@@ -20,8 +20,6 @@ Takes a \code{\link{methrix}} object and returns with the same object with delay
 with HDF5 backend. Might take long time!
 }
 \examples{
-\dontrun{
 data(methrix_data)
 m2 <- convert_methrix(m=methrix_data)
-}
 }

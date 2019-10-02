@@ -6,7 +6,9 @@
 #' @export
 #' @return a list of data.table containing number of CpG's and contig lengths
 #' @examples
+#'\dontrun{
 #' hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19", bored = FALSE)
+#' }
 
 extract_CPGs = function(ref_genome = NULL, bored = TRUE){
 

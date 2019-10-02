@@ -19,9 +19,7 @@ Converts HDF5 methrix object to standard in-memory object.
 Takes a \code{\link{methrix}} object and returns with the same object with in-memory assay slots.
 }
 \examples{
-\dontrun{
 data(methrix_data)
 m2 <- convert_methrix(m=methrix_data)
 m <- convert_HDF5_methrix(m=m2)
-}
 }

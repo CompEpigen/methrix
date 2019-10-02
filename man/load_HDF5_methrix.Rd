@@ -22,7 +22,6 @@ Takes  directory with a previously saved HDF5Array format \code{\link{methrix}} 
 }
 \examples{
 \dontrun{
-data("methrix_data_h5")
-load_HDF5_methrix(methrix_data_h5, dir = tempdir(), replace=TRUE)
+load_HDF5_methrix( dir = getwd())
 }
 }

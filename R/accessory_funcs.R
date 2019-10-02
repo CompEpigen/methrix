@@ -194,7 +194,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
     data.table::setkey(x = bdg_dat, "chr", "start")
   }
   #Better than identical(); seems to take couple of seconds but this is crucial to make sure everything is in order
-  is_identical = data.table:::all.equal.data.table(target = bdg_dat[,.(chr, start)],
+  is_identical = all.equal(target = bdg_dat[,.(chr, start)],
                                                    current = genome[,.(chr, start)],
                                                    ignore.row.order = FALSE)
 
@@ -204,7 +204,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
     cat(paste0("--Non ref CpGs: ", format(nrow(non_ref_cpgs), big.mark = ","), " [Removing them]\n"))
     bdg_dat = bdg_dat[genome[,list(chr, start)], on = c("chr", "start")]
     data.table::setkey(x = bdg_dat, "chr", "start")
-    is_identical = data.table:::all.equal.data.table(target = bdg_dat[,.(chr, start)],
+    is_identical = all.equal(target = bdg_dat[,.(chr, start)],
                                                      current = genome[,.(chr, start)],
                                                      ignore.row.order = FALSE)
     if(is(is_identical, 'character')){
@@ -426,9 +426,9 @@ giveme_this = function(mat, stat = "mean", na_rm = TRUE, ish5 = FALSE){
     }else if(stat == "median"){
       res = DelayedMatrixStats::colMedians(mat, na.rm = na_rm)
     }else if(stat == "min"){
-      res = DelayedMatrixStats::colMins(mat, na.rm = na_rm)
+      res = colMins(mat, na.rm = na_rm)
     }else if(stat == "max"){
-      res = DelayedMatrixStats::colMaxs(mat, na.rm = na_rm)
+      res = colMaxs(mat, na.rm = na_rm)
     }else if(stat == "sum"){
       res = DelayedMatrixStats::colSums2(mat, na.rm = na_rm)
     }
