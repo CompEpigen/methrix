@@ -554,12 +554,12 @@ get_stats = function(m, per_chr = TRUE){
 #' @param replace Should it overwrite the pre-existing data? FALSE by default.
 #' @param ... Parameters to pass to saveHDF5SummarizedExperiment
 #' @examples
-#' \dontrun{
 #' data("methrix_data")
 #' methrix_data_h5 <- convert_methrix(m=methrix_data)
-#' save_HDF5_methrix(methrix_data_h5, dir = getwd(), replace=TRUE)
-#' }
-#' @return NULL
+#' target_dir = paste0(getwd(), "/temp/")
+#' dir.create(path = target_dir, showWarnings = FALSE, recursive = TRUE)
+#' save_HDF5_methrix(methrix_data_h5, dir = target_dir, replace = TRUE)
+#' @return Nothing
 #' @export
 save_HDF5_methrix = function(m = NULL, dir = NULL, replace = FALSE, ...){
 
@@ -582,9 +582,12 @@ save_HDF5_methrix = function(m = NULL, dir = NULL, replace = FALSE, ...){
 #' @param ... Parameters to pass to loadHDF5SummarizedExperiment
 #' @return An object of class \code{\link{methrix}}
 #' @examples
-#' \dontrun{
-#' load_HDF5_methrix( dir = getwd())
-#' }
+#' data("methrix_data")
+#' methrix_data_h5 <- convert_methrix(m=methrix_data)
+#' target_dir = paste0(getwd(), "/temp/")
+#' dir.create(path = target_dir, showWarnings = FALSE, recursive = TRUE)
+#' save_HDF5_methrix(methrix_data_h5, dir = target_dir, replace = TRUE)
+#' load_HDF5_methrix(target_dir)
 #' @export
 load_HDF5_methrix = function(dir = NULL, ...){
 
@@ -609,7 +612,7 @@ load_HDF5_methrix = function(dir = NULL, ...){
 #' @export
 convert_HDF5_methrix = function(m = NULL){
 
-  if(is.null(m) | class(m)!="methrix"){
+  if(is.null(m) | !is(methrix_data, "methrix")){
     stop("No or not valid input data provided.")
   }
   if(!is_h5(m)){
@@ -634,7 +637,7 @@ convert_HDF5_methrix = function(m = NULL){
 #' @export
 convert_methrix = function(m = NULL){
 
-  if(is.null(m) | class(m)!="methrix"){
+  if(is.null(m) | !is(m, "methrix")){
     stop("No or not valid input data provided.")
   }
   if(is_h5(m)){

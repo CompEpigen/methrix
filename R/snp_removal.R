@@ -10,6 +10,7 @@
 #' Default FALSE.
 #' @param forced the reduce_filtering is not recommended with less than 10 samples, but can be forced. Default is FALSE.
 #' @return a coverage or methylation matrix
+#' @importFrom BSgenome score
 #' @examples
 #' data("methrix_data")
 #' remove_snps(m = methrix_data, maf_threshold=0.01)
