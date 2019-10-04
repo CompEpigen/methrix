@@ -5,7 +5,7 @@
 \title{Writes bedGraphs from methrix object}
 \usage{
 write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
-  n_thr = 4)
+  n_thr = 4, compress = TRUE)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
@@ -17,6 +17,8 @@ write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
 \item{force}{forces to create files if they are existing}
 
 \item{n_thr}{Default 4.}
+
+\item{compress}{Whether to compress the output. Default TRUE}
 }
 \value{
 writes bedgraph files to output

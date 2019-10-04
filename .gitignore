@@ -4,6 +4,7 @@ Meta
 .Rhistory
 .RData
 .Ruserdata
+.Rbuildignore
 inst/doc/*
 doc
 .renviron
