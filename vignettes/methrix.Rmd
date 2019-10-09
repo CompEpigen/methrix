@@ -141,7 +141,11 @@ methrix::methrix_report(meth = meth, output_dir = tempdir())
 One can also remove CpG sites overlaping with common SNPs based on minor allele frequencies.
 
 ```{r, eval=FALSE}
-library("MafDb.1Kgenomes.phase3.hs37d5")
+if(!require(MafDb.1Kgenomes.phase3.hs37d5)) {
+install.packages("MafDb.1Kgenomes.phase3.hs37d5"); require(MafDb.1Kgenomes.phase3.hs37d5)} 
+if(!require(GenomicScores)) {
+install.packages("GenomicScores"); require(GenomicScores)} 
+
 meth_snps_filtered = methrix::remove_snps(m = meth)
 ```
 
@@ -275,7 +279,10 @@ methrix::plot_coverage(m = methrix_data, type = "dens")
 ## Converting methrix to BSseq
 If you prefer to work with [bsseq](https://bioconductor.org/packages/release/bioc/vignettes/bsseq/inst/doc/bsseq.html#3_using_objects_of_class_bsseq) object, you can generate `bsseq` object from methrix with the `methrix2bsseq`. 
 ```{r}
-library(bsseq)
+if(!require(bsseq)) {
+install.packages("bsseq"); require(bsseq)}
+
+
 ```
 
 ```{r}

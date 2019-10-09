@@ -343,7 +343,7 @@ plot_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perGroup = F
   #On an average a matrix of 28e6 rows x 10 columns, sizes around 2.4 GB. Copying, and melting would double the memory consumption.
   #We should think of something else.
 
-  if (length(m@assays[[2]])>size.lim){
+  if (nrow(m)>size.lim){
     cat("The dataset is bigger than the size limit. A random subset of the object will be used that contains ~", size.lim, " observations. \n")
     n_rows <- trunc(size.lim/nrow(m@colData))
     sel_rows <- sample(1:nrow(m@elementMetadata), size = n_rows, replace = FALSE)
@@ -379,7 +379,8 @@ plot_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perGroup = F
       p <- ggplot2::ggplot(plot.data, aes(value, color = variable)) +
         ggplot2::geom_density(alpha = .5, adjust = 1.5, lwd = 1, position = "stack") +
         ggplot2::theme_classic() +
-        ggplot2::xlab("Coverage")
+        ggplot2::xlab("Coverage") +
+        ggplot2::scale_color_brewer(type="div", palette = col_palette)
 
     } else if(type == "hist") {
       p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, color = variable)) +

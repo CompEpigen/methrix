@@ -170,9 +170,9 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
 
 
   # if(is_h5(m)){
-  #   n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
+  #   n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = assays(m)[["cov"]]) == 0))
   # } else {
-  #   n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))}
+  #   n_non_covered = length(which(matrixStats::rowSums2(x = assays(m)[["cov"]]) == 0))}
   # se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
   #                                     Summary = c(ncol(m), format(nrow(m), big.mark = ","),
   #                                                 n_non_covered, length(unique(m@elementMetadata$chr)), m@metadata$genome, m@metadata$is_h5))
@@ -270,7 +270,7 @@ methrix2bsseq = function(m){
   n_samps = nrow(SummarizedExperiment::colData(x = m))
   M_clean <- get_matrix(m) * get_matrix(m, type = "C")
   M_clean[is.na(M_clean)] <- 0
-  m@assays[[2]][is.na(m@assays[[2]])] <- 0
+  assays(m)[[2]][is.na(assays(m)[[2]])] <- 0
   #Thanks to Maxi for pointing out the bug related to M estimation
   #To-do: Find solution to avoid matrix multiplication (for small datasets it shouldn't affect)
   b = bsseq::BSseq(M = M_clean,
@@ -368,11 +368,11 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
 
     cat(paste0("-Masked ", format(length(row_idx), big.mark = ","), " CpGs due to low coverage. \n"))
      if (is_h5(m)) {
-       m@assays[[1]][m@assays[[2]] < low_count] <- NA
-       m@assays[[2]][m@assays[[2]] < low_count] <- NA
+       assays(m)[[1]][assays(m)[[2]] < low_count] <- NA
+       assays(m)[[2]][assays(m)[[2]] < low_count] <- NA
      } else {
-      m@assays[[1]][row_idx] <- NA
-      m@assays[[2]][row_idx] <- NA
+      assays(m)[[1]][row_idx] <- NA
+      assays(m)[[2]][row_idx] <- NA
      }
 
   }
@@ -382,25 +382,25 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
       stop("High quantile should be between 0 and 1. ")
     }
     if (is_h5(m)){
-      quantiles <- DelayedMatrixStats::colQuantiles(m@assays[[2]], probs = high_quantile, na.rm = TRUE)
+      quantiles <- DelayedMatrixStats::colQuantiles(assays(m)[[2]], probs = high_quantile, na.rm = TRUE)
       quantiles <- as.vector(quantiles)
       names(quantiles) <- rownames(m@colData)
     } else {
-      quantiles <- matrixStats::colQuantiles(m@assays[[2]], probs = high_quantile, na.rm=TRUE)
+      quantiles <- matrixStats::colQuantiles(assays(m)[[2]], probs = high_quantile, na.rm=TRUE)
       quantiles <- as.vector(quantiles)
       names(quantiles) <- rownames(m@colData)
     }
 
     for (quant in seq_along(quantiles)){
-      row_idx <- which(m@assays[[2]][,which(rownames(m@colData)==names(quantiles[quant]))] > quantiles[quant], arr.ind = FALSE)
+      row_idx <- which(assays(m)[[2]][,which(rownames(m@colData)==names(quantiles[quant]))] > quantiles[quant], arr.ind = FALSE)
 
      # if (is_h5(m)){
-        m@assays[[1]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <-as.double(NA)
-        m@assays[[2]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <- as.integer(NA)
+        assays(m)[[1]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <-as.double(NA)
+        assays(m)[[2]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <- as.integer(NA)
 
      # } else {
-       # m@assays[[1]][row_idx, names(quantiles[quant])] <- NA
-      #  m@assays[[2]][row_idx, names(quantiles[quant])] <- NA
+       # assays(m)[[1]][row_idx, names(quantiles[quant])] <- NA
+      #  assays(m)[[2]][row_idx, names(quantiles[quant])] <- NA
       #}
 
       cat(paste0("-Masked ", length(row_idx), " CpGs due to too high coverage in sample ", names(quantiles[quant]), ".\n"))
@@ -445,9 +445,9 @@ combine_methrix = function(m1, m2, by = c("row", "col")){
   }
   gc()
   # if(is_h5(m)){
-  #   n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = m@assays[["cov"]]) == 0))
+  #   n_non_covered = length(which(DelayedMatrixStats::rowSums2(x = assays(m)[["cov"]]) == 0))
   # } else {
-  #   n_non_covered = length(which(matrixStats::rowSums2(x = m@assays[["cov"]]) == 0))}
+  #   n_non_covered = length(which(matrixStats::rowSums2(x = assays(m)[["cov"]]) == 0))}
   #
   # se_summary = data.table::data.table(ID = c("n_samples", "n_CpGs", "n_uncovered", "n_chromosomes", "Reference_Build", "is_H5"),
   #                                     Summary = c(ncol(m), format(nrow(m), big.mark = ","),
@@ -554,11 +554,13 @@ get_stats = function(m, per_chr = TRUE){
 #' @param replace Should it overwrite the pre-existing data? FALSE by default.
 #' @param ... Parameters to pass to saveHDF5SummarizedExperiment
 #' @examples
+#'  \dontrun{
 #' data("methrix_data")
 #' methrix_data_h5 <- convert_methrix(m=methrix_data)
 #' target_dir = paste0(getwd(), "/temp/")
 #' dir.create(path = target_dir, showWarnings = FALSE, recursive = TRUE)
 #' save_HDF5_methrix(methrix_data_h5, dir = target_dir, replace = TRUE)
+#' }
 #' @return Nothing
 #' @export
 save_HDF5_methrix = function(m = NULL, dir = NULL, replace = FALSE, ...){
@@ -582,12 +584,14 @@ save_HDF5_methrix = function(m = NULL, dir = NULL, replace = FALSE, ...){
 #' @param ... Parameters to pass to loadHDF5SummarizedExperiment
 #' @return An object of class \code{\link{methrix}}
 #' @examples
+#' \dontrun{
 #' data("methrix_data")
 #' methrix_data_h5 <- convert_methrix(m=methrix_data)
 #' target_dir = paste0(getwd(), "/temp/")
 #' dir.create(path = target_dir, showWarnings = FALSE, recursive = TRUE)
 #' save_HDF5_methrix(methrix_data_h5, dir = target_dir, replace = TRUE)
 #' load_HDF5_methrix(target_dir)
+#' }
 #' @export
 load_HDF5_methrix = function(dir = NULL, ...){
 
@@ -619,8 +623,8 @@ convert_HDF5_methrix = function(m = NULL){
     stop("The input data is not in HDF5 format. No conversion happened.")
   }
 
-  m@assays[[1]] <- as.matrix(m@assays[[1]])
-  m@assays[[2]] <- as.matrix(m@assays[[2]])
+  assays(m)[[1]] <- as.matrix(assays(m)[[1]])
+  assays(m)[[2]] <- as.matrix(assays(m)[[2]])
   m@metadata$is_h5 <- FALSE
   return(m)
 }
@@ -644,7 +648,7 @@ convert_methrix = function(m = NULL){
     stop("The input data is already in HDF5 format. No conversion happened.")
   }
 
-  m <- create_methrix(beta_mat = m@assays[[1]], cov_mat = m@assays[[2]],
+  m <- create_methrix(beta_mat = assays(m)[[1]], cov_mat = assays(m)[[2]],
                            cpg_loci = m@elementMetadata,is_hdf5 = TRUE, genome_name = m@metadata$genome,
                            col_data = m@colData, chrom_sizes = m@metadata$chrom_sizes,
                            ref_cpg_dt = m@metadata$ref_CpG, desc = m@metadata$descriptive_stats)
