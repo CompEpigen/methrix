@@ -191,10 +191,10 @@ methrix_pca <- function(m, var="top",top_var = 1000, ranges = NULL, pheno = NULL
           sds <- DelayedMatrixStats::rowSds(meth_sub, na.rm = TRUE)
         } else{
           sds <- matrixStats::rowSds(meth_sub, na.rm = TRUE)
-          }
-       meth_sub <- meth_sub[order(sds, decreasing = TRUE)[1:min(top_var, nrow(meth_sub))],]
+        }
+        meth_sub <- meth_sub[order(sds, decreasing = TRUE)[1:min(top_var, nrow(meth_sub))],]
       } else{
-      meth_sub <- methrix::get_matrix(m = order_by_sd(m)[1:min(top_var, nrow(m))], type = "M", add_loci = FALSE)
+        meth_sub <- methrix::get_matrix(m = order_by_sd(m)[1:min(top_var, nrow(m))], type = "M", add_loci = FALSE)
       }
     }
   }
@@ -351,7 +351,7 @@ plot_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perGroup = F
     meth_sub <- methrix::get_matrix(m = m[sel_rows,], type = "C", add_loci = FALSE)
 
   } else {
-  meth_sub <- methrix::get_matrix(m = m, type = "C", add_loci = FALSE)
+    meth_sub <- methrix::get_matrix(m = m, type = "C", add_loci = FALSE)
   }
 
   if(perGroup){
@@ -503,7 +503,7 @@ plot_stats = function(plot_dat, what = "M", stat = "mean", ignore_chr = NULL, sa
     plot_dat$sd_low = ifelse(test = plot_dat$sd_low < 0, yes = 0, no = plot_dat$sd_low)
 
     plot_dat_gg = ggplot(data = plot_dat, aes(x = Sample_Name, y = measurement))+geom_point(col = "maroon", size = 2)+
-    geom_errorbar(aes(ymin = sd_low, ymax = sd_high), col = 'gray70')+
+      geom_errorbar(aes(ymin = sd_low, ymax = sd_high), col = 'gray70')+
       geom_point(col = 'maroon')+
       theme_minimal(base_size = 12)+theme(axis.title.x = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1, size = 12, colour = "black"),
                                           axis.text.y = element_text(size = 12, colour = "black"), axis.title.y = element_blank())+

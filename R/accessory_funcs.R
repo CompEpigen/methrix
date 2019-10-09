@@ -195,8 +195,8 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
   }
   #Better than identical(); seems to take couple of seconds but this is crucial to make sure everything is in order
   is_identical = all.equal(target = bdg_dat[,.(chr, start)],
-                                                   current = genome[,.(chr, start)],
-                                                   ignore.row.order = FALSE)
+                           current = genome[,.(chr, start)],
+                           ignore.row.order = FALSE)
 
   if(is(is_identical, 'character')){
     #cat(paste0('--non reference CpGs found. Removing them\n'))
@@ -205,8 +205,8 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
     bdg_dat = bdg_dat[genome[,list(chr, start)], on = c("chr", "start")]
     data.table::setkey(x = bdg_dat, "chr", "start")
     is_identical = all.equal(target = bdg_dat[,.(chr, start)],
-                                                     current = genome[,.(chr, start)],
-                                                     ignore.row.order = FALSE)
+                             current = genome[,.(chr, start)],
+                             ignore.row.order = FALSE)
     if(is(is_identical, 'character')){
       stop("Something went wrong with filling up of uncovered CpG sites.")
     }

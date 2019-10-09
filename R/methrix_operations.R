@@ -57,23 +57,23 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
 
   dat = cbind(overlap_indices, dat)
 
- #cat("-Summarizing overlaps..\n")
- if(how == "mean") {
-   cat("-Summarizing by average\n")
-   output = dat[, lapply(.SD, mean, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
- }else if (how == "median") {
-   cat("-Summarizing by median\n")
-   output = dat[, lapply(.SD, median, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
- }else if (how == "max") {
-   cat("-Summarizing by maximum\n")
-   output = dat[, lapply(.SD, max, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
- }else if (how == "min") {
-   cat("-Summarizing by minimum\n")
-   output = dat[, lapply(.SD, min, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
- }else if (how == "sum") {
-   cat("-Summarizing by sum\n")
-   output = dat[, lapply(.SD, sum, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
- }
+  #cat("-Summarizing overlaps..\n")
+  if(how == "mean") {
+    cat("-Summarizing by average\n")
+    output = dat[, lapply(.SD, mean, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+  }else if (how == "median") {
+    cat("-Summarizing by median\n")
+    output = dat[, lapply(.SD, median, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+  }else if (how == "max") {
+    cat("-Summarizing by maximum\n")
+    output = dat[, lapply(.SD, max, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+  }else if (how == "min") {
+    cat("-Summarizing by minimum\n")
+    output = dat[, lapply(.SD, min, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+  }else if (how == "sum") {
+    cat("-Summarizing by sum\n")
+    output = dat[, lapply(.SD, sum, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+  }
 
   output = merge(target_regions, output, by.x = 'rid', by.y = 'yid', all.x = TRUE)
   output = merge(n_overlap_cpgs, output, by = 'rid')
@@ -367,13 +367,13 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
     row_idx <- which(get_matrix(m = m, type = "C") < low_count, arr.ind = FALSE)
 
     cat(paste0("-Masked ", format(length(row_idx), big.mark = ","), " CpGs due to low coverage. \n"))
-     if (is_h5(m)) {
-       assays(m)[[1]][assays(m)[[2]] < low_count] <- NA
-       assays(m)[[2]][assays(m)[[2]] < low_count] <- NA
-     } else {
+    if (is_h5(m)) {
+      assays(m)[[1]][assays(m)[[2]] < low_count] <- NA
+      assays(m)[[2]][assays(m)[[2]] < low_count] <- NA
+    } else {
       assays(m)[[1]][row_idx] <- NA
       assays(m)[[2]][row_idx] <- NA
-     }
+    }
 
   }
 
@@ -394,12 +394,12 @@ mask_methrix <- function(m, low_count=NULL, high_quantile=0.99){
     for (quant in seq_along(quantiles)){
       row_idx <- which(assays(m)[[2]][,which(rownames(m@colData)==names(quantiles[quant]))] > quantiles[quant], arr.ind = FALSE)
 
-     # if (is_h5(m)){
-        assays(m)[[1]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <-as.double(NA)
-        assays(m)[[2]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <- as.integer(NA)
+      # if (is_h5(m)){
+      assays(m)[[1]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <-as.double(NA)
+      assays(m)[[2]][row_idx, which(rownames(m@colData)==names(quantiles[quant]))] <- as.integer(NA)
 
-     # } else {
-       # assays(m)[[1]][row_idx, names(quantiles[quant])] <- NA
+      # } else {
+      # assays(m)[[1]][row_idx, names(quantiles[quant])] <- NA
       #  assays(m)[[2]][row_idx, names(quantiles[quant])] <- NA
       #}
 
@@ -554,13 +554,10 @@ get_stats = function(m, per_chr = TRUE){
 #' @param replace Should it overwrite the pre-existing data? FALSE by default.
 #' @param ... Parameters to pass to saveHDF5SummarizedExperiment
 #' @examples
-#'  \dontrun{
 #' data("methrix_data")
 #' methrix_data_h5 <- convert_methrix(m=methrix_data)
 #' target_dir = paste0(getwd(), "/temp/")
-#' dir.create(path = target_dir, showWarnings = FALSE, recursive = TRUE)
 #' save_HDF5_methrix(methrix_data_h5, dir = target_dir, replace = TRUE)
-#' }
 #' @return Nothing
 #' @export
 save_HDF5_methrix = function(m = NULL, dir = NULL, replace = FALSE, ...){
@@ -584,14 +581,11 @@ save_HDF5_methrix = function(m = NULL, dir = NULL, replace = FALSE, ...){
 #' @param ... Parameters to pass to loadHDF5SummarizedExperiment
 #' @return An object of class \code{\link{methrix}}
 #' @examples
-#' \dontrun{
 #' data("methrix_data")
 #' methrix_data_h5 <- convert_methrix(m=methrix_data)
-#' target_dir = paste0(getwd(), "/temp/")
-#' dir.create(path = target_dir, showWarnings = FALSE, recursive = TRUE)
+#' target_dir = paste0(getwd(), "/temp1/")
 #' save_HDF5_methrix(methrix_data_h5, dir = target_dir, replace = TRUE)
 #' load_HDF5_methrix(target_dir)
-#' }
 #' @export
 load_HDF5_methrix = function(dir = NULL, ...){
 

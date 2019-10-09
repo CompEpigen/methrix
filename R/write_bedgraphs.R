@@ -29,31 +29,31 @@ write_bedgraphs = function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE, n_
   cat("----------------------\n")
   cat("*Writing bedGraphs:\n")
   op_bdgs = lapply(seq_len(nrow(colData(m))), function(i){
-                mat_i = mat[,c(1:3, i+4), with = FALSE]
-                if(rm_NA){
-                  mat_i = mat_i[complete.cases(mat_i),,]
-                }
+    mat_i = mat[,c(1:3, i+4), with = FALSE]
+    if(rm_NA){
+      mat_i = mat_i[complete.cases(mat_i),,]
+    }
 
-                if(compress){
-                  op_bdg = paste0(output_dir, "/", rownames(colData(m))[i], ".bedGraph.gz")
-                }else{
-                  op_bdg = paste0(output_dir, "/", rownames(colData(m))[i], ".bedGraph")
-                }
+    if(compress){
+      op_bdg = paste0(output_dir, "/", rownames(colData(m))[i], ".bedGraph.gz")
+    }else{
+      op_bdg = paste0(output_dir, "/", rownames(colData(m))[i], ".bedGraph")
+    }
 
-                if(file.exists(op_bdg)){
-                  if(force){
-                    cat(paste0("**Writing ", rownames(colData(m))[i], "\n"))
-                    colnames(mat_i) = paste0("V", 1:ncol(mat_i))
-                    data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", col.names = FALSE, nThread = n_thr, scipen = 7, compress = "auto")
-                  }else{
-                    cat(paste0("**File ", basename(op_bdg), " already exists. Skipped re-writing\n"))
-                  }
-                }else{
-                  cat(paste0("**Writing ", rownames(colData(m))[i], "\n"))
-                  colnames(mat_i) = paste0("V", 1:ncol(mat_i))
-                  data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", col.names = FALSE, nThread = n_thr)
-                }
-                op_bdg
-              })
+    if(file.exists(op_bdg)){
+      if(force){
+        cat(paste0("**Writing ", rownames(colData(m))[i], "\n"))
+        colnames(mat_i) = paste0("V", 1:ncol(mat_i))
+        data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", col.names = FALSE, nThread = n_thr, scipen = 7, compress = "auto")
+      }else{
+        cat(paste0("**File ", basename(op_bdg), " already exists. Skipped re-writing\n"))
+      }
+    }else{
+      cat(paste0("**Writing ", rownames(colData(m))[i], "\n"))
+      colnames(mat_i) = paste0("V", 1:ncol(mat_i))
+      data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", col.names = FALSE, nThread = n_thr)
+    }
+    op_bdg
+  })
   cat("----------------------\n")
 }
