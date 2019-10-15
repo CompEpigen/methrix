@@ -4,15 +4,16 @@
 #' @param regions genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object
 #' @param type matrix which needs to be summarized. Coule be `M`, `C`. Default "M"
 #' @param how mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min. Default "mean"
-#' @param na_rm Remove NA's ? Default \code{TRUE}
+#' @param overlap_type defines the type of the overlap of the CpG sites with the target region. Default value is `within`. For detailed description,
+#' see the \code{foverlaps} function of the \code{\link{data.table}} package.
+#' @param na_rm Remove NA's? Default \code{TRUE}
 #' @param verbose Default TRUE
 #' @return a coverage or methylation matrix
 #' @examples
 #' data("methrix_data")
 #' get_region_summary(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103), type = "M", how = "mean")
 #' @export
-get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm = TRUE, verbose = TRUE){
-
+get_region_summary = function(m, regions = NULL, type = "M", how = "mean", overlap_type="within", na_rm = TRUE, verbose = TRUE){
   type = match.arg(arg = type, choices = c('M', 'C'))
   how = match.arg(arg = how, choices = c('mean', 'median', 'max', 'min', 'sum'))
 
@@ -31,7 +32,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", na_rm
     cat("-Checking for overlaps..\n")
   }
 
-  overlap_indices = data.table::foverlaps(x = r_dat, y = target_regions, type = "any", nomatch = NULL, which = TRUE)
+  overlap_indices = data.table::foverlaps(x = r_dat, y = target_regions, type = overlap_type, nomatch = NULL, which = TRUE)
 
   if(nrow(overlap_indices) == 0){
     warning("No overlaps detected")
@@ -317,12 +318,14 @@ remove_uncovered = function(m){
 #' @details Takes \code{\link{methrix}} object and filters CpGs based on supplied regions in data.table or GRanges format
 #' @param m \code{\link{methrix}} object
 #' @param regions genomic regions to filter-out. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object
+#' @param type defines the type of the overlap of the CpG sites with the target regions. Default value is `within`. For detailed description,
+#' see the \code{foverlaps} function of the \code{\link{data.table}} package.
 #' @return An object of class \code{\link{methrix}}
 #' @examples
 #' data("methrix_data")
 #' region_filter(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103))
 #' @export
-region_filter = function(m, regions){
+region_filter = function(m, regions, type="within"){
 
   start_proc_time = proc.time()
 
@@ -332,7 +335,7 @@ region_filter = function(m, regions){
   current_regions <-  data.table::as.data.table(rowData(m))
   current_regions[,end := start+1]
   data.table::setDT(x = current_regions, key = c("chr", "start", "end"))
-  overlap = data.table::foverlaps(x = current_regions, y = target_regions, type = "within", nomatch = NULL, which = TRUE)
+  overlap = data.table::foverlaps(x = current_regions, y = target_regions, type = type, nomatch = NULL, which = TRUE)
 
   if(nrow(overlap) == 0){
     stop("No CpGs found within the query intervals. Nothing to remove.")

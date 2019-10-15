@@ -5,7 +5,7 @@
 \title{Extract and summarize methylation or coverage info by regions of interest}
 \usage{
 get_region_summary(m, regions = NULL, type = "M", how = "mean",
-  na_rm = TRUE, verbose = TRUE)
+  overlap_type = "within", na_rm = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
@@ -16,7 +16,10 @@ get_region_summary(m, regions = NULL, type = "M", how = "mean",
 
 \item{how}{mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min. Default "mean"}
 
-\item{na_rm}{Remove NA's ? Default \code{TRUE}}
+\item{overlap_type}{defines the type of the overlap of the CpG sites with the target region. Default value is `within`. For detailed description,
+see the \code{foverlaps} function of the \code{\link{data.table}} package.}
+
+\item{na_rm}{Remove NA's? Default \code{TRUE}}
 
 \item{verbose}{Default TRUE}
 }

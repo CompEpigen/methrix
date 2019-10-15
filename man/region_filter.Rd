@@ -4,12 +4,15 @@
 \alias{region_filter}
 \title{Filter matrices by region}
 \usage{
-region_filter(m, regions)
+region_filter(m, regions, type = "within")
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
 
 \item{regions}{genomic regions to filter-out. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object}
+
+\item{type}{defines the type of the overlap of the CpG sites with the target regions. Default value is `within`. For detailed description,
+see the \code{foverlaps} function of the \code{\link{data.table}} package.}
 }
 \value{
 An object of class \code{\link{methrix}}
