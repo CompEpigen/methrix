@@ -12,6 +12,7 @@
 
 extract_CPGs = function(ref_genome = NULL, bored = TRUE){
 
+  pkgname <- seqlengths <- chr <- NULL
   gnoms_installed = BSgenome::installed.genomes(splitNameParts = TRUE)
   data.table::setDT(x = gnoms_installed)
 
@@ -36,7 +37,7 @@ extract_CPGs = function(ref_genome = NULL, bored = TRUE){
       }
     }
   }
-
+  requireNamespace(ref_genome, quietly = TRUE)
   if(bored){
     #Try to fetch a random joke from Internet Chuck Norris Database
     rec_url = paste("http://api.icndb.com/jokes/random/")
@@ -63,7 +64,7 @@ extract_CPGs = function(ref_genome = NULL, bored = TRUE){
   }
   #Code borrwed from from: https://support.bioconductor.org/p/95239/
   cgs = lapply(chrs, function(x) start(Biostrings::matchPattern("CG", ref_genome[[x]])))
-  cpgs = do.call(c, lapply(seq_along(chrs), function(x) GRanges(names(ref_genome)[x], IRanges(cgs[[x]], width = 2))))
+  cpgs = do.call(c, lapply(seq_along(chrs), function(x) GenomicRanges::GRanges(names(ref_genome)[x], IRanges::IRanges(cgs[[x]], width = 2))))
   cpgs = data.table::as.data.table(as.data.frame(cpgs, stringsAsFactors = FALSE))
   colnames(cpgs) = c("chr", "start", "end", "width", "strand")
   cpgs[, chr := as.character(chr)][, start := as.numeric(start)][, end := as.numeric(end)][, width := as.numeric(width)]

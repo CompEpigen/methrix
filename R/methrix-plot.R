@@ -13,6 +13,7 @@
 #' plot_violin(m = methrix_data)
 plot_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, col_palette = "RdYlGn"){
 
+  variable <- Meth <- NULL
   if (!is.null(ranges)) {
     meth_sub <- subset_methrix(m = m, regions = ranges)
     if (!is.null(n_cpgs)) {
@@ -89,6 +90,7 @@ plot_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, col_pale
 #' plot_density(m = methrix_data)
 plot_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL, bw.adjust = 2, col_palette="RdYlGn"){
 
+  Meth <- variable <- NULL
   ## subset based on the input ranges
   if (!is.null(ranges)) {
     meth_sub <- subset_methrix(m = m, regions = ranges)
@@ -258,6 +260,7 @@ methrix_pca <- function(m, var="top",top_var = 1000, ranges = NULL, pheno = NULL
 #' @export
 plot_pca = function(pca_res, m = NULL, col_anno = NULL, shape_anno = NULL, pc_x = "PC1", pc_y = "PC2", show_labels = FALSE){
 
+  X <- Y <- color_me <- shape_me <- row_names <- NULL
   pc_vars = pca_res$var_explained
   pca_res = as.data.frame(pca_res$PC_matrix)
   pca_res$row_names = rownames(pca_res)
@@ -339,6 +342,7 @@ plot_pca = function(pca_res, m = NULL, col_anno = NULL, shape_anno = NULL, pc_x 
 
 plot_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perGroup = FALSE, lim = 100, size.lim=1000000, col_palette="RdYlGn"){
 
+  value <- variable <- NULL
   type = match.arg(arg = type, choices = c("hist", "dens"), several.ok = FALSE)
   #On an average a matrix of 28e6 rows x 10 columns, sizes around 2.4 GB. Copying, and melting would double the memory consumption.
   #We should think of something else.
@@ -437,6 +441,8 @@ plot_coverage <- function(m, type = c("hist","dens"), pheno = NULL, perGroup = F
 #'
 plot_stats = function(plot_dat, what = "M", stat = "mean", ignore_chr = NULL, samples = NULL, n_col = NULL, n_row = NULL){
 
+  Chromosome <- . <- Sample_Name <- mean_meth <- sd_meth <- median_meth <- mean_cov <- sd_cov <- NULL
+  median_cov <- measurement <- sd_low <- sd_high <- NULL
   what = match.arg(arg = what, choices = c("M", 'C'))
   stat = match.arg(arg = stat, choices = c("mean", 'median'))
 

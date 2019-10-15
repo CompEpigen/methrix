@@ -11,9 +11,12 @@
 #' @return a coverage or methylation matrix
 #' @examples
 #' data("methrix_data")
-#' get_region_summary(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103), type = "M", how = "mean")
+#' get_region_summary(m = methrix_data,
+#' regions = data.table(chr = "chr21", start = 27867971, end =  27868103),
+#' type = "M", how = "mean")
 #' @export
 get_region_summary = function(m, regions = NULL, type = "M", how = "mean", overlap_type="within", na_rm = TRUE, verbose = TRUE){
+  rid <- chr <- yid <- median <- NULL
   type = match.arg(arg = type, choices = c('M', 'C'))
   how = match.arg(arg = how, choices = c('mean', 'median', 'max', 'min', 'sum'))
 
@@ -198,6 +201,7 @@ subset_methrix = function(m, regions = NULL, contigs = NULL, samples = NULL){
 #' @export
 coverage_filter = function(m, cov_thr = 1, min_samples = 1){
 
+  V1 <- . <- NULL
   start_proc_time = proc.time()
   res <- data.table::as.data.table(which(get_matrix(m = m, type = "C") >= cov_thr, arr.ind = TRUE))
 
@@ -296,6 +300,7 @@ methrix2bsseq = function(m){
 #'
 remove_uncovered = function(m){
 
+  V1 <- N <- NULL
   start_proc_time = proc.time()
 
   if (is_h5(m)) {
@@ -323,7 +328,8 @@ remove_uncovered = function(m){
 #' @return An object of class \code{\link{methrix}}
 #' @examples
 #' data("methrix_data")
-#' region_filter(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103))
+#' region_filter(m = methrix_data,
+#' regions = data.table(chr = "chr21", start = 27867971, end =  27868103))
 #' @export
 region_filter = function(m, regions, type="within"){
 
@@ -471,7 +477,7 @@ combine_methrix = function(m1, m2, by = c("row", "col")){
 #' @return data.table of summary stats
 #' @export
 get_stats = function(m, per_chr = TRUE){
-
+median <- . <- sd <- chr <- NULL
   start_proc_time = proc.time()
 
   row_idx = data.table::as.data.table(which(is.na(get_matrix(m = m, type = "C")), arr.ind = TRUE))
@@ -613,7 +619,7 @@ load_HDF5_methrix = function(dir = NULL, ...){
 #' @export
 convert_HDF5_methrix = function(m = NULL){
 
-  if(is.null(m) | !is(methrix_data, "methrix")){
+  if(is.null(m) | !is(m, "methrix")){
     stop("No or not valid input data provided.")
   }
   if(!is_h5(m)){

@@ -25,5 +25,6 @@ Takes \code{\link{methrix}} object and filters CpGs based on supplied regions in
 }
 \examples{
 data("methrix_data")
-region_filter(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103))
+region_filter(m = methrix_data,
+regions = data.table(chr = "chr21", start = 27867971, end =  27868103))
 }

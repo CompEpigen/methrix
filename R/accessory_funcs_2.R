@@ -1,6 +1,8 @@
 
 #Process all samples in one go (ideal for few number of samples)
 merge_vect_code = function(files, col_idx, col_data, ideal = FALSE, genome = NULL){
+
+  chr <- . <- NULL
   bdgs = lapply(files, read_bdg, col_list = col_idx, genome = genome, fill_cpgs = FALSE)
   names(bdgs) = rownames(col_data)
   if(ideal){
@@ -23,6 +25,8 @@ merge_vect_code = function(files, col_idx, col_data, ideal = FALSE, genome = NUL
 
 #Process samples in batches. Batches are processed in vectorized manner (ideal for large number of samples)
 merge_vect_code_batch = function(files, col_idx, batch_size, ideal = FALSE, col_data = NULL, genome = NULL){
+
+  chr <- . <- NULL
   batches = split(files, ceiling(seq_along(files)/batch_size))
   batches_samp_names = split(rownames(col_data), ceiling(seq_along(rownames(col_data))/batch_size))
 
@@ -72,6 +76,8 @@ merge_vect_code_batch = function(files, col_idx, batch_size, ideal = FALSE, col_
 
 #Use for loop for sample-by-sample processing. (Slow af!)
 merge_non_vect_code = function(files, col_idx, coldata, verbose = TRUE, ideal = FALSE, genome = NULL){
+
+  chr <- . <- NULL
   beta_mat = data.table::data.table()
   cov_mat = data.table::data.table()
 

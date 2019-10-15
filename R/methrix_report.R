@@ -16,6 +16,7 @@
 #' @export
 methrix_report = function(meth, output_dir = NULL, recal_stats = FALSE, plot_beta_dist = TRUE, beta_nCpG = 10000, n_thr = 4){
 
+  n_covered <- total_CpGs <- n_non_covered <- fract_CpG <- n_CpG <- NULL
   if(!recal_stats){
     warning("If input methrix is a subsetted version of original methrix object, set recal_stats to TRUE", immediate. = TRUE)
     if (is.null(meth@metadata$descriptive_stats)){

@@ -35,9 +35,13 @@
 #' @import SummarizedExperiment DelayedArray HDF5Array
 #' @examples
 #'\dontrun{
-#'bdg_files = list.files(path = system.file('extdata', package = 'methrix'), pattern = "*\\.bdg\\.gz$", full.names = TRUE)
-#' hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19", bored = FALSE)
-#' meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = hg19_cpgs, chr_idx = 1, start_idx = 2, end_idx = 3, cov_idx = 4, beta_idx = 5, stranded = TRUE, zero_based = FALSE, collapse_strands = TRUE)
+#'bdg_files = list.files(path = system.file('extdata', package = 'methrix'),
+#'pattern = "*\\.bdg\\.gz$", full.names = TRUE)
+#' hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19",
+#' bored = FALSE)
+#' meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = hg19_cpgs,
+#' chr_idx = 1, start_idx = 2, end_idx = 3, cov_idx = 4, beta_idx = 5,
+#' stranded = TRUE, zero_based = FALSE, collapse_strands = TRUE)
 #'}
 #'
 
@@ -49,7 +53,7 @@ read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stra
                           verbose = TRUE, bored = TRUE){
 
   #To-do: One has to check if it works correctly with Bismark and MethylDackel data.
-
+contig <- chr <- genome_contigs <- . <- NULL
   if(is.null(files)){
     stop("Missing input files.", call. = FALSE)
   }

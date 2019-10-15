@@ -78,9 +78,13 @@ Reads BedGraph files and generates methylation and coverage matrices. Optionally
 }
 \examples{
 \dontrun{
-bdg_files = list.files(path = system.file('extdata', package = 'methrix'), pattern = "*\\\\.bdg\\\\.gz$", full.names = TRUE)
-hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19", bored = FALSE)
-meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = hg19_cpgs, chr_idx = 1, start_idx = 2, end_idx = 3, cov_idx = 4, beta_idx = 5, stranded = TRUE, zero_based = FALSE, collapse_strands = TRUE)
+bdg_files = list.files(path = system.file('extdata', package = 'methrix'),
+pattern = "*\\\\.bdg\\\\.gz$", full.names = TRUE)
+hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19",
+bored = FALSE)
+meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = hg19_cpgs,
+chr_idx = 1, start_idx = 2, end_idx = 3, cov_idx = 4, beta_idx = 5,
+stranded = TRUE, zero_based = FALSE, collapse_strands = TRUE)
 }
 
 }

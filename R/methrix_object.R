@@ -6,6 +6,9 @@
 #' @slot metadata a list of meta data associated with the assays
 #' @slot NAMES NULL
 #' @exportClass methrix
+#' @importFrom graphics axis legend lines mtext par plot title
+#' @importFrom stats complete.cases cov density median prcomp quantile sd
+#' @importFrom utils browseURL
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
 #'
 methrix <- setClass(Class = 'methrix', contains = "SummarizedExperiment")

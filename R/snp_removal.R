@@ -19,6 +19,7 @@
 
 remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filtering = FALSE, forced=FALSE) {
   genome <- m@metadata$genome
+  chr <- NULL
 
   if (grepl("hg19|GRCh37|Hs37|hs37",  genome)){
     if (requireNamespace("MafDb.1Kgenomes.phase3.hs37d5", quietly = TRUE) & requireNamespace("GenomicScores", quietly = TRUE)){
@@ -47,7 +48,7 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
     stop("The maf_threshold should be 0.01 or 0.05. \n")
   }
 
-  regions <- gr.nochr(makeGRangesFromDataFrame(elementMetadata(m), start.field = "start", end.field = "start"))
+  regions <- gr.nochr(GenomicRanges::makeGRangesFromDataFrame(elementMetadata(m), start.field = "start", end.field = "start"))
 
   snp_rows <- unique(c(unique(which(as.data.table(score(mafdb, regions, pop=populations))>=maf_threshold, arr.ind=TRUE)[,1]),
                        unique(which(as.data.table(score(mafdb, shift(regions, 1), pop=populations))>=maf_threshold, arr.ind=TRUE)[,1])))
@@ -97,8 +98,9 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
 }
 
 gr.nochr <- function(gr) {
-  if (grepl('^chr', seqlevels(gr)[1])){
-    seqlevels(gr) = gsub('^chr','', seqlevels(gr))
+
+  if (grepl('^chr', GenomeInfoDb::seqlevels(gr)[1])){
+    GenomeInfoDb::seqlevels(gr) = gsub('^chr','', GenomeInfoDb::seqlevels(gr))
   }
   return(gr)
 }

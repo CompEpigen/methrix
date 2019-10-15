@@ -34,5 +34,7 @@ Takes \code{\link{methrix}} object and summarizes regions
 }
 \examples{
 data("methrix_data")
-get_region_summary(m = methrix_data, regions = data.table(chr = "chr21", start = 27867971, end =  27868103), type = "M", how = "mean")
+get_region_summary(m = methrix_data,
+regions = data.table(chr = "chr21", start = 27867971, end =  27868103),
+type = "M", how = "mean")
 }

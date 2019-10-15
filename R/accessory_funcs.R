@@ -111,6 +111,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
 read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_collapse = FALSE, fill_cpgs = TRUE, contigs = contigs,
                     synced_coordinates = synced_coordinates, file_uncovered = NULL, zero_based = TRUE){
 
+  chr <- M <- U <- . <- NULL
   cat(paste0("-Processing:    ", basename(bdg), "\n"))
   bdg_dat = suppressWarnings(data.table::fread(file = bdg, sep = "\t", colClasses = col_list$col_classes, verbose = FALSE, showProgress = FALSE))
   colnames(bdg_dat)[col_list$col_idx] = names(col_list$col_idx)
@@ -245,6 +246,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE, strand_
 #Process samples in batches. Batches are processed in vectorized manner (ideal for large number of samples)
 vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome = NULL, strand_collapse = FALSE, thr = 1, contigs = contigs,
                            synced_coordinates,  file_uncovered = NULL, zero_based = TRUE){
+  . <- NULL
   batches = split(files, ceiling(seq_along(files)/batch_size))
   batches_samp_names = split(rownames(col_data), ceiling(seq_along(rownames(col_data))/batch_size))
 
@@ -305,6 +307,8 @@ vect_code_batch = function(files, col_idx, batch_size,  col_data = NULL, genome 
 #Use for loop for sample-by-sample processing, memory efficient, uses HDF5Array
 non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL, h5temp = NULL, h5 = FALSE, strand_collapse = FALSE,
                          contigs = contigs, synced_coordinates, file_uncovered = NULL, zero_based = TRUE){
+
+  Sample_Name <- . <- chr <- NULL
   if ( strand_collapse){
     dimension <- as.integer(nrow(genome)/2)
   } else {
@@ -394,6 +398,7 @@ non_vect_code = function(files, col_idx, coldata, verbose = TRUE,  genome = NULL
 #--------------------------------------------------------------------------------------------------------------------------
 #Parse genomic regions and convert them to key'd data.table
 cast_ranges = function(regions){
+  chr <- . <- NULL
   if(is(regions, "GRanges")){
     target_regions = data.table::as.data.table(x = regions)
     target_regions[, seqnames := as.character(seqnames)]

@@ -25,6 +25,10 @@ Suggests:
     MafDb.1Kgenomes.phase3.hs37d5,
     GenomicScores,
     Biostrings,
-    RColorBrewer
+    RColorBrewer, 
+    GenomicRanges,
+    GenomeInfoDb,
+    IRanges
 VignetteBuilder: knitr
 biocViews: DNAMethylation, Sequencing, Coverage
+
