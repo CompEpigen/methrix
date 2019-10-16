@@ -11,7 +11,7 @@ S4 class Methrix
 \section{Slots}{
 
 \describe{
-\item{\code{assays}}{A list of tw omatrices containing "Methylation" and "Coverage" information}
+\item{\code{assays}}{A list of tw omatrices containing 'Methylation' and 'Coverage' information}
 
 \item{\code{elementMetadata}}{A DataFrame describing rows in correspoding assay matrices.}
 

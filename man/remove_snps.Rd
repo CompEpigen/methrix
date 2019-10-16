@@ -32,6 +32,6 @@ With the reduce_filtering option, SNPs with MAP < 0.1 will be further evaluated.
 variability in the population, therefore the corresponding CpG site won't be removed. Please keep in mind that variance thresholds are
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 remove_snps(m = methrix_data, maf_threshold=0.01)
 }

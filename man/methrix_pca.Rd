@@ -10,7 +10,7 @@ methrix_pca(m, var = "top", top_var = 1000, ranges = NULL,
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
 
-\item{var}{Choose between random CpG sites ("rand") or most variable CpGs ("top").}
+\item{var}{Choose between random CpG sites ('rand') or most variable CpGs ('top').}
 
 \item{top_var}{Number of variable CpGs to use. Default 1000 Set it to NULL to use all CpGs (which is not recommended due to memory requirements). This option is mutually exclusive with \code{ranges}.}
 
@@ -29,6 +29,6 @@ PCA results
 Principal Component Analysis
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 methrix_pca(methrix_data, do_plot = FALSE)
 }

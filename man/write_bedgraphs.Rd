@@ -27,6 +27,6 @@ writes bedgraph files to output
 Writes bedGraphs from methrix object
 }
 \examples{
-data("methrix_data")
-write_bedgraphs(m = methrix_data, output_dir = "./temp")
+data('methrix_data')
+write_bedgraphs(m = methrix_data, output_dir = './temp')
 }

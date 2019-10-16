@@ -4,15 +4,15 @@
 \name{methrix_data}
 \alias{methrix_data}
 \title{WGBS for colon cancer, chr21 and chr22}
-\format{An object of class \code{"methrix"}}
+\format{An object of class \code{'methrix'}}
 \usage{
-data("methrix_data")
+data('methrix_data')
 }
 \description{
 This is a subset of original `bsseqData` converted to `methrix` containing Whole-genome bisulfite sequencing data (WGBS) for colon cancer on chromosome 21 and 22.
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 methrix_data
 }
 \references{

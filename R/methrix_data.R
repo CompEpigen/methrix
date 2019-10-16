@@ -4,9 +4,9 @@
 #'
 #' @docType data
 #'
-#' @usage data("methrix_data")
+#' @usage data('methrix_data')
 #'
-#' @format An object of class \code{"methrix"}
+#' @format An object of class \code{'methrix'}
 #'
 #' @keywords datasets
 #'
@@ -14,6 +14,6 @@
 #'
 #'
 #' @examples
-#' data("methrix_data")
+#' data('methrix_data')
 #' methrix_data
 "methrix_data"

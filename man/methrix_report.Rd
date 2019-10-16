@@ -29,7 +29,7 @@ If the directory contains required files (from previous run), it directly procee
 }
 \examples{
 \dontrun{
-data("methrix_data")
+data('methrix_data')
 methrix::methrix_report(meth = methrix_data)
 }
 }

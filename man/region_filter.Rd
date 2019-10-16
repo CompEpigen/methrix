@@ -24,7 +24,7 @@ Filter matrices by region
 Takes \code{\link{methrix}} object and filters CpGs based on supplied regions in data.table or GRanges format
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 region_filter(m = methrix_data,
-regions = data.table(chr = "chr21", start = 27867971, end =  27868103))
+regions = data.table(chr = 'chr21', start = 27867971, end =  27868103))
 }

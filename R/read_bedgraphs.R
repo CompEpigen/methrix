@@ -1,7 +1,7 @@
 #' Versatile BedGraph reader.
 #' @details Reads BedGraph files and generates methylation and coverage matrices. Optionally arrays can be serialized as on-disk HDFS5 arrays.
 #' @param files bedgraph files.
-#' @param pipeline Default NULL. Can be "Bismark" or "MethylDeckal" or "MethylcTools". If not known use idx arguments for manual column assignments.
+#' @param pipeline Default NULL. Can be 'Bismark' or 'MethylDeckal' or 'MethylcTools'. If not known use idx arguments for manual column assignments.
 #' @param zero_based Are bedgraph regions zero based ? Default TRUE
 #' @param stranded Default FALSE
 #' @param collapse_strands If TRUE collapses CpGs on different crick strand into watson. Deafult FALSE
@@ -22,7 +22,7 @@
 #' @param synced_coordinates Are the start and end coordinates of a stranded bedgraph are synchronized between + and - strands? Possible
 #' values: FALSE (default), TRUE if the start coordinates are the start coordinates of the C on the plus strand.
 #' @param n_threads number of threads to use. Default 1. Be-careful - there is a linear increase in memory usage with number of threads. This option is does not work with Windows OS.
-#' @param h5 Should the coverage and methylation matrices be stored as "HDF5Array"
+#' @param h5 Should the coverage and methylation matrices be stored as 'HDF5Array'
 #' @param h5_dir directory to store H5 based object
 #' @param h5temp temporary directory to store hdf5
 #' @param verbose Be little chatty ? Default TRUE.
@@ -36,8 +36,8 @@
 #' @examples
 #'\dontrun{
 #'bdg_files = list.files(path = system.file('extdata', package = 'methrix'),
-#'pattern = "*\\.bdg\\.gz$", full.names = TRUE)
-#' hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19",
+#'pattern = '*\\.bdg\\.gz$', full.names = TRUE)
+#' hg19_cpgs = methrix::extract_CPGs(ref_genome = 'BSgenome.Hsapiens.UCSC.hg19',
 #' bored = FALSE)
 #' meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = hg19_cpgs,
 #' chr_idx = 1, start_idx = 2, end_idx = 3, cov_idx = 4, beta_idx = 5,
@@ -45,170 +45,179 @@
 #'}
 #'
 
-read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL, ref_build = NULL, contigs = NULL, vect = FALSE,
-                          vect_batch_size = NULL, coldata = NULL, chr_idx = NULL, start_idx = NULL, end_idx = NULL,
-                          beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
-                          synced_coordinates = FALSE,
-                          n_threads = 1, h5 = FALSE, h5_dir = NULL, h5temp=NULL,
-                          verbose = TRUE, bored = TRUE){
+read_bedgraphs = function(files = NULL, pipeline = NULL, zero_based = TRUE, stranded = FALSE,
+    collapse_strands = FALSE, ref_cpgs = NULL, ref_build = NULL, contigs = NULL,
+    vect = FALSE, vect_batch_size = NULL, coldata = NULL, chr_idx = NULL, start_idx = NULL,
+    end_idx = NULL, beta_idx = NULL, M_idx = NULL, U_idx = NULL, strand_idx = NULL,
+    cov_idx = NULL, synced_coordinates = FALSE, n_threads = 1, h5 = FALSE, h5_dir = NULL,
+    h5temp = NULL, verbose = TRUE, bored = TRUE) {
 
-  #To-do: One has to check if it works correctly with Bismark and MethylDackel data.
-contig <- chr <- genome_contigs <- . <- NULL
-  if(is.null(files)){
-    stop("Missing input files.", call. = FALSE)
-  }
-
-  if(is.null(ref_cpgs)){
-    stop("Missing genome. Please provide a valid genome name", call. = FALSE)
-  }
-
-  if(collapse_strands){
-    if(!stranded){
-      stop("collapse_strands works only when stranded = TRUE ")
-    }
-  }
-
-  if(vect && is.null(vect_batch_size)){
-    vect_batch_size <- length(files)
-  }
-
-  start_proc_time = proc.time()
-
-  #Final aim is to bring input data to the following order:
-  ##chr start end beta cov starnd <rest..>
-  cat(paste0("----------------------------", "\n"))
-  if(is.null(pipeline)){
-    cat(paste0("-Preset:        Custom \n"))
-    col_idx = parse_source_idx(chr = chr_idx, start = start_idx, end = end_idx, beta = beta_idx,
-                               cov = cov_idx, strand = strand_idx, n_meth = M_idx, n_unmeth = U_idx, verbose = verbose)
-    col_idx$col_classes = NULL
-  }else{
-    pipeline = match.arg(arg = pipeline, choices = c("Bismark_cov", "MethylDackel", "MethylcTools"))
-    if(verbose){
-      cat(paste0("-Preset:        ", pipeline, "\n"))
+    # To-do: One has to check if it works correctly with Bismark and MethylDackel
+    # data.
+    contig <- chr <- genome_contigs <- . <- NULL
+    if (is.null(files)) {
+        stop("Missing input files.", call. = FALSE)
     }
 
-    col_idx = get_source_idx(protocol = pipeline)
-
-    if(any(pipeline %in% c("Bismark_cov"))){
-      if(zero_based){
-        cat("*BismarkCov files are one based. You may want to re-run with zero_based=FALSE\n")
-      }
+    if (is.null(ref_cpgs)) {
+        stop("Missing genome. Please provide a valid genome name", call. = FALSE)
     }
-  }
 
-  if(is.null(contigs)) {
-    #Work with only main contrigs (either with chr prefix - UCSC style, or ensemble style)
-    #it should work more generally
-    contigs = c(paste0("chr", c(1:22, "X", "Y", "M")), 1:22, "X", "Y", "MT")
-  }
+    if (collapse_strands) {
+        if (!stranded) {
+            stop("collapse_strands works only when stranded = TRUE ")
+        }
+    }
 
-  #Extract CpG's
-  conig_lens = NA
-  if(is(ref_cpgs, 'list') & all(names(ref_cpgs) == c('cpgs', 'contig_lens', 'release_name'))){
-    conig_lens =  ref_cpgs$contig_lens[contig %in% contigs]
-    genome = data.table::copy(x = ref_cpgs$cpgs)
-  }else if(any(is(ref_cpgs[1], "character"), is(ref_cpgs[1], "BSgenome"))){
-    genome = extract_CPGs(ref_genome = ref_cpgs)
-    conig_lens = genome$contig_lens
-    genome = genome$cpgs
-  }else if(is(ref_cpgs[1], "data.frame")){
-    genome = data.table::copy(x = ref_cpgs)
-    data.table::setkey(x = genome, chr, start)
-  }else{
-    stop("Could not figure out the genome class.")
-  }
+    if (vect && is.null(vect_batch_size)) {
+        vect_batch_size <- length(files)
+    }
 
-  if(verbose){
-    cat(paste0("-CpGs raw:      ", format(nrow(genome), big.mark = ","), "\n"))
-  }
-  genome = genome[chr %in% as.character(contigs)]
+    start_proc_time = proc.time()
 
-  if(nrow(genome) == 0) {
-    message("No more CpG's left after subsetting for contigs. It appears provided contig names do not match to the BSgenome.")
-    message("Contigs provied:")
-    print(contigs)
-    message("Contigs from BSGenome:")
-    print(genome_contigs)
-    stop(call. = FALSE)
-  }
+    # Final aim is to bring input data to the following order: chr start end beta cov
+    # starnd <rest..>
+    cat(paste0("----------------------------", "\n"))
+    if (is.null(pipeline)) {
+        cat(paste0("-Preset:        Custom \n"))
+        col_idx = parse_source_idx(chr = chr_idx, start = start_idx, end = end_idx,
+            beta = beta_idx, cov = cov_idx, strand = strand_idx, n_meth = M_idx,
+            n_unmeth = U_idx, verbose = verbose)
+        col_idx$col_classes = NULL
+    } else {
+        pipeline = match.arg(arg = pipeline, choices = c("Bismark_cov", "MethylDackel",
+            "MethylcTools"))
+        if (verbose) {
+            cat(paste0("-Preset:        ", pipeline, "\n"))
+        }
 
-  if(verbose){
-    cat(paste0("-CpGs filtered: ", format(nrow(genome), big.mark = ","), "\n"))
-    #cat(paste0("-Retained ", format(nrow(genome), big.mark = ","), " CpGs after filtering for contigs\n"))
-  }
+        col_idx = get_source_idx(protocol = pipeline)
 
-  #check it with the strand column
-  if(stranded){
-    genome_plus <- data.table::copy(genome)
-    genome_plus[, strand := "+"]
-    genome[, start := start + 1]
-    genome[, strand := "-"]
-    genome <- data.table::rbindlist(list(genome, genome_plus), use.names = TRUE)
-    data.table::setkeyv(genome, cols = c("chr", "start"))
-    cat(paste0("-CpGs stranded: ", format(nrow(genome), big.mark = ","), "\n"))
-    #message(paste0("Splitted into ", format(nrow(genome), big.mark = ","), " CpGs with strand information"))
-    rm(genome_plus)
+        if (any(pipeline %in% c("Bismark_cov"))) {
+            if (zero_based) {
+                cat("*BismarkCov files are one based. You may want to re-run with zero_based=FALSE\n")
+            }
+        }
+    }
+
+    if (is.null(contigs)) {
+        # Work with only main contrigs (either with chr prefix - UCSC style, or ensemble
+        # style) it should work more generally
+        contigs = c(paste0("chr", c(seq_len(22), "X", "Y", "M")), seq_len(22), "X", "Y", "MT")
+    }
+
+    # Extract CpG's
+    conig_lens = NA
+    if (is(ref_cpgs, "list") & all(names(ref_cpgs) == c("cpgs", "contig_lens", "release_name"))) {
+        conig_lens = ref_cpgs$contig_lens[contig %in% contigs]
+        genome = data.table::copy(x = ref_cpgs$cpgs)
+    } else if (any(is(ref_cpgs[1], "character"), is(ref_cpgs[1], "BSgenome"))) {
+        genome = extract_CPGs(ref_genome = ref_cpgs)
+        conig_lens = genome$contig_lens
+        genome = genome$cpgs
+    } else if (is(ref_cpgs[1], "data.frame")) {
+        genome = data.table::copy(x = ref_cpgs)
+        data.table::setkey(x = genome, chr, start)
+    } else {
+        stop("Could not figure out the genome class.")
+    }
+
+    if (verbose) {
+        cat(paste0("-CpGs raw:      ", format(nrow(genome), big.mark = ","), "\n"))
+    }
+    genome = genome[chr %in% as.character(contigs)]
+
+    if (nrow(genome) == 0) {
+        message("No more CpG's left after subsetting for contigs. It appears provided contig names do not match to the BSgenome.")
+        message("Contigs provied:")
+        print(contigs)
+        message("Contigs from BSGenome:")
+        print(genome_contigs)
+        stop(call. = FALSE)
+    }
+
+    if (verbose) {
+        cat(paste0("-CpGs filtered: ", format(nrow(genome), big.mark = ","), "\n"))
+        # cat(paste0('-Retained ', format(nrow(genome), big.mark = ','), ' CpGs after
+        # filtering for contigs\n'))
+    }
+
+    # check it with the strand column
+    if (stranded) {
+        genome_plus <- data.table::copy(genome)
+        genome_plus[, `:=`(strand, "+")]
+        genome[, `:=`(start, start + 1)]
+        genome[, `:=`(strand, "-")]
+        genome <- data.table::rbindlist(list(genome, genome_plus), use.names = TRUE)
+        data.table::setkeyv(genome, cols = c("chr", "start"))
+        cat(paste0("-CpGs stranded: ", format(nrow(genome), big.mark = ","), "\n"))
+        # message(paste0('Splitted into ', format(nrow(genome), big.mark = ','), ' CpGs
+        # with strand information'))
+        rm(genome_plus)
+        gc()
+    }
+
+    # Set colData
+    if (is.null(coldata)) {
+        coldata = data.frame(row.names = unlist(data.table::tstrsplit(x = basename(files),
+            split = "\\.", keep = 1)), stringsAsFactors = FALSE)
+    } else {
+        if (length(files) != nrow(coldata)) {
+            stop("Number of samples in coldata does not match the number of input files.")
+        }
+        if (any(make.names(rownames(coldata), unique = TRUE) != rownames(coldata))) {
+            modified <- which(make.names(rownames(coldata), unique = TRUE) != rownames(coldata))
+            cat("The sample names contained a non-valid character or were duplicated. The following changes were made:\n")
+            cat(paste(paste(rownames(coldata)[modified], make.names(rownames(coldata),
+                unique = TRUE)[modified], sep = " => "), collapse = " \n "), "\n")
+            rownames(coldata) <- make.names(rownames(coldata), unique = TRUE)
+
+        }
+
+    }
+
+    cat(paste0("----------------------------", "\n"))
+
+    # Summarize bedgraphs and create a matrix
+    if (vect) {
+        mat_list = vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size,
+            col_data = coldata, genome = genome, strand_collapse = collapse_strands,
+            thr = n_threads, contigs = contigs, synced_coordinates = synced_coordinates,
+            zero_based = zero_based)
+    } else {
+        mat_list = non_vect_code(files = files, col_idx = col_idx, coldata = coldata,
+            strand_collapse = collapse_strands, verbose = verbose, genome = genome,
+            h5 = h5, h5temp = h5temp, contigs = contigs, synced_coordinates = synced_coordinates,
+            zero_based = zero_based)
+    }
+
+    if (nrow(mat_list$beta_matrix) != nrow(mat_list$cov_matrix)) {
+        stop("Discrepancies in dimensions of coverage and beta value matrices.")
+    }
+
+    # Finally collapse ref CpGs strands
+    if (collapse_strands) {
+        genome = genome[strand %in% "+"]
+        genome[, `:=`(strand, "*")]
+    }
+
+    ref_cpgs_chr = genome[, .N, chr]
+
+    descriptive_stats = list(genome_stat = mat_list$genome_stat, chr_stat = mat_list$chr_stat,
+        n_cpgs_covered = mat_list$ncpg)
+
+    if (is.null(ref_build)) {
+        ref_build = ref_cpgs$release_name
+    }
+
+    m_obj = create_methrix(beta_mat = mat_list$beta_mat, cov_mat = mat_list$cov_matrix,
+        cpg_loci = genome[, .(chr, start, strand)], is_hdf5 = h5, genome_name = ref_build,
+        col_data = coldata, h5_dir = h5_dir, ref_cpg_dt = ref_cpgs_chr, chrom_sizes = conig_lens,
+        desc = descriptive_stats)
+
+    rm(genome)
     gc()
-  }
 
-  #Set colData
-  if(is.null(coldata)){
-    coldata = data.frame(row.names = unlist(data.table::tstrsplit(x = basename(files), split = '\\.', keep = 1)),
-                         stringsAsFactors = FALSE)
-  }else{
-    if(length(files) != nrow(coldata)){
-      stop("Number of samples in coldata does not match the number of input files.")
-    }
-    if (any(make.names(rownames(coldata), unique = TRUE)!=rownames(coldata))){
-      modified <- which(make.names(rownames(coldata), unique = TRUE)!=rownames(coldata))
-      cat("The sample names contained a non-valid character or were duplicated. The following changes were made:\n")
-      cat(paste(paste(rownames(coldata)[modified],
-                      make.names(rownames(coldata), unique = TRUE)[modified], sep=" => "), collapse = " \n "), "\n")
-      rownames(coldata) <- make.names(rownames(coldata), unique = TRUE)
-
-    }
-
-  }
-
-  cat(paste0("----------------------------", "\n"))
-
-  #Summarize bedgraphs and create a matrix
-  if(vect){
-    mat_list = vect_code_batch(files = files, col_idx = col_idx, batch_size = vect_batch_size, col_data = coldata,
-                               genome = genome, strand_collapse = collapse_strands, thr = n_threads,
-                               contigs = contigs, synced_coordinates = synced_coordinates, zero_based = zero_based)
-  } else {
-    mat_list = non_vect_code(files = files, col_idx = col_idx, coldata = coldata, strand_collapse = collapse_strands,
-                             verbose = verbose,  genome = genome, h5 = h5, h5temp = h5temp, contigs = contigs,
-                             synced_coordinates = synced_coordinates,  zero_based = zero_based)
-  }
-
-  if(nrow(mat_list$beta_matrix) != nrow(mat_list$cov_matrix)){
-    stop("Discrepancies in dimensions of coverage and beta value matrices.")
-  }
-
-  #Finally collapse ref CpGs strands
-  if(collapse_strands){
-    genome = genome[strand %in% '+']
-    genome[,strand := "*"]
-  }
-
-  ref_cpgs_chr = genome[, .N, chr]
-
-  descriptive_stats = list(genome_stat = mat_list$genome_stat, chr_stat = mat_list$chr_stat, n_cpgs_covered = mat_list$ncpg)
-
-  if(is.null(ref_build)){
-    ref_build = ref_cpgs$release_name
-  }
-
-  m_obj =  create_methrix(beta_mat = mat_list$beta_mat, cov_mat = mat_list$cov_matrix,
-                          cpg_loci = genome[,.(chr, start, strand)], is_hdf5 = h5, genome_name = ref_build,
-                          col_data = coldata, h5_dir = h5_dir, ref_cpg_dt = ref_cpgs_chr, chrom_sizes = conig_lens, desc = descriptive_stats)
-
-  rm(genome)
-  gc()
-
-  cat("-Finished in:  ",data.table::timetaken(start_proc_time),"\n")
-  return(m_obj)
+    cat("-Finished in:  ", data.table::timetaken(start_proc_time), "\n")
+    return(m_obj)
 }

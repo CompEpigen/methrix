@@ -16,7 +16,7 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 \arguments{
 \item{files}{bedgraph files.}
 
-\item{pipeline}{Default NULL. Can be "Bismark" or "MethylDeckal" or "MethylcTools". If not known use idx arguments for manual column assignments.}
+\item{pipeline}{Default NULL. Can be 'Bismark' or 'MethylDeckal' or 'MethylcTools'. If not known use idx arguments for manual column assignments.}
 
 \item{zero_based}{Are bedgraph regions zero based ? Default TRUE}
 
@@ -57,7 +57,7 @@ values: FALSE (default), TRUE if the start coordinates are the start coordinates
 
 \item{n_threads}{number of threads to use. Default 1. Be-careful - there is a linear increase in memory usage with number of threads. This option is does not work with Windows OS.}
 
-\item{h5}{Should the coverage and methylation matrices be stored as "HDF5Array"}
+\item{h5}{Should the coverage and methylation matrices be stored as 'HDF5Array'}
 
 \item{h5_dir}{directory to store H5 based object}
 
@@ -79,8 +79,8 @@ Reads BedGraph files and generates methylation and coverage matrices. Optionally
 \examples{
 \dontrun{
 bdg_files = list.files(path = system.file('extdata', package = 'methrix'),
-pattern = "*\\\\.bdg\\\\.gz$", full.names = TRUE)
-hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19",
+pattern = '*\\\\.bdg\\\\.gz$', full.names = TRUE)
+hg19_cpgs = methrix::extract_CPGs(ref_genome = 'BSgenome.Hsapiens.UCSC.hg19',
 bored = FALSE)
 meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = hg19_cpgs,
 chr_idx = 1, start_idx = 2, end_idx = 3, cov_idx = 4, beta_idx = 5,

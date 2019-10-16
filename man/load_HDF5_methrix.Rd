@@ -21,9 +21,9 @@ Loads HDF5 methrix object
 Takes  directory with a previously saved HDF5Array format \code{\link{methrix}} object and loads it
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 methrix_data_h5 <- convert_methrix(m=methrix_data)
-target_dir = paste0(getwd(), "/temp1/")
+target_dir = paste0(getwd(), '/temp1/')
 save_HDF5_methrix(methrix_data_h5, dir = target_dir, replace = TRUE)
 load_HDF5_methrix(target_dir)
 }

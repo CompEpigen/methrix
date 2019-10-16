@@ -32,7 +32,7 @@ Plot descriptive statistics
 plot descriptive statistics results from \code{\link{get_stats}}
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 gs = get_stats(methrix_data)
 plot_stats(gs)
 }

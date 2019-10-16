@@ -25,6 +25,6 @@ ggplot2 object
 Violin Plot for \eqn{\beta}-Values
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 plot_violin(m = methrix_data)
 }

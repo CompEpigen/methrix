@@ -40,6 +40,9 @@ This vignette describes basic usage of the package intended to process several l
 #Load library
 library(methrix)
 #Genome of your preference to work with
+if(!require(BSgenome.Hsapiens.UCSC.hg19)) {
+install.packages("BSgenome.Hsapiens.UCSC.hg19")
+}
 library(BSgenome.Hsapiens.UCSC.hg19) 
 ```
 
@@ -137,28 +140,6 @@ methrix::methrix_report(meth = meth, output_dir = tempdir())
 ```
 
 ## Filtering
-### Remove SNPs
-One can also remove CpG sites overlaping with common SNPs based on minor allele frequencies.
-
-```{r, eval=FALSE}
-if(!require(MafDb.1Kgenomes.phase3.hs37d5)) {
-install.packages("MafDb.1Kgenomes.phase3.hs37d5"); require(MafDb.1Kgenomes.phase3.hs37d5)} 
-if(!require(GenomicScores)) {
-install.packages("GenomicScores"); require(GenomicScores)} 
-
-meth_snps_filtered = methrix::remove_snps(m = meth)
-```
-
-```{r}
-# Used SNP database: MafDb.1Kgenomes.phase3.hs37d5. 
-# Number of SNPs removed: 
-#      chr  N
-# 1: chr21 40
-# 2: chr22 52
-# 
-#  Sum: [1] 92
-```
-
 ### Remove uncovered loci
 Usual task in analysis involves removing uncovered CpGs. i.e, those loci which are not covered across all sample (in other words covered only in subset of samples resulting `NA` for rest of the samples ).
 ```{r, eval=FALSE}
@@ -181,6 +162,29 @@ meth
 #     is_h5: FALSE
 # Reference: hg19
 ```
+### Remove SNPs
+One can also remove CpG sites overlaping with common SNPs based on minor allele frequencies.
+
+```{r, eval=FALSE}
+if(!require(MafDb.1Kgenomes.phase3.hs37d5)) {
+install.packages("MafDb.1Kgenomes.phase3.hs37d5"); require(MafDb.1Kgenomes.phase3.hs37d5)} 
+if(!require(GenomicScores)) {
+install.packages("GenomicScores"); require(GenomicScores)} 
+
+meth_snps_filtered = methrix::remove_snps(m = meth)
+```
+
+```{r}
+# Used SNP database: MafDb.1Kgenomes.phase3.hs37d5. 
+# Number of SNPs removed: 
+#      chr  N
+# 1: chr21 40
+# 2: chr22 52
+# 
+#  Sum: [1] 92
+```
+
+
 
 ## Basic operations
 ### Extract methylation/coverage matrices

@@ -25,8 +25,8 @@ Saves HDF5 methrix object
 Takes \code{\link{methrix}} object and saves it
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 methrix_data_h5 <- convert_methrix(m=methrix_data)
-target_dir = paste0(getwd(), "/temp/")
+target_dir = paste0(getwd(), '/temp/')
 save_HDF5_methrix(methrix_data_h5, dir = target_dir, replace = TRUE)
 }

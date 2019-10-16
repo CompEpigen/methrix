@@ -12,9 +12,9 @@ get_region_summary(m, regions = NULL, type = "M", how = "mean",
 
 \item{regions}{genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object}
 
-\item{type}{matrix which needs to be summarized. Coule be `M`, `C`. Default "M"}
+\item{type}{matrix which needs to be summarized. Coule be `M`, `C`. Default 'M'}
 
-\item{how}{mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min. Default "mean"}
+\item{how}{mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min. Default 'mean'}
 
 \item{overlap_type}{defines the type of the overlap of the CpG sites with the target region. Default value is `within`. For detailed description,
 see the \code{foverlaps} function of the \code{\link{data.table}} package.}
@@ -33,8 +33,8 @@ Extract and summarize methylation or coverage info by regions of interest
 Takes \code{\link{methrix}} object and summarizes regions
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 get_region_summary(m = methrix_data,
-regions = data.table(chr = "chr21", start = 27867971, end =  27868103),
-type = "M", how = "mean")
+regions = data.table(chr = 'chr21', start = 27867971, end =  27868103),
+type = 'M', how = 'mean')
 }

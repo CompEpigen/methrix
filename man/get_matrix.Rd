@@ -9,7 +9,7 @@ get_matrix(m, type = "M", add_loci = FALSE)
 \arguments{
 \item{m}{\code{\link{methrix}} object}
 
-\item{type}{can be \code{M} or \code{C}. Default "M"}
+\item{type}{can be \code{M} or \code{C}. Default 'M'}
 
 \item{add_loci}{Default FALSE. If TRUE adds CpG position info to the matrix and returns as a data.table}
 }
@@ -23,9 +23,9 @@ Extract methylation or coverage matrices
 Takes \code{\link{methrix}} object and returns user specified \code{methylation} or \code{coverage} matrix
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 #Get methylation matrix
-get_matrix(m = methrix_data, type = "M")
+get_matrix(m = methrix_data, type = 'M')
 #Get methylation matrix along with loci
-get_matrix(m = methrix_data, type = "M", add_loci = TRUE)
+get_matrix(m = methrix_data, type = 'M', add_loci = TRUE)
 }

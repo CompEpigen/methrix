@@ -23,7 +23,7 @@ Filter matrices by coverage
 Takes \code{\link{methrix}} object and filters CpGs based on coverage statistics
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 #keep only CpGs which are covered by at-least 1 read across 3 samples
 coverage_filter(m = methrix_data, cov_thr = 1, min_samples = 3)
 }

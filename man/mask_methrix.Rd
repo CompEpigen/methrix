@@ -25,6 +25,6 @@ Takes \code{\link{methrix}} object and masks sites with too high or too low cove
  by putting NA for coverage and beta value. The sites will remain in the object.
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 mask_methrix(m = methrix_data, low_count = 5, high_quantile = 0.99 )
 }

@@ -19,6 +19,6 @@ Extracts all CpGs from a genome
 }
 \examples{
 \dontrun{
-hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19", bored = FALSE)
+hg19_cpgs = methrix::extract_CPGs(ref_genome = 'BSgenome.Hsapiens.UCSC.hg19', bored = FALSE)
 }
 }

@@ -21,7 +21,7 @@ Estimate descriptive statistics
 Calculate descriptive statistics
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 get_stats(methrix_data)
 }
 \seealso{

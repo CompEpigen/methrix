@@ -11,7 +11,7 @@ plot_coverage(m, type = c("hist", "dens"), pheno = NULL,
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
 
-\item{type}{Choose between "hist" (histogram) or "dens" (density plot).}
+\item{type}{Choose between 'hist' (histogram) or 'dens' (density plot).}
 
 \item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the plot.}
 
@@ -31,6 +31,6 @@ ggplot2 object
 Coverage QC Plots
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 plot_coverage(m = methrix_data)
 }

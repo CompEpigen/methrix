@@ -16,9 +16,9 @@ plot_pca(pca_res, m = NULL, col_anno = NULL, shape_anno = NULL,
 
 \item{shape_anno}{Column name of colData(m). Default NULL. Will be used as a factor to shape different groups. Required \code{methrix} object}
 
-\item{pc_x}{Default "PC1"}
+\item{pc_x}{Default 'PC1'}
 
-\item{pc_y}{Default "PC2"}
+\item{pc_y}{Default 'PC2'}
 
 \item{show_labels}{Default FLASE}
 }
@@ -29,7 +29,7 @@ ggplot2 object
 Plot PCA results
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 mpc = methrix_pca(methrix_data, do_plot = FALSE)
 plot_pca(mpc)
 }

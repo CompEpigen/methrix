@@ -19,6 +19,6 @@ Order mathrix object by SD
 Takes \code{\link{methrix}} object and reorganizes the data by standard deviation
 }
 \examples{
-data("methrix_data")
+data('methrix_data')
 order_by_sd(m = methrix_data)
 }

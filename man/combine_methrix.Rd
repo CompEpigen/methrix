@@ -11,7 +11,7 @@ combine_methrix(m1, m2, by = c("row", "col"))
 
 \item{m2}{Second \code{\link{methrix}} object}
 
-\item{by}{The direction of combine. "column" (cbind) combines samples with same regions, "row" combines different regions,
+\item{by}{The direction of combine. 'column' (cbind) combines samples with same regions, 'row' combines different regions,
 e.g. different chromosomes.}
 }
 \value{
