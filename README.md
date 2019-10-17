@@ -6,7 +6,6 @@ Fast and efficient summarization of generic bedGraph files from Bisufite sequenc
 
 <!-- badges: start -->
 
-[![CRAN status](https://www.r-pkg.org/badges/version/methrix)](https://cran.r-project.org/package=methrix)
 [![Travis build status](https://travis-ci.com/CompEpigen/methrix.svg?branch=master)](https://travis-ci.com/CompEpigen/methrix)
 [![Lifecycle: maturing](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
 [![BioC status](http://www.bioconductor.org/shields/build/release/bioc/methrix.svg)](https://bioconductor.org/checkResults/release/bioc-LATEST/methrix)
@@ -95,20 +94,30 @@ Reference: Genome Reference Consortium GRCh37
 What can be done on `methrix` object? Following are the key functions
 
 ```r
-subset_methrix()    #Subset methrix object based on given condition
+#reading and writing:
+read_bedgraphs()    #Reads in bedgraph files into methrix
 write_bedgraphs()   #Writes bedGraphs from methrix object
-order_by_sd()       #order methrix object by SD
-methrix_report()    #Create a detailed interative html summary report from methrix object
-methrix2bsseq()     #Convert methrix to bsseq object
-region_filter()	    #Filter matrices by region
-remove_uncovered()	#Remove loci that are uncovered across all samples
+#operations
+order_by_sd()       #Orders methrix object by SD
+region_filter()	    #Filters matrices by region
+mask_methrix()      #Masks lowly covered CpGs
 coverage_filter()   #Filters methrix object based on coverage
+subset_methrix()	  #Subsets methrix object based on given conditions.
+remove_uncovered()	#Removes loci that are uncovered across all samples
+remove_snps()       #Removes loci overlapping with possible SNPs
+#Visualization and QC
+methrix_report()    #Creates a detailed interative html summary report from methrix object
 methrix_pca()	      #Principal Component Analysis
-subset_methrix	    #Subsets 'methrix' object based on given conditions.
+plot_pca()          #Plots the result of PCA
+plot_coverage()     #Plots coverage statistics
+plot_density()      #Plots the density distribution of the beta values 
+plot_violin()       #Plots the distribution of the beta values on a violin plot
+plot_stats()        #Plot descriptive statistics
 get_stats()	        #Estimate descriptive statistics of the object
-methrix_report()	  #Creates a detailed interative html summary report from Methrix object
+#Other
+methrix2bsseq()     #Convert methrix to bsseq object
+
 ```
-plus other plotting functions..
 
 ### Speed benchmark
 
