@@ -26,6 +26,8 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 ```{r}
 library(ggplot2)
+if (!requireNamespace("plotly", quietly = TRUE))
+    install.packages("plotly")
 library(plotly)
 library(data.table)
 ```

@@ -17,6 +17,11 @@
 #' @export
 get_region_summary <- function(m, regions = NULL, type = "M", how = "mean",
     overlap_type = "within", na_rm = TRUE, verbose = TRUE) {
+
+    if (!is(m, "methrix")){
+        stop("A valid methrix object needs to be supplied.")
+    }
+
     rid <- chr <- yid <- median <- NULL
     type <- match.arg(arg = type, choices = c("M", "C"))
     how <- match.arg(arg = how, choices = c("mean", "median", "max", "min",
@@ -106,6 +111,10 @@ get_region_summary <- function(m, regions = NULL, type = "M", how = "mean",
 #' @export
 order_by_sd <- function(m) {
 
+    if (!is(m, "methrix")){
+        stop("A valid methrix object needs to be supplied.")
+    }
+
     if (is_h5(m)) {
         sds <- DelayedMatrixStats::rowSds(x = get_matrix(m, type = "M"))
     } else {
@@ -131,6 +140,10 @@ order_by_sd <- function(m) {
 #' @return An object of class \code{\link{methrix}}
 #' @export
 subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL) {
+
+    if (!is(m, "methrix")){
+        stop("A valid methrix object needs to be supplied.")
+    }
 
     r_dat <- data.table::as.data.table(rowData(m))
 
@@ -240,9 +253,14 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1) {
 #' @export
 get_matrix <- function(m, type = "M", add_loci = FALSE, in_granges=FALSE) {
 
+    if (!is(m, "methrix")){
+        stop("A valid methrix object needs to be supplied.")
+    }
+
+
     type <- match.arg(arg = type, choices = c("M", "C"))
     if (add_loci==FALSE & in_granges==TRUE){
-        message("Without genomic locations (add_loci= FALSE), it is not possible to convert the results to GRanges, ",
+        warning("Without genomic locations (add_loci= FALSE), it is not possible to convert the results to GRanges, ",
                 "the output will be a data.table object. ")
 
     }
@@ -286,6 +304,10 @@ get_matrix <- function(m, type = "M", add_loci = FALSE, in_granges=FALSE) {
 #'
 methrix2bsseq <- function(m) {
 
+    if (!is(m, "methrix")){
+        stop("A valid methrix object needs to be supplied.")
+    }
+
     n_samps <- nrow(SummarizedExperiment::colData(x = m))
     M_clean <- get_matrix(m) * get_matrix(m, type = "C")
     M_clean[is.na(M_clean)] <- 0
@@ -310,8 +332,13 @@ methrix2bsseq <- function(m) {
 #'
 remove_uncovered <- function(m) {
 
+
+
     V1 <- N <- NULL
     start_proc_time <- proc.time()
+    if (!is(m, "methrix")){
+        stop("A valid methrix object needs to be supplied.")
+    }
 
     if (is_h5(m)) {
         row_idx <- data.table::as.data.table(which(is.na(get_matrix(m = m,
@@ -347,8 +374,10 @@ remove_uncovered <- function(m) {
 region_filter <- function(m, regions, type = "within") {
 
     start_proc_time <- proc.time()
+    if (!is(m, "methrix")){
+        stop("A valid methrix object needs to be supplied.")
+    }
 
-    start_proc_time <- proc.time()
     target_regions <- cast_ranges(regions)
 
     current_regions <- data.table::as.data.table(rowData(m))
@@ -387,6 +416,10 @@ region_filter <- function(m, regions, type = "within") {
 mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99) {
 
     start_proc_time <- proc.time()
+    if (!is(m, "methrix")){
+        stop("A valid methrix object needs to be supplied.")
+    }
+
     if (!is.null(low_count)) {
 
         row_idx <- which(get_matrix(m = m, type = "C") < low_count, arr.ind = FALSE)
@@ -448,6 +481,10 @@ mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99) {
 #'
 combine_methrix <- function(m1, m2, by = c("row", "col")) {
 
+    if (!is(m1, "methrix") || !is(m2, "methrix") ){
+        stop("Valid methrix objects need to be supplied.")
+    }
+
     by <- match.arg(arg = by, choices = c("row", "col"), several.ok = FALSE)
 
     if (by == "row") {
@@ -485,8 +522,13 @@ combine_methrix <- function(m1, m2, by = c("row", "col")) {
 #' @return data.table of summary stats
 #' @export
 get_stats <- function(m, per_chr = TRUE) {
+
     median <- . <- sd <- chr <- NULL
     start_proc_time <- proc.time()
+    if (!is(m, "methrix")){
+        stop("A valid methrix object needs to be supplied.")
+    }
+
 
     row_idx <- data.table::as.data.table(which(is.na(get_matrix(m = m,
         type = "C")), arr.ind = TRUE))
@@ -600,6 +642,7 @@ get_stats <- function(m, per_chr = TRUE) {
 #' @return Nothing
 #' @export
 save_HDF5_methrix <- function(m = NULL, dir = NULL, replace = FALSE, ...) {
+
 
     if (is.null(dir)) {
         stop("Please provide an target directory to save the results")

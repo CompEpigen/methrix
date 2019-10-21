@@ -164,7 +164,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     data.table::fwrite(x = meth@metadata$chrom_sizes, file = of5, sep = "\t")
 
     message(paste0("Knitting report\n"))
-    md <- system.file("extdata", "summarize_methrix.Rmd", package = "methrix")
+    md <- system.file("report", "summarize_methrix.Rmd", package = "methrix")
 
     rmarkdown::render(input = md, output_file = "methrix_reports.html",
         output_dir = output_dir, clean = TRUE, params = list(n_covered_tsv = of3,

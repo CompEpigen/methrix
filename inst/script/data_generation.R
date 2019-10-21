@@ -69,9 +69,10 @@ hg19_cpg <-  extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19")
 
 files <- dir(path = location, full.names = TRUE,
              pattern = ".bedGraph$")
+colnames(pData(BS.cancer.ex)) <- c("Condition", "Pair")
+
 methrix_obj <- methrix::read_bedgraphs(files = files,coldata = pData(BS.cancer.ex),
                         zero_based = FALSE,
-                        collapse_strands = FALSE,
                         stranded = FALSE,
                         ref_build = "hg19",
                         ref_cpgs = hg19_cpg,
@@ -92,5 +93,24 @@ start(dmrs_gr) <- start(dmrs_gr) - 2000
 end(dmrs_gr) <- end(dmrs_gr) + 2000
 
 methrix_dta <- subset_methrix(methrix_obj, regions=dmrs_gr)
-methrix_dta <- remove_uncovered(methrix_dta)
-write_bedgraphs(methrix_dta, output_dir = location)
+methrix_data <- remove_uncovered(methrix_dta)
+usethis::use_data(methrix_data, overwrite=TRUE)
+
+meth <- get_matrix(methrix_data, type="M")
+cov <- get_matrix(methrix_data, type="C")
+gr <- methrix_data@elementMetadata
+
+
+#create M and U values
+count_meth_sub <- cov*meth
+count_unmethylated_sub <- cov - count_meth_sub
+df <- list()
+#save bedgraphs
+for (i in colnames(count_meth_sub)){
+  df[[i]] <- data.frame(chromosome=gr$chr, position=gr$start, count_methylated=count_meth_sub[,i],
+                        count_unmethylated=count_unmethylated_sub[,i] )
+  df[[i]] <- df[[i]][!is.na(df[[i]]$count_methylated),]
+  data.table::fwrite(df[[i]], file = paste0("./inst/extdata/",i,".bedGraph.gz"),
+                     compress = "auto", quote=FALSE, sep="\t", row.names=FALSE, col.names=FALSE)
+}
+
