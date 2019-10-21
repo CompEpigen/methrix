@@ -10,7 +10,8 @@ write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
 \arguments{
 \item{m}{\code{\link{methrix}} object}
 
-\item{output_dir}{Output directory name where the files should be saved. If \code{NULL} creats a \code{tempdir}}
+\item{output_dir}{Output directory name where the files should be saved.
+If \code{NULL} creats a \code{tempdir}}
 
 \item{rm_NA}{remove NAs}
 

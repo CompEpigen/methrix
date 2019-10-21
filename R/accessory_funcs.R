@@ -57,7 +57,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
            call. = FALSE)
     } else {
       if (verbose) {
-        cat("--Missing beta and coverage info. Estimating them from M and U values\n")
+        message("--Missing beta and coverage info. Estimating them from M and U values\n")
       }
 
       return(list(col_idx = c(chr = chr, start = start, end = end,
@@ -74,14 +74,14 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
       stop("Missing beta values but coverage info available.\nEither U or M are required for estimating beta values!",
            call. = FALSE)
     } else if (all(!is.null(n_meth), !is.null(n_unmeth))) {
-      cat("--Estimating beta values from M and U\n")
+      message("--Estimating beta values from M and U\n")
       return(list(col_idx = c(chr = chr, start = start, end = end,
                               strand = strand, beta = beta, M = n_meth,
                               U = n_unmeth,  cov = cov),
                   fix_missing = c(fix_missing, "beta := M/(M+U")))
     } else if (!is.null(n_meth)) {
       # M available
-      cat("--Estimating beta values from M and coverage\n")
+      message("--Estimating beta values from M and coverage\n")
       return(list(col_idx = c(chr = chr, start = start, end = end,
                               strand = strand, beta = beta, M = n_meth,
                               U = n_unmeth, cov = cov),
@@ -89,7 +89,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
                                                           "U := cov - M")))
     } else if (!is.null(n_unmeth)) {
       # U available
-      cat("--Estimating beta values from U and coverage\n")
+      message("--Estimating beta values from U and coverage\n")
       return(list(col_idx = c(chr = chr, start = start, end = end,
                               strand = strand, beta = beta,M = n_meth,
                               U = n_unmeth, cov = cov),
@@ -104,7 +104,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
            call. = FALSE)
     } else {
       if (verbose) {
-        cat("--Estimating coverage from M and U\n")
+        message("--Estimating coverage from M and U\n")
       }
 
       return(list(col_idx = c(chr = chr, start = start, end = end,
@@ -117,7 +117,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
     # and U)
     if (all(is.null(n_meth), is.null(n_unmeth))) {
       if (verbose) {
-        cat("--Estimating M and U from coverage and beta values\n")
+        message("--Estimating M and U from coverage and beta values\n")
       }
 
       return(list(col_idx = c(chr = chr, start = start, end = end,
@@ -126,7 +126,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
                                   "U := cov - M")))
     } else {
       if (verbose) {
-        cat("--All fields are present. Nice.\n")
+        message("--All fields are present. Nice.\n")
       }
 
       return(list(col_idx = c(chr = chr, start = start, end = end,
@@ -147,7 +147,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
                     file_uncovered = NULL, zero_based = TRUE) {
 
   chr <- M <- U <- . <- NULL
-  cat(paste0("-Processing:    ", basename(bdg), "\n"))
+  message(paste0("-Processing:    ", basename(bdg), "\n"))
   bdg_dat = suppressWarnings(data.table::fread(file = bdg, sep = "\t",
                                                colClasses = col_list$col_classes,
                                                verbose = FALSE,
@@ -167,7 +167,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
     if (max_beta > 1) {
       bdg_dat[, `:=`(beta, beta/100)]
       if (verbose) {
-        cat("--Note:         Converted beta values from percent to fractions\n")
+        message("--Note:         Converted beta values from percent to fractions\n")
       }
       rm(max_beta)
     }
@@ -230,7 +230,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
 
   if (verbose) {
     if (nrow(missing_cpgs) > 0) {
-      cat(paste0("--CpGs missing: ", format(nrow(missing_cpgs), big.mark = ","),
+      message(paste0("--CpGs missing: ", format(nrow(missing_cpgs), big.mark = ","),
                  "\n"))
     }
     # message(paste0('Missing ', format(nrow(missing_cpgs), big.mark =
@@ -248,10 +248,9 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
                            current = genome[, .(chr, start)], ignore.row.order = FALSE)
 
   if (is(is_identical, "character")) {
-    # cat(paste0('--non reference CpGs found. Removing them\n'))
     non_ref_cpgs = bdg_dat[!genome[, list(chr, start)], on = c("chr",
                                                                "start")]
-    cat(paste0("--Non ref CpGs: ", format(nrow(non_ref_cpgs), big.mark = ","),
+    message(paste0("--Non ref CpGs: ", format(nrow(non_ref_cpgs), big.mark = ","),
                " [Removing them]\n"))
     bdg_dat = bdg_dat[genome[, list(chr, start)], on = c("chr", "start")]
     data.table::setkey(x = bdg_dat, "chr", "start")
@@ -308,86 +307,69 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
 
 # Process samples in batches. Batches are processed in vectorized
 # manner (ideal for large number of samples)
-vect_code_batch = function(files, col_idx, batch_size, col_data = NULL,
-                           genome = NULL, strand_collapse = FALSE,
-                           thr = 1, contigs = contigs,
-                           synced_coordinates, file_uncovered = NULL,
-                           zero_based = TRUE) {
+vect_code_batch <- function(files, col_idx, batch_size, col_data = NULL,
+                            genome = NULL, strand_collapse = FALSE, thr = 1, contigs = contigs,
+                            synced_coordinates, file_uncovered = NULL, zero_based = TRUE) {
   . <- NULL
-  batches = split(files, ceiling(seq_along(files)/batch_size))
-  batches_samp_names = split(rownames(col_data),
-                             ceiling(seq_along(rownames(col_data))/batch_size))
+  batches <- split(files, ceiling(seq_along(files)/batch_size))
+  batches_samp_names <- split(rownames(col_data), ceiling(seq_along(rownames(col_data))/batch_size))
 
-  beta_mat_final = data.table::data.table()
-  cov_mat_final = data.table::data.table()
-  genome_stat_final = data.table::data.table()
-  chr_stat_final = data.table::data.table()
-  ncpg_final = data.table::data.table()
+  beta_mat_final <- data.table::data.table()
+  cov_mat_final <- data.table::data.table()
+  genome_stat_final <- data.table::data.table()
+  chr_stat_final <- data.table::data.table()
+  ncpg_final <- data.table::data.table()
 
   for (i in seq_along(batches)) {
     # browser()
-    cat(paste0("-Batch:         ", i, "/", length(batches)), "\n")
-    batch_files = batches[[i]]
-    samp_names = batches_samp_names[[i]]
+    message(paste0("-Batch:         ", i, "/", length(batches)), "\n")
+    batch_files <- batches[[i]]
+    samp_names <- batches_samp_names[[i]]
     if (grepl("Windows", Sys.getenv("OS"))) {
       if (thr > 1) {
         warning("Windows doesn't support parallel processing. Setting n_threads to 1.")
       }
-      bdgs = lapply(batch_files, read_bdg, col_list = col_idx,
-                    genome = genome,
-                    strand_collapse = strand_collapse, contigs = contigs,
-                    synced_coordinates = synced_coordinates,
-                    file_uncovered = file_uncovered, zero_based = zero_based)
+      bdgs <- lapply(batch_files, read_bdg, col_list = col_idx, genome = genome,
+                     strand_collapse = strand_collapse, contigs = contigs, synced_coordinates = synced_coordinates,
+                     file_uncovered = file_uncovered, zero_based = zero_based)
     } else {
-      bdgs = parallel::mclapply(batch_files, read_bdg, col_list = col_idx,
-                                genome = genome,
-                                strand_collapse = strand_collapse,
-                                mc.cores = thr,
-                                contigs = contigs,
-                                synced_coordinates = synced_coordinates,
-                                file_uncovered = file_uncovered,
-                                zero_based = zero_based)
+      bdgs <- parallel::mclapply(batch_files, read_bdg, col_list = col_idx,
+                                 genome = genome, strand_collapse = strand_collapse, mc.cores = thr,
+                                 contigs = contigs, synced_coordinates = synced_coordinates,
+                                 file_uncovered = file_uncovered, zero_based = zero_based)
     }
-    names(bdgs) = samp_names
+    names(bdgs) <- samp_names
 
     if (i == 1) {
-      cov_mat_final = data.frame(lapply(bdgs, function(x)
-        x$bdg[, .(cov)]), stringsAsFactors = FALSE)
-      beta_mat_final = data.frame(lapply(bdgs, function(x)
-        x$bdg[, .(beta)]), stringsAsFactors = FALSE)
-      colnames(cov_mat_final) = colnames(beta_mat_final) = samp_names
+      cov_mat_final <- data.frame(lapply(bdgs, function(x) x$bdg[,
+                                                                 .(cov)]), stringsAsFactors = FALSE)
+      beta_mat_final <- data.frame(lapply(bdgs, function(x) x$bdg[,
+                                                                  .(beta)]), stringsAsFactors = FALSE)
+      colnames(cov_mat_final) <- colnames(beta_mat_final) <- samp_names
 
-      genome_stat_final = data.table::rbindlist(lapply(bdgs,
-                                                       function(x) x$genome_stat),
-                                                use.names = TRUE, fill = TRUE,
-                                                idcol = "Sample_Name")
-      chr_stat_final = data.table::rbindlist(lapply(bdgs, function(x) x$chr_stat),
-                                             use.names = TRUE,
-                                             fill = TRUE, idcol = "Sample_Name")
-      ncpg_final = data.table::rbindlist(lapply(bdgs, function(x) x$ncpg),
-                                         use.names = TRUE, fill = TRUE,
-                                         idcol = "Sample_Name")
+      genome_stat_final <- data.table::rbindlist(lapply(bdgs, function(x) x$genome_stat),
+                                                 use.names = TRUE, fill = TRUE, idcol = "Sample_Name")
+      chr_stat_final <- data.table::rbindlist(lapply(bdgs, function(x) x$chr_stat),
+                                              use.names = TRUE, fill = TRUE, idcol = "Sample_Name")
+      ncpg_final <- data.table::rbindlist(lapply(bdgs, function(x) x$ncpg),
+                                          use.names = TRUE, fill = TRUE, idcol = "Sample_Name")
     } else {
-      cov_mat = data.frame(lapply(bdgs, function(x) x$bdg[, .(cov)]),
-                           stringsAsFactors = FALSE)
-      beta_mat = data.frame(lapply(bdgs, function(x) x$bdg[, .(beta)]),
+      cov_mat <- data.frame(lapply(bdgs, function(x) x$bdg[, .(cov)]),
                             stringsAsFactors = FALSE)
-      colnames(cov_mat) = colnames(beta_mat) = samp_names
-      cov_mat_final = cbind(cov_mat_final, cov_mat)
-      beta_mat_final = cbind(beta_mat_final, beta_mat)
+      beta_mat <- data.frame(lapply(bdgs, function(x) x$bdg[, .(beta)]),
+                             stringsAsFactors = FALSE)
+      colnames(cov_mat) <- colnames(beta_mat) <- samp_names
+      cov_mat_final <- cbind(cov_mat_final, cov_mat)
+      beta_mat_final <- cbind(beta_mat_final, beta_mat)
 
-      genome_stat_final = rbind(genome_stat_final,
-                                data.table::rbindlist(lapply(bdgs, function(x)
-                                  x$genome_stat), use.names = TRUE, fill = TRUE,
-                                                      idcol = "Sample_Name"))
-      chr_stat_final = rbind(chr_stat_final,
-                             data.table::rbindlist(lapply(bdgs, function(x)
-                               x$chr_stat), use.names = TRUE, fill = TRUE,
-                                                   idcol = "Sample_Name"))
-      ncpg_final = rbind(ncpg_final,
-                         data.table::rbindlist(lapply(bdgs, function(x) x$ncpg),
-                                               use.names = TRUE, fill = TRUE,
-                                               idcol = "Sample_Name"))
+      genome_stat_final <- rbind(genome_stat_final, data.table::rbindlist(lapply(bdgs,
+                                                                                 function(x) x$genome_stat), use.names = TRUE, fill = TRUE,
+                                                                          idcol = "Sample_Name"))
+      chr_stat_final <- rbind(chr_stat_final, data.table::rbindlist(lapply(bdgs,
+                                                                           function(x) x$chr_stat), use.names = TRUE, fill = TRUE,
+                                                                    idcol = "Sample_Name"))
+      ncpg_final <- rbind(ncpg_final, data.table::rbindlist(lapply(bdgs,
+                                                                   function(x) x$ncpg), use.names = TRUE, fill = TRUE, idcol = "Sample_Name"))
 
       rm(cov_mat)
       rm(beta_mat)
@@ -395,159 +377,131 @@ vect_code_batch = function(files, col_idx, batch_size, col_data = NULL,
     }
   }
   gc()
-  ncpg_final = data.table::dcast(data = ncpg_final, chr ~ Sample_Name,
-                                 value.var = "N")
+  ncpg_final <- data.table::dcast(data = ncpg_final, chr ~ Sample_Name,
+                                  value.var = "N")
 
-  return(list(beta_matrix = data.table::setDT(beta_mat_final),
-              cov_matrix = data.table::setDT(cov_mat_final),
-              genome_stat = genome_stat_final, chr_stat = chr_stat_final,
-              ncpg = ncpg_final))
+  return(list(beta_matrix = data.table::setDT(beta_mat_final), cov_matrix = data.table::setDT(cov_mat_final),
+              genome_stat = genome_stat_final, chr_stat = chr_stat_final, ncpg = ncpg_final))
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
 
 
-#Use for loop for sample-by-sample processing, memory efficient, uses HDF5Array
-non_vect_code = function(files, col_idx, coldata, verbose = TRUE,
-                         genome = NULL, h5temp = NULL, h5 = FALSE,
-                         strand_collapse = FALSE,
-                         contigs = contigs, synced_coordinates,
-                         file_uncovered = NULL, zero_based = TRUE){
+# Use for loop for sample-by-sample processing, memory efficient, uses
+# HDF5Array
+non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL,
+                          h5temp = NULL, h5 = FALSE, strand_collapse = FALSE, contigs = contigs,
+                          synced_coordinates, file_uncovered = NULL, zero_based = TRUE) {
 
   Sample_Name <- . <- chr <- NULL
-  if ( strand_collapse){
+  if (strand_collapse) {
     dimension <- as.integer(nrow(genome)/2)
   } else {
     dimension <- as.integer(nrow(genome))
   }
 
-  if(h5){
-    if(is.null(h5temp)){
-      h5temp <- tempdir()}
+  if (h5) {
+    if (is.null(h5temp)) {
+      h5temp <- tempdir()
+    }
     sink_counter <- 1
-    while(any(c(paste0("M_sink_",sink_counter, ".h5"),
-                paste0("cov_sink_",sink_counter, ".h5")) %in%  dir(h5temp))){
-      sink_counter <- sink_counter+1
+    while (any(c(paste0("M_sink_", sink_counter, ".h5"), paste0("cov_sink_",
+                                                                sink_counter, ".h5")) %in% dir(h5temp))) {
+      sink_counter <- sink_counter + 1
 
     }
-    grid <- DelayedArray::RegularArrayGrid(
-      refdim = c(dimension, length(files)),
-      spacings = c(dimension, 1L))
+    grid <- DelayedArray::RegularArrayGrid(refdim = c(dimension, length(files)),
+                                           spacings = c(dimension, 1L))
 
-    M_sink <- HDF5Array::HDF5RealizationSink(
-      dim = c(dimension, length(files)),
-      dimnames = NULL,
-      type = "double",
-      filepath = file.path(h5temp, paste0("M_sink_",sink_counter, ".h5")),
-      name = "M",
-      #chunkdim = c(dimension, length(files)),
-      level = 6)
-    cov_sink <- HDF5Array::HDF5RealizationSink(
-      dim = c(dimension, length(files)),
-      dimnames = NULL,
-      type = "integer",
-      filepath = file.path(h5temp, paste0("cov_sink_",sink_counter, ".h5")),
-      name = "cov",
-      #chunkdim = HDF5Array::getHDF5DumpChunkDim(c(nrow(genome), length(files))),
-      level = 6)
+    M_sink <- HDF5Array::HDF5RealizationSink(dim = c(dimension, length(files)),
+                                             dimnames = NULL, type = "double",
+                                             filepath = file.path(h5temp, paste0("M_sink_", sink_counter, ".h5")), name = "M", level = 6)
+    cov_sink <- HDF5Array::HDF5RealizationSink(dim = c(dimension, length(files)),
+                                               dimnames = NULL, type = "integer",
+                                               filepath = file.path(h5temp, paste0("cov_sink_", sink_counter, ".h5")), name = "cov",
+                                               level = 6)
   } else {
-    beta_mat = data.table::data.table()
-    cov_mat = data.table::data.table()
+    beta_mat <- data.table::data.table()
+    cov_mat <- data.table::data.table()
   }
 
   if (h5) {
-    for (i in seq_along(files)){
-      b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome,
-                   strand_collapse = strand_collapse,
-                   contigs = contigs, synced_coordinates = synced_coordinates,
-                   file_uncovered = file_uncovered,
-                   zero_based = zero_based)
+    for (i in seq_along(files)) {
+      b <- read_bdg(bdg = files[i], col_list = col_idx, genome = genome,
+                    strand_collapse = strand_collapse, contigs = contigs, synced_coordinates = synced_coordinates,
+                    file_uncovered = file_uncovered, zero_based = zero_based)
 
       DelayedArray::write_block(block = as.matrix(b$bdg[, .(beta)]),
-                                viewport = grid[[i]],
-                                x = M_sink)
+                                viewport = grid[[i]], x = M_sink)
       DelayedArray::write_block(block = as.matrix(b$bdg[, .(cov)]),
-                                viewport = grid[[i]],
-                                x = cov_sink)
-      genome_stat_final = rbind(genome_stat_final,
-                                b$genome_stat[, `:=`(Sample_Name,
-                                                     rownames(coldata)[i])])
-      chr_stat_final = rbind(chr_stat_final,
-                             b$chr_stat[, `:=`(Sample_Name,
-                                               rownames(coldata)[i])])
-      ncpg_final = rbind(ncpg_final,
-                         b$ncpg[, `:=`(Sample_Name, rownames(coldata)[i])])
+                                viewport = grid[[i]], x = cov_sink)
+      genome_stat_final <- rbind(genome_stat_final, b$genome_stat[,
+                                                                  `:=`(Sample_Name, rownames(coldata)[i])])
+      chr_stat_final <- rbind(chr_stat_final, b$chr_stat[, `:=`(Sample_Name,
+                                                                rownames(coldata)[i])])
+      ncpg_final <- rbind(ncpg_final, b$ncpg[, `:=`(Sample_Name,
+                                                    rownames(coldata)[i])])
       rm(b)
       gc()
     }
-    ncpg_final = data.table::dcast(data = ncpg_final,
-                                   chr ~ Sample_Name, value.var = "N")
-    return(list(beta_matrix = as(M_sink, "HDF5Array"),
-                cov_matrix = as(cov_sink, "HDF5Array"),
+    ncpg_final <- data.table::dcast(data = ncpg_final, chr ~ Sample_Name,
+                                    value.var = "N")
+    return(list(beta_matrix = as(M_sink, "HDF5Array"), cov_matrix = as(cov_sink, "HDF5Array"),
                 genome_stat = genome_stat_final, chr_stat = chr_stat_final,
                 ncpg = ncpg_final))
   } else {
     for (i in seq_along(files)) {
       if (i == 1) {
-        b = read_bdg(bdg = files[i], col_list = col_idx,
-                     genome = genome, strand_collapse = strand_collapse,
-                     contigs = contigs, synced_coordinates = synced_coordinates,
-                     file_uncovered = file_uncovered,
-                     zero_based = TRUE)
+        b <- read_bdg(bdg = files[i], col_list = col_idx, genome = genome,
+                      strand_collapse = strand_collapse, contigs = contigs,
+                      synced_coordinates = synced_coordinates, file_uncovered = file_uncovered,
+                      zero_based = zero_based)
 
-        beta_mat = b$bdg[, .(chr, start, beta)]
-        cov_mat = b$bdg[, .(chr, start, cov)]
-        genome_stat_final = b$genome_stat[, `:=`(Sample_Name,
-                                                 rownames(coldata)[i])]
-        chr_stat_final = b$chr_stat[, `:=`(Sample_Name, rownames(coldata)[i])]
-        ncpg_final = b$ncpg[, `:=`(Sample_Name, rownames(coldata)[i])]
+        beta_mat <- b$bdg[, .(chr, start, beta)]
+        cov_mat <- b$bdg[, .(chr, start, cov)]
+        genome_stat_final <- b$genome_stat[, `:=`(Sample_Name,
+                                                  rownames(coldata)[i])]
+        chr_stat_final <- b$chr_stat[, `:=`(Sample_Name, rownames(coldata)[i])]
+        ncpg_final <- b$ncpg[, `:=`(Sample_Name, rownames(coldata)[i])]
       } else {
-        b = read_bdg(bdg = files[i], col_list = col_idx, genome = genome,
-                     strand_collapse = strand_collapse,
-                     contigs = contigs, synced_coordinates = synced_coordinates,
-                     file_uncovered = file_uncovered,
-                     zero_based = TRUE)
+        b <- read_bdg(bdg = files[i], col_list = col_idx, genome = genome,
+                      strand_collapse = strand_collapse, contigs = contigs,
+                      synced_coordinates = synced_coordinates, file_uncovered = file_uncovered,
+                      zero_based = zero_based)
 
-        beta_mat = cbind(beta_mat, b$bdg[, .(beta)])
-        cov_mat = cbind(cov_mat, b$bdg[, .(cov)])
-        genome_stat_final = rbind(genome_stat_final,
-                                  b$genome_stat[, `:=`(Sample_Name,
-                                                       rownames(coldata)[i])])
-        chr_stat_final = rbind(chr_stat_final,
-                               b$chr_stat[, `:=`(Sample_Name,
-                                                 rownames(coldata)[i])])
-        ncpg_final = rbind(ncpg_final, b$ncpg[, `:=`(Sample_Name,
-                                                     rownames(coldata)[i])])
+        beta_mat <- cbind(beta_mat, b$bdg[, .(beta)])
+        cov_mat <- cbind(cov_mat, b$bdg[, .(cov)])
+        genome_stat_final <- rbind(genome_stat_final, b$genome_stat[,
+                                                                    `:=`(Sample_Name, rownames(coldata)[i])])
+        chr_stat_final <- rbind(chr_stat_final, b$chr_stat[, `:=`(Sample_Name,
+                                                                  rownames(coldata)[i])])
+        ncpg_final <- rbind(ncpg_final, b$ncpg[, `:=`(Sample_Name,
+                                                      rownames(coldata)[i])])
       }
-      colnames(beta_mat)[ncol(beta_mat)] =
-        colnames(cov_mat)[ncol(cov_mat)] = rownames(coldata)[i]
+      colnames(beta_mat)[ncol(beta_mat)] <- colnames(cov_mat)[ncol(cov_mat)] <- rownames(coldata)[i]
     }
-    ncpg_final = data.table::dcast(data = ncpg_final,
-                                   chr ~ Sample_Name, value.var = "N")
-    return(list(beta_matrix = beta_mat[, -(seq_len(2))],
-                cov_matrix = cov_mat[, -(seq_len(2))],
-                genome_stat = genome_stat_final,
-                chr_stat = chr_stat_final, ncpg = ncpg_final))
-    # return(list(beta_matrix = as(M_sink, 'HDF5Array'), cov_matrix = as(cov_sink,
-    # 'HDF5Array'), genome_stat = genome_stat_final, chr_stat = chr_stat_final, ncpg
-    # = ncpg_final))
+    ncpg_final <- data.table::dcast(data = ncpg_final, chr ~ Sample_Name,
+                                    value.var = "N")
+    return(list(beta_matrix = beta_mat[, -(seq_len(2))], cov_matrix = cov_mat[, -(seq_len(2))],
+                genome_stat = genome_stat_final, chr_stat = chr_stat_final,
+                ncpg = ncpg_final))
   }
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
 # Parse genomic regions and convert them to key'd data.table
-cast_ranges = function(regions) {
+cast_ranges <- function(regions) {
   chr <- . <- NULL
   if (is(regions, "GRanges")) {
-    target_regions = data.table::as.data.table(x = regions)
+    target_regions <- data.table::as.data.table(x = regions)
     target_regions[, `:=`(seqnames, as.character(seqnames))]
-    colnames(target_regions)[seq_len(3)] = c("chr", "start", "end")
+    colnames(target_regions)[seq_len(3)] <- c("chr", "start", "end")
     data.table::setDT(x = target_regions, key = c("chr", "start", "end"))
-    target_regions = target_regions[, .(chr, start, end)]
+    target_regions <- target_regions[, .(chr, start, end)]
   } else if (is(regions, "data.frame")) {
-    target_regions = data.table::as.data.table(x = regions)
-    colnames(target_regions)[seq_len(3)] = c("chr", "start", "end")
-    target_regions = target_regions[, .(chr, start, end)]
+    target_regions <- data.table::as.data.table(x = regions)
+    colnames(target_regions)[seq_len(3)] <- c("chr", "start", "end")
+    target_regions <- target_regions[, .(chr, start, end)]
     target_regions[, `:=`(chr, as.character(chr))]
     target_regions[, `:=`(start, as.numeric(as.character(start)))]
     target_regions[, `:=`(end, as.numeric(as.character(end)))]
@@ -561,33 +515,33 @@ cast_ranges = function(regions) {
 
 #--------------------------------------------------------------------------------------------------------------------------
 # Get min/max/mean/median of a matrix
-giveme_this = function(mat, stat = "mean", na_rm = TRUE, ish5 = FALSE) {
-  stat = match.arg(arg = stat, choices = c("mean", "median", "min", "max",
-                                           "sum"))
+giveme_this <- function(mat, stat = "mean", na_rm = TRUE, ish5 = FALSE) {
+  stat <- match.arg(arg = stat, choices = c("mean", "median", "min",
+                                            "max", "sum"))
 
   if (ish5) {
     if (stat == "mean") {
-      res = DelayedMatrixStats::colMeans2(mat, na.rm = na_rm)
+      res <- DelayedMatrixStats::colMeans2(mat, na.rm = na_rm)
     } else if (stat == "median") {
-      res = DelayedMatrixStats::colMedians(mat, na.rm = na_rm)
+      res <- DelayedMatrixStats::colMedians(mat, na.rm = na_rm)
     } else if (stat == "min") {
-      res = colMins(mat, na.rm = na_rm)
+      res <- colMins(mat, na.rm = na_rm)
     } else if (stat == "max") {
-      res = colMaxs(mat, na.rm = na_rm)
+      res <- colMaxs(mat, na.rm = na_rm)
     } else if (stat == "sum") {
-      res = DelayedMatrixStats::colSums2(mat, na.rm = na_rm)
+      res <- DelayedMatrixStats::colSums2(mat, na.rm = na_rm)
     }
   } else {
     if (stat == "mean") {
-      res = matrixStats::colMeans2(mat, na.rm = na_rm)
+      res <- matrixStats::colMeans2(mat, na.rm = na_rm)
     } else if (stat == "median") {
-      res = matrixStats::colMedians(mat, na.rm = na_rm)
+      res <- matrixStats::colMedians(mat, na.rm = na_rm)
     } else if (stat == "min") {
-      res = matrixStats::colMins(mat, na.rm = na_rm)
+      res <- matrixStats::colMins(mat, na.rm = na_rm)
     } else if (stat == "max") {
-      res = matrixStats::colMaxs(mat, na.rm = na_rm)
+      res <- matrixStats::colMaxs(mat, na.rm = na_rm)
     } else if (stat == "sum") {
-      res = matrixStats::colSums2(mat, na.rm = na_rm)
+      res <- matrixStats::colSums2(mat, na.rm = na_rm)
     }
   }
 
@@ -597,83 +551,18 @@ giveme_this = function(mat, stat = "mean", na_rm = TRUE, ish5 = FALSE) {
 
 #--------------------------------------------------------------------------------------------------------------------------
 # Tiny script to get axis and limits
-get_y_lims = function(vec) {
+get_y_lims <- function(vec) {
 
-  y_lims = range(vec)
-  y_at = pretty(y_lims)
+  y_lims <- range(vec)
+  y_at <- pretty(y_lims)
 
   if (y_at[1] > min(vec, na.rm = TRUE)) {
-    y_at[1] = min(vec, na.rm = TRUE)
+    y_at[1] <- min(vec, na.rm = TRUE)
   }
   if (y_at[length(y_at)] < max(vec, na.rm = TRUE)) {
-    y_at[length(y_at)] = max(vec, na.rm = TRUE)
+    y_at[length(y_at)] <- max(vec, na.rm = TRUE)
   }
-  y_lims = range(y_at, na.rm = TRUE)
+  y_lims <- range(y_at, na.rm = TRUE)
 
   list(y_lims = y_lims, y_at = y_at)
 }
-
-# Older implementation of get_region_summary - takes almost twice the
-# memory. Backing it up here
-get_region_summary = function(m,
-                              regions = NULL,
-                              type = 'M',
-                              how = 'mean',
-                              na_rm = TRUE,
-                              verbose = TRUE) {
-  type = match.arg(arg = type, choices = c('M', 'C', 'MR'))
-  how = match.arg(arg = how,
-                  choices = c('mean', 'sum', 'max', 'min'))
-  start_proc_time = proc.time()
-  regions_work = cast_ranges(regions = regions)
-  regions_work[, id := paste0(chr, ':', start, '-', end)]
-  data.table::setDT(x = regions_work, key = c('chr', 'start', 'end'))
-  if (type == 'M') {
-    dat = get_matrix(m = m,
-                     type = 'M',
-                     add_loci =
-                       TRUE)
-  } else if (type == 'C') {
-    dat = get_matrix(m = m,
-                     type = 'C',
-                     add_loci = TRUE)
-  } else if (type == 'MR') {
-    dat_C = get_matrix(m = m, type = 'C',
-                       add_loci = FALSE)
-    dat_M = get_matrix(m = m, type = 'M',add_loci = FALSE)
-    reg = get_matrix(m = m,  type = 'M', add_loci = TRUE)[, seq_len(3)]
-    dat = cbind(reg, dat_C * dat_M)
-  }
-
-  dat[, end := start + 1]
-  region_overlap <- unique(data.table::foverlaps(x = dat, y = regions_work, type = 'any',
-                                                 nomatch = NULL, which = T)$yid)
-  overlap = data.table::foverlaps(x = dat, y = regions_work, type = 'any',
-                          nomatch = NULL)
-  if(nrow(overlap) == 0){
-  stop('Subsetting resulted in zero entries')
-  }
-  if(how == 'mean') {
-  cat('-Summarizing by average\n')
-    output = overlap[, lapply(.SD, mean, na.rm = na_rm), by= id, .SDcols = rownames(colData(m))]
-    } else if (how == 'max') {
-      cat('-Summarizing by maximum\n')
-      output = overlap[, lapply(.SD, max,na.rm = na_rm), by = id, .SDcols = rownames(colData(m))]
-      } else if (how == 'min') {
-        cat('-Summarizing by minimum\n')
-        output = overlap[,lapply(.SD, min, na.rm = na_rm),
-                         by = id, .SDcols = rownames(colData(m))]
-      } else if (how == 'sum')
-      { cat('-Summarizing by sum\n')
-        output = overlap[, lapply(.SD, sum, na.rm = na_rm), by = id,
-                         .SDcols = rownames(colData(m))]
-        }
-  output <- merge(regions_work[,list(id)],output, by='id', all = TRUE, sort =
-                                   FALSE)
-  output <- output[order(regions$chr, regions$start, regions$end),]
-  output = cbind(regions[,c('chr', 'start', 'end'), with = FALSE],
-  mean[,rownames(colData(m)), with = FALSE])
-  cat('-Done! Finished in:',data.table::timetaken(start_proc_time),'\n')
-
-return(output)
-  }

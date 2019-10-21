@@ -4,12 +4,10 @@
 \alias{extract_CPGs}
 \title{Extracts all CpGs from a genome}
 \usage{
-extract_CPGs(ref_genome = NULL, bored = TRUE)
+extract_CPGs(ref_genome = NULL)
 }
 \arguments{
 \item{ref_genome}{BSgenome object or name of the installed BSgenome package. Example: BSgenome.Hsapiens.UCSC.hg19}
-
-\item{bored}{Tell me a Chuck Norris joke while I wait for my CpG extraction. Default TRUE. jokes can be very explicit! you have been warned!}
 }
 \value{
 a list of data.table containing number of CpG's and contig lengths
@@ -19,6 +17,6 @@ Extracts all CpGs from a genome
 }
 \examples{
 \dontrun{
-hg19_cpgs = methrix::extract_CPGs(ref_genome = 'BSgenome.Hsapiens.UCSC.hg19', bored = FALSE)
+hg19_cpgs = methrix::extract_CPGs(ref_genome = 'BSgenome.Hsapiens.UCSC.hg19')
 }
 }

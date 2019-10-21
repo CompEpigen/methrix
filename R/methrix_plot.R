@@ -1,35 +1,29 @@
-#' Violin Plot for \eqn{\beta}-Values
-#'
-#' @param m Input \code{\link{methrix}} object
-#' @param n_cpgs Use these many random CpGs for plotting. Default 25000. Set it to \code{NULL} to use all - which can be memory expensive.
-#' @param ranges genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object
-#' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
-#' @param col_palette Name of the ggplot diverging to use. Possible values: BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral
-#' @return ggplot2 object
-#' @export
-#' @import ggplot2
-#' @examples
-#' data('methrix_data')
-#' plot_violin(m = methrix_data)
-plot_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
-    col_palette = "RdYlGn") {
+prepare_plot_data <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL){
 
-    variable <- Meth <- NULL
+    if (!is(m, "methrix")){
+        stop("A valid methrix object needs to be supplied.")
+    }
+    if (!is.null(n_cpgs)){
+        if (!is.numeric(n_cpgs)){
+            stop("n_cpgs must be numeric.")
+        }
+    }
+
     if (!is.null(ranges)) {
         meth_sub <- subset_methrix(m = m, regions = ranges)
         if (!is.null(n_cpgs)) {
             message("Randomly selecting ", n_cpgs, " sites. \n")
             ids <- sample(x = seq_along(meth_sub), replace = FALSE, size = min(n_cpgs,
-                nrow(meth_sub)))
+                                                                               nrow(meth_sub)))
             meth_sub <- get_matrix(m = meth_sub[ids, ], type = "M", add_loci = FALSE)
         } else {
             meth_sub <- get_matrix(m = meth_sub, type = "M", add_loci = FALSE)
         }
     } else if (!is.null(n_cpgs)) {
-        message("Randomly selecting", n_cpgs, "sites. \n")
+        message("Randomly selecting ", n_cpgs, " sites. \n")
 
         ids <- sample(x = seq_along(m), replace = FALSE, size = min(n_cpgs,
-            nrow(m)))
+                                                                    nrow(m)))
         meth_sub <- get_matrix(m = m[ids, ], type = "M", add_loci = FALSE)
     } else {
         meth_sub <- get_matrix(m = m, type = "M", add_loci = FALSE)
@@ -50,11 +44,46 @@ plot_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
     colnames(plot.data) <- c("variable", "Meth")
 
     gc(verbose = FALSE)
+    return(plot.data)
 
+
+}
+
+get_palette <- function(n_row, col_palette){
+
+    if (!col_palette %in% rownames(RColorBrewer::brewer.pal.info)){
+
+        stop("Please provide a valid RColorBrewer palettte. Possible values are: ", paste0(rownames(RColorBrewer::brewer.pal.info)), sep=", ")
+    }
+    color_pal <- grDevices::colorRampPalette(RColorBrewer::brewer.pal(RColorBrewer::brewer.pal.info[col_palette,
+                                                                                         "maxcolors"], col_palette))(n_row)
+    return(color_pal)
+}
+
+#' Violin Plot for \eqn{\beta}-Values
+#'
+#' @param m Input \code{\link{methrix}} object
+#' @param n_cpgs Use these many random CpGs for plotting. Default 25000. Set it to \code{NULL} to use all - which can be memory expensive.
+#' @param ranges genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object
+#' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
+#' @param col_palette Name of the RColorBrewer palette to use for plotting.
+#' @return ggplot2 object
+#' @export
+#' @import ggplot2
+#' @examples
+#' data('methrix_data')
+#' plot_violin(m = methrix_data)
+plot_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
+    col_palette = "RdYlGn") {
+    variable <- Meth <- NULL
+
+    plot.data <- prepare_plot_data(m=m, ranges = ranges, n_cpgs = n_cpgs, pheno = pheno)
+
+    col_palette <- get_palette(ncol(m), col_palette)
     # generate the violin plot
     p <- ggplot2::ggplot(plot.data, ggplot2::aes(x = variable, y = Meth,
         fill = variable)) + ggplot2::geom_violin(alpha = 0.8) + ggplot2::theme_classic(base_size = 14) +
-        ggplot2::scale_fill_brewer(type = "div", palette = col_palette) +
+        ggplot2::scale_fill_manual(values = col_palette) +
         ggplot2::xlab(pheno) + ggplot2::ylab(expression(beta * "-Value")) +
         theme(axis.title.x = element_blank(), axis.text.x = element_text(size = 12,
             colour = "black"), axis.text.y = element_text(size = 12, colour = "black"),
@@ -71,7 +100,7 @@ plot_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
 #' @param ranges genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object
 #' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
 #' @param bw.adjust Multiplicate bandwide adjustment. See \code{\link{geom_density}} for more information
-#' @param col_palette Name of the ggplot diverging to use. Possible values: BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral
+#' @param col_palette Name of the RColorBrewer palette to use for plotting.
 #' @return ggplot2 object
 #' @export
 #'
@@ -81,44 +110,16 @@ plot_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
 plot_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
     bw.adjust = 2, col_palette = "RdYlGn") {
 
-    Meth <- variable <- NULL
-    ## subset based on the input ranges
-    if (!is.null(ranges)) {
-        meth_sub <- subset_methrix(m = m, regions = ranges)
-        if (!is.null(n_cpgs)) {
-            ids <- sample(x = seq_along(meth_sub), replace = FALSE, size = min(n_cpgs,
-                nrow(meth_sub)))
-            meth_sub <- get_matrix(m = meth_sub[ids, ], type = "M", add_loci = FALSE)
-        } else {
-            meth_sub <- get_matrix(m = meth_sub, type = "M", add_loci = FALSE)
-        }
-    } else if (!is.null(n_cpgs)) {
+    variable <- Meth <- NULL
 
-        ids <- sample(x = seq_along(m), replace = FALSE, size = min(n_cpgs,
-            nrow(m)))
-        meth_sub <- get_matrix(m = m[ids, ], type = "M", add_loci = FALSE)
-    } else {
-        meth_sub <- get_matrix(m = m, type = "M", add_loci = FALSE)
-    }
-
-    if (!is.null(pheno)) {
-        if (pheno %in% colnames(colData(m))) {
-            colnames(meth_sub) <- m@colData[, pheno]
-        } else {
-            stop("Please provide a valid phenotype annotation column.")
-        }
-    }
-
-    meth_sub <- as.data.frame(meth_sub)
-    data.table::setDT(x = meth_sub)
-    plot.data <- suppressWarnings(expr = data.table::melt(meth_sub))
-    colnames(plot.data) <- c("variable", "Meth")
+    plot.data <- prepare_plot_data(m=m, ranges = ranges, n_cpgs = n_cpgs, pheno = pheno)
+    col_palette <- get_palette(ncol(m), col_palette)
 
     # generate the density plot
     p <- ggplot2::ggplot(plot.data, ggplot2::aes(Meth, color = variable)) +
         geom_density(lwd = 1, position = "identity") + ggplot2::theme_classic() +
         ggplot2::xlab("Methylation") + ggplot2::theme_classic(base_size = 14) +
-        ggplot2::scale_color_brewer(type = "div", palette = col_palette) +
+        ggplot2::scale_fill_manual(values = col_palette) +
         ggplot2::xlab(expression(beta * "-Value")) + theme(axis.title.x = element_blank(),
         axis.text.x = element_text(size = 12, colour = "black"), axis.text.y = element_text(size = 12,
             colour = "black"), axis.title.y = element_blank(), legend.title = element_blank())
@@ -147,6 +148,15 @@ plot_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
 methrix_pca <- function(m, var = "top", top_var = 1000, ranges = NULL,
     pheno = NULL, do_plot = TRUE, n_pc = 2) {
     var_select <- match.arg(var, c("top", "rand"))
+
+    if (!is(m, "methrix")){
+        stop("A valid methrix object needs to be supplied.")
+    }
+
+    if (!(is.numeric(top_var) & is.numeric(n_pc))){
+        stop("Either top_var or n_pc variables are not numeric.")
+    }
+
     ## subset based on the input ranges
     if (!is.null(ranges)) {
         message("GenomicRanges will be used for the PCA\n")
@@ -160,6 +170,9 @@ methrix_pca <- function(m, var = "top", top_var = 1000, ranges = NULL,
             meth_sub <- get_matrix(m = m, type = "M", add_loci = FALSE)
         }
     } else {
+        if (!is.numeric(top_var)){
+            stop("top_var must be numeric.")
+        }
         top_var <- as.integer(as.character(top_var))
         if (var_select == "rand") {
             if (!is.null(ranges)) {
@@ -254,7 +267,10 @@ methrix_pca <- function(m, var = "top", top_var = 1000, ranges = NULL,
 plot_pca <- function(pca_res, m = NULL, col_anno = NULL, shape_anno = NULL,
     pc_x = "PC1", pc_y = "PC2", show_labels = FALSE) {
 
+
     X <- Y <- color_me <- shape_me <- row_names <- NULL
+
+
     pc_vars <- pca_res$var_explained
     pca_res <- as.data.frame(pca_res$PC_matrix)
     pca_res$row_names <- rownames(pca_res)
@@ -334,7 +350,7 @@ plot_pca <- function(pca_res, m = NULL, col_anno = NULL, shape_anno = NULL,
 #' @param lim Maximum coverage value to be plotted.
 #' @param size.lim The maximum number of observarions (sites*samples) to use. If the dataset is larger that this,
 #' random sites will be selected from the genome.
-#' @param col_palette Name of the ggplot diverging to use. Possible values: BrBG, PiYG, PRGn, PuOr, RdBu, RdGy, RdYlBu, RdYlGn, Spectral
+#' @param col_palette Name of the RColorBrewer palette to use for plotting.
 #' @return ggplot2 object
 #' @examples
 #' data('methrix_data')
@@ -345,6 +361,13 @@ plot_coverage <- function(m, type = c("hist", "dens"), pheno = NULL, perGroup = 
     lim = 100, size.lim = 1e+06, col_palette = "RdYlGn") {
 
     value <- variable <- NULL
+
+    if (!is(m, "methrix")){
+        stop("A valid methrix object needs to be supplied.")
+    }
+    colors_palette <- get_palette(ncol(m), col_palette)
+
+
     type <- match.arg(arg = type, choices = c("hist", "dens"), several.ok = FALSE)
 
     if (nrow(m) > size.lim) {
@@ -383,7 +406,7 @@ plot_coverage <- function(m, type = c("hist", "dens"), pheno = NULL, perGroup = 
             p <- ggplot2::ggplot(plot.data, aes(value, color = variable)) +
                 ggplot2::geom_density(alpha = 0.5, adjust = 1.5, lwd = 1,
                   position = "stack") + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
-                ggplot2::scale_color_brewer(type = "div", palette = col_palette)
+                ggplot2::scale_fill_manual(values = colors_palette)
 
         } else if (type == "hist") {
             p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, color = variable)) +
@@ -397,16 +420,15 @@ plot_coverage <- function(m, type = c("hist", "dens"), pheno = NULL, perGroup = 
             p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, color = variable)) +
                 ggplot2::geom_density(alpha = 0.6, adjust = 1.5, lwd = 1,
                   position = "stack") + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
-                ggplot2::labs(fill = "Groups") + ggplot2::scale_color_brewer(type = "div",
-                palette = col_palette)
-
+                ggplot2::labs(fill = "Groups") +
+                ggplot2::scale_fill_manual(values = colors_palette)
             # print(p)
         } else if (type == "hist") {
             p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, color = variable)) +
                 ggplot2::geom_histogram(alpha = 0.6, binwidth = 1, color = "grey90",
                   lwd = 1) + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
-                ggplot2::labs(fill = "Groups") + ggplot2::scale_color_brewer(type = "div",
-                palette = col_palette)
+                ggplot2::labs(fill = "Groups") +
+                ggplot2::scale_fill_manual(values = colors_palette)
             # print(p)
         }
     }

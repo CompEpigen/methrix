@@ -40,8 +40,13 @@ This vignette describes basic usage of the package intended to process several l
 #Load library
 library(methrix)
 #Genome of your preference to work with
-if(!require(BSgenome.Hsapiens.UCSC.hg19)) {
-install.packages("BSgenome.Hsapiens.UCSC.hg19")
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+library(BiocManager)
+
+if(!requireNamespace("BSgenome.Hsapiens.UCSC.hg19")) {
+BiocManager::install("BSgenome.Hsapiens.UCSC.hg19")
 }
 library(BSgenome.Hsapiens.UCSC.hg19) 
 ```
@@ -49,7 +54,7 @@ library(BSgenome.Hsapiens.UCSC.hg19)
 
 ```{r}
 #Example bedgraph files
-bdg_files = list.files(
+bdg_files <- list.files(
   path = system.file('extdata', package = 'methrix'),
   pattern = "*bdg\\.gz$",
   full.names = TRUE
@@ -58,7 +63,7 @@ bdg_files = list.files(
 print(basename(bdg_files))
 
 #Generate some sample annotation table
-sample_anno = data.frame(
+sample_anno <- data.frame(
   row.names = gsub(
     pattern = "\\.bdg\\.gz$",
     replacement = "",
@@ -73,9 +78,9 @@ print(sample_anno)
 
 We can import bedgraph files with the function `read_bedgraphs` which reads in the bedgraphs, adds CpGs missing from the reference set, and creates a methylation/coverage matrices. Once the process is complete - it returns an object of class `methrix` which in turn inherits [SummarizedExperiment](https://bioconductor.org/packages/release/bioc/vignettes/SummarizedExperiment/inst/doc/SummarizedExperiment.html) class. `methrix` object contains 'methylation' and 'coverage' matrices (either in-memory or as on-disk HDF5 arrays) along with pheno-data and other basic info. This object can be passed to all downstream functions for various analysis.
 
-```{r, warning=FALSE, eval=FALSE}
+```{r, warning=FALSE, eval=TRUE}
 #First extract genome wide CpGs from the desired reference genome
-hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19", bored = FALSE)
+hg19_cpgs <- methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19")
 ```
 
 ```{r}
@@ -83,9 +88,9 @@ hg19_cpgs = methrix::extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19", bo
 # -Done. Extracted 28,700,086 CpGs from 93 contigs.
 ```
 
-```{r, eval=FALSE}
-#Read the files (To keep the build time small - below function is not evaluated)
-meth = methrix::read_bedgraphs(
+```{r, eval=TRUE}
+#Read the files 
+meth <- methrix::read_bedgraphs(
   files = bdg_files,
   ref_cpgs = hg19_cpgs,
   chr_idx = 1,
@@ -98,40 +103,14 @@ meth = methrix::read_bedgraphs(
 )
 ```
 
-```{r}
-# ----------------------------
-# -Preset:        Custom 
-# --Missing beta and coverage info. Estimating them from M and U values
-# -CpGs raw:      28,700,086
-# -CpGs filtered: 28,217,448
-# -CpGs stranded: 56,434,896
-# ----------------------------
-# -Processing:    C1.bdg.gz
-# --CpGs missing: 56,434,254
-# -Processing:    C2.bdg.gz
-# --CpGs missing: 56,434,231
-# -Processing:    N1.bdg.gz
-# --CpGs missing: 56,434,233
-# -Processing:    N2.bdg.gz
-# --CpGs missing: 56,434,233
-# -Finished in:   00:08:36 elapsed (00:04:10 cpu) 
-```
-
 
 Note: Use the argument `pipeline` if your bedgraphs are generated with "Bismark", "MethylDeckal", or "MethylcTools". This will automatically figure out the file formats for you, and you dont have to use the arguments `chr_idx` `start_idx` and so..
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 #Typing meth shows basic summary.
 meth
 ```
 
-```{r}
-# An object of class methrix
-#    n_CpGs: 28,217,448
-# n_samples: 4
-#     is_h5: FALSE
-# Reference: hg19
-```
 
 ## HTML QC report
 Get basic summary statistics of the `methrix` object with `methrix_report` function which produces an interactive html report
@@ -142,46 +121,31 @@ methrix::methrix_report(meth = meth, output_dir = tempdir())
 ## Filtering
 ### Remove uncovered loci
 Usual task in analysis involves removing uncovered CpGs. i.e, those loci which are not covered across all sample (in other words covered only in subset of samples resulting `NA` for rest of the samples ).
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 meth = methrix::remove_uncovered(m = meth)
 ```
 
-```{r}
-# -Removed 28,216,749 [100%] uncovered loci of 28,217,448 sites
-# -Finished in:   29.9s elapsed (21.5s cpu) 
-```
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 meth
 ```
 
-```{r}
-# An object of class methrix
-#    n_CpGs: 699
-# n_samples: 4
-#     is_h5: FALSE
-# Reference: hg19
-```
 ### Remove SNPs
 One can also remove CpG sites overlaping with common SNPs based on minor allele frequencies.
 
 ```{r, eval=FALSE}
 if(!require(MafDb.1Kgenomes.phase3.hs37d5)) {
-install.packages("MafDb.1Kgenomes.phase3.hs37d5"); require(MafDb.1Kgenomes.phase3.hs37d5)} 
+BiocManager::install("MafDb.1Kgenomes.phase3.hs37d5")} 
 if(!require(GenomicScores)) {
-install.packages("GenomicScores"); require(GenomicScores)} 
-
-meth_snps_filtered = methrix::remove_snps(m = meth)
+BiocManager::install("GenomicScores")} 
 ```
 
-```{r}
-# Used SNP database: MafDb.1Kgenomes.phase3.hs37d5. 
-# Number of SNPs removed: 
-#      chr  N
-# 1: chr21 40
-# 2: chr22 52
-# 
-#  Sum: [1] 92
+
+```{r, eval=TRUE}
+library(MafDb.1Kgenomes.phase3.hs37d5)
+library(GenomicScores)
+
+meth_snps_filtered <- methrix::remove_snps(m = meth)
 ```
 
 
@@ -189,23 +153,23 @@ meth_snps_filtered = methrix::remove_snps(m = meth)
 ## Basic operations
 ### Extract methylation/coverage matrices
 ```{r}
-#Example data bundled 
+#Example data bundled, same as the previously generated meth 
 data("methrix_data")
 
 #Coverage matrix
-coverage_mat = methrix::get_matrix(m = methrix_data, type = "C")
+coverage_mat <- methrix::get_matrix(m = methrix_data, type = "C")
 head(coverage_mat)
 ```
 
 ```{r}
 #Methylation matrix
-meth_mat = methrix::get_matrix(m = methrix_data, type = "M")
+meth_mat <- methrix::get_matrix(m = methrix_data, type = "M")
 head(meth_mat)
 ```
 
 ```{r}
 #If you prefer you can attach loci info to the matrix
-meth_mat_with_loci = methrix::get_matrix(m = methrix_data, type = "M", add_loci = TRUE)
+meth_mat_with_loci <- methrix::get_matrix(m = methrix_data, type = "M", add_loci = TRUE)
 meth_mat_with_loci
 ```
 
@@ -229,10 +193,12 @@ methrix::subset_methrix(m = methrix_data, contigs = "chr21")
 Regions can be data.table or [GRanges](https://kasperdanielhansen.github.io/genbioconductor/html/GenomicRanges_GRanges.html#granges) format.
 ```{r}
 #e.g; Retain sites only in TP53 loci 
-target_loci = data.table::data.table(chr = "chr21", start = 27867971, end =  27868103)
+target_loci <- GenomicRanges::GRanges("chr21:27867971-27868103")
+
 print(target_loci)
 
 methrix::subset_methrix(m = methrix_data, regions = target_loci)
+
 ```
 
 ### Subset by samples
@@ -246,7 +212,7 @@ methrix_data[,1]
 ## Summary statsitcis 
 ### Basic summaries
 ```{r}
-meth_stats = get_stats(m = methrix_data)
+meth_stats <- get_stats(m = methrix_data)
 print(meth_stats)
 ```
 
@@ -259,7 +225,7 @@ plot_stats(plot_dat = meth_stats, what = "M", stat = "mean")
 
 ## PCA
 ```{r}
-mpca = methrix_pca(m = methrix_data, do_plot = FALSE)
+mpca <- methrix_pca(m = methrix_data, do_plot = FALSE)
 
 #Plot PCA results
 plot_pca(pca_res = mpca, show_labels = TRUE)
@@ -282,15 +248,15 @@ methrix::plot_coverage(m = methrix_data, type = "dens")
 
 ## Converting methrix to BSseq
 If you prefer to work with [bsseq](https://bioconductor.org/packages/release/bioc/vignettes/bsseq/inst/doc/bsseq.html#3_using_objects_of_class_bsseq) object, you can generate `bsseq` object from methrix with the `methrix2bsseq`. 
-```{r}
+```{r eval=FALSE}
 if(!require(bsseq)) {
-install.packages("bsseq"); require(bsseq)}
-
+BiocManager::install("bsseq")}
 
 ```
 
 ```{r}
-bs_seq = methrix::methrix2bsseq(m = methrix_data)
+library(bsseq)
+bs_seq <- methrix::methrix2bsseq(m = methrix_data)
 
 bs_seq
 ```

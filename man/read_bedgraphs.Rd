@@ -11,12 +11,13 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
   start_idx = NULL, end_idx = NULL, beta_idx = NULL, M_idx = NULL,
   U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
   synced_coordinates = FALSE, n_threads = 1, h5 = FALSE,
-  h5_dir = NULL, h5temp = NULL, verbose = TRUE, bored = TRUE)
+  h5_dir = NULL, h5temp = NULL, verbose = TRUE)
 }
 \arguments{
 \item{files}{bedgraph files.}
 
-\item{pipeline}{Default NULL. Can be 'Bismark' or 'MethylDeckal' or 'MethylcTools'. If not known use idx arguments for manual column assignments.}
+\item{pipeline}{Default NULL. Can be 'Bismark' or 'MethylDeckal' or 'MethylcTools'.
+If not known use idx arguments for manual column assignments.}
 
 \item{zero_based}{Are bedgraph regions zero based ? Default TRUE}
 
@@ -24,7 +25,8 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 
 \item{collapse_strands}{If TRUE collapses CpGs on different crick strand into watson. Deafult FALSE}
 
-\item{ref_cpgs}{BSgenome object, or name of the installed BSgenome package, or an output from \code{\link{extract_CPGs}}. Example: BSgenome.Hsapiens.UCSC.hg19}
+\item{ref_cpgs}{BSgenome object, or name of the installed BSgenome package, or an output from \code{\link{extract_CPGs}}.
+Example: BSgenome.Hsapiens.UCSC.hg19}
 
 \item{ref_build}{reference genome for bedgraphs. Default NULL. Only used for additional details. Doesnt affect in any way.}
 
@@ -34,7 +36,8 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 
 \item{vect_batch_size}{Default NULL. Process samples in batches. Applicable only when vect = TRUE}
 
-\item{coldata}{An optional DataFrame describing the samples. Row names, if present, become the column names of the matrix. If NULL, then a DataFrame will be created with basename of files used as the row names.}
+\item{coldata}{An optional DataFrame describing the samples. Row names, if present, become the column names of the matrix.
+If NULL, then a DataFrame will be created with basename of files used as the row names.}
 
 \item{chr_idx}{column index for chromosome in bedgraph files}
 
@@ -52,10 +55,12 @@ read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
 
 \item{cov_idx}{column index for total-coverage in bedgraph files}
 
-\item{synced_coordinates}{Are the start and end coordinates of a stranded bedgraph are synchronized between + and - strands? Possible
-values: FALSE (default), TRUE if the start coordinates are the start coordinates of the C on the plus strand.}
+\item{synced_coordinates}{Are the start and end coordinates of a stranded
+bedgraph are synchronized between + and - strands? Possible values: FALSE (default),
+TRUE if the start coordinates are the start coordinates of the C on the plus strand.}
 
-\item{n_threads}{number of threads to use. Default 1. Be-careful - there is a linear increase in memory usage with number of threads. This option is does not work with Windows OS.}
+\item{n_threads}{number of threads to use. Default 1.
+Be-careful - there is a linear increase in memory usage with number of threads. This option is does not work with Windows OS.}
 
 \item{h5}{Should the coverage and methylation matrices be stored as 'HDF5Array'}
 
@@ -64,8 +69,6 @@ values: FALSE (default), TRUE if the start coordinates are the start coordinates
 \item{h5temp}{temporary directory to store hdf5}
 
 \item{verbose}{Be little chatty ? Default TRUE.}
-
-\item{bored}{Tell me a Chuck Norris joke while I wait for my CpG extraction. Default TRUE. jokes can be very explicit! you have been warned.}
 }
 \value{
 An object of class \code{\link{methrix}}
@@ -74,14 +77,14 @@ An object of class \code{\link{methrix}}
 Versatile BedGraph reader.
 }
 \details{
-Reads BedGraph files and generates methylation and coverage matrices. Optionally arrays can be serialized as on-disk HDFS5 arrays.
+Reads BedGraph files and generates methylation and coverage matrices.
+Optionally arrays can be serialized as on-disk HDFS5 arrays.
 }
 \examples{
 \dontrun{
 bdg_files = list.files(path = system.file('extdata', package = 'methrix'),
 pattern = '*\\\\.bdg\\\\.gz$', full.names = TRUE)
-hg19_cpgs = methrix::extract_CPGs(ref_genome = 'BSgenome.Hsapiens.UCSC.hg19',
-bored = FALSE)
+hg19_cpgs = methrix::extract_CPGs(ref_genome = 'BSgenome.Hsapiens.UCSC.hg19')
 meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = hg19_cpgs,
 chr_idx = 1, start_idx = 2, end_idx = 3, cov_idx = 4, beta_idx = 5,
 stranded = TRUE, zero_based = FALSE, collapse_strands = TRUE)

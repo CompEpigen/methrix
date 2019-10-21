@@ -17,28 +17,28 @@
 #' @export
 
 
-remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filtering = FALSE, 
+remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filtering = FALSE,
     forced = FALSE) {
     genome <- m@metadata$genome
     chr <- NULL
-    
+
     if (grepl("hg19|GRCh37|Hs37|hs37", genome)) {
-        if (requireNamespace("MafDb.1Kgenomes.phase3.hs37d5", quietly = TRUE) & requireNamespace("GenomicScores", 
-            quietly = TRUE)) {
-            cat("Used SNP database: MafDb.1Kgenomes.phase3.hs37d5. \n")
-            # snps <- SNPlocs.Hsapiens.dbSNP144.GRCh37::SNPlocs.Hsapiens.dbSNP144.GRCh37
+        if (requireNamespace("MafDb.1Kgenomes.phase3.hs37d5", quietly = TRUE) &
+            requireNamespace("GenomicScores", quietly = TRUE)) {
+            message("Used SNP database: MafDb.1Kgenomes.phase3.hs37d5. \n")
             mafdb <- MafDb.1Kgenomes.phase3.hs37d5::MafDb.1Kgenomes.phase3.hs37d5
         } else {
-            stop("Packages MafDb.1Kgenomes.phase3.hs37d5 and/or GenomicScores not found. Please install them before proceed.")
+            stop("Packages MafDb.1Kgenomes.phase3.hs37d5 and/or GenomicScores not found.
+                 Please install them before proceed.")
         }
     } else if (grepl("hg38|GRCh38|Hs38|hs38", genome)) {
-        if (requireNamespace("MafDb.1Kgenomes.phase3.GRCh38", quietly = TRUE) & requireNamespace("GenomicScores", 
-            quietly = TRUE)) {
-            cat("Used SNP database: MafDb.1Kgenomes.phase3.hs38. \n")
-            # snps <- SNPlocs.Hsapiens.dbSNP151.GRCh38::SNPlocs.Hsapiens.dbSNP151.GRCh38
+        if (requireNamespace("MafDb.1Kgenomes.phase3.GRCh38", quietly = TRUE) &
+            requireNamespace("GenomicScores", quietly = TRUE)) {
+            message("Used SNP database: MafDb.1Kgenomes.phase3.hs38. \n")
             mafdb <- MafDb.1Kgenomes.phase3.GRCh38::MafDb.1Kgenomes.phase3.GRCh38
         } else {
-            stop("Packages MafDb.1Kgenomes.phase3.GRCh38 and/or GenomicScores not found. Please install them before proceed.")
+            stop("Packages MafDb.1Kgenomes.phase3.GRCh38 and/or GenomicScores not found.
+                 Please install them before proceed.")
         }
     } else {
         stop("Only hg19 and hg38 genomes are currently supported..\n")
@@ -46,39 +46,39 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
     if (is.null(populations)) {
         populations <- GenomicScores::populations(mafdb)
     } else if (!all(populations %in% populations(mafdb))) {
-        stop("The population selected is not available. Please select from ", paste(populations(mafdb), 
-            collapse = ", "), ". \n")
+        stop("The population selected is not available. Please select from ",
+            paste(populations(mafdb), collapse = ", "), ". \n")
     }
-    
+
     if (!(maf_threshold %in% c(0.01, 0.05))) {
         stop("The maf_threshold should be 0.01 or 0.05. \n")
     }
-    
-    regions <- gr.nochr(GenomicRanges::makeGRangesFromDataFrame(elementMetadata(m), 
+
+    regions <- gr.nochr(GenomicRanges::makeGRangesFromDataFrame(elementMetadata(m),
         start.field = "start", end.field = "start"))
-    
-    snp_rows <- unique(c(unique(which(as.data.table(score(mafdb, regions, pop = populations)) >= 
-        maf_threshold, arr.ind = TRUE)[, 1]), unique(which(as.data.table(score(mafdb, 
-        shift(regions, 1), pop = populations)) >= maf_threshold, arr.ind = TRUE)[, 
-        1])))
-    
+
+    snp_rows <- unique(c(unique(which(as.data.table(score(mafdb, regions,
+        pop = populations)) >= maf_threshold, arr.ind = TRUE)[, 1]),
+        unique(which(as.data.table(score(mafdb,
+        shift(regions, 1), pop = populations)) >= maf_threshold, arr.ind = TRUE)[, 1])))
+
     snp_rows <- snp_rows[order(snp_rows)]
-    
+
     if (reduce_filtering) {
-        
-        cat("Keep in mind that the filtering is in experimental state, the cut-off is arbitrary. \n ")
-        # stop('The reduce filtering option is not implemented yet. \n')
-        
+
+        message("Keep in mind that the filtering is in experimental state, the cut-off is arbitrary. \n ")
+
         if (ncol(m) < 10 & forced == FALSE) {
-            stop("The reduce filtering option is not recommended for sample number below 10. Use the forced option if you still want to do it.  \n")
+            stop("The reduce filtering option is not recommended for sample number below 10.
+                 Use the forced option if you still want to do it.  \n")
         } else if (ncol(m) < 10 & forced == TRUE) {
-            cat("The reduce filtering option is not recommended for sample number below 10. \n")
+            message("The reduce filtering option is not recommended for sample number below 10. \n")
         }
-        # regions_select <- regions[snp_rows,]
-        
-        snp_test <- unique(c(unique(which(as.data.table(score(mafdb, regions, pop = populations)) <= 
-            0.1, arr.ind = TRUE)[, 1]), unique(which(as.data.table(score(mafdb, shift(regions, 
-            1), pop = populations)) <= 0.1, arr.ind = TRUE)[, 1])))
+
+        snp_test <- unique(c(unique(which(as.data.table(score(mafdb, regions,
+            pop = populations)) <= 0.1, arr.ind = TRUE)[, 1]),
+            unique(which(as.data.table(score(mafdb,
+            shift(regions, 1), pop = populations)) <= 0.1, arr.ind = TRUE)[, 1])))
         snp_test <- snp_test[order(snp_test)]
         snp_test <- intersect(snp_rows, snp_test)
         snp_rows <- snp_rows[!(snp_rows %in% snp_test)]
@@ -88,30 +88,32 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
         } else {
             vars <- matrixStats::rowVars(m_mat, na.rm = TRUE)
         }
-        snp_test <- snp_test[which(vars > quantile(vars[complete.cases(vars)], 0.25))]
-        
-        
+        snp_test <- snp_test[which(vars > quantile(vars[complete.cases(vars)],
+            0.25))]
+
+
         snp_rows <- c(snp_rows, snp_test)
     }
-    
-    removed_snps <- data.table::as.data.table(m@elementMetadata)[snp_rows, ]
-    
-    cat("Number of SNPs removed: \n")
+
+    removed_snps <- data.table::as.data.table(m@elementMetadata)[snp_rows,
+        ]
+
+    message("Number of SNPs removed: \n")
     print(removed_snps[, .N, by = chr])
-    cat("\n Sum: ")
+    message("\n Sum: ")
     print(removed_snps[, .N])
     m <- m[-snp_rows, ]
-    
-    
+
+
     gc()
     return(m)
-    
+
 }
 
 gr.nochr <- function(gr) {
-    
+
     if (grepl("^chr", GenomeInfoDb::seqlevels(gr)[1])) {
-        GenomeInfoDb::seqlevels(gr) = gsub("^chr", "", GenomeInfoDb::seqlevels(gr))
+        GenomeInfoDb::seqlevels(gr) <- gsub("^chr", "", GenomeInfoDb::seqlevels(gr))
     }
     return(gr)
 }

@@ -67,7 +67,7 @@ pheno <- pData(BS.cancer.ex)
 
 hg19_cpg <-  extract_CPGs(ref_genome = "BSgenome.Hsapiens.UCSC.hg19")
 
-files <- dir(path = location, full.names = T,
+files <- dir(path = location, full.names = TRUE,
              pattern = ".bedGraph$")
 methrix_obj <- methrix::read_bedgraphs(files = files,coldata = pData(BS.cancer.ex),
                         zero_based = FALSE,

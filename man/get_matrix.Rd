@@ -4,7 +4,7 @@
 \alias{get_matrix}
 \title{Extract methylation or coverage matrices}
 \usage{
-get_matrix(m, type = "M", add_loci = FALSE)
+get_matrix(m, type = "M", add_loci = FALSE, in_granges = FALSE)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
@@ -12,6 +12,8 @@ get_matrix(m, type = "M", add_loci = FALSE)
 \item{type}{can be \code{M} or \code{C}. Default 'M'}
 
 \item{add_loci}{Default FALSE. If TRUE adds CpG position info to the matrix and returns as a data.table}
+
+\item{in_granges}{Do you want the outcome in \code{GRanges}?}
 }
 \value{
 Coverage or Methylation matrix
@@ -28,4 +30,6 @@ data('methrix_data')
 get_matrix(m = methrix_data, type = 'M')
 #Get methylation matrix along with loci
 get_matrix(m = methrix_data, type = 'M', add_loci = TRUE)
+#' #Get methylation data as a GRanges object
+get_matrix(m = methrix_data, type = 'M', add_loci = TRUE, in_granges=TRUE)
 }
