@@ -1,0 +1,19 @@
+data('methrix_data')
+
+
+m <- methrix_data
+m@assays@data$beta[1,] <- NA
+m@assays@data$cov[1,] <- NA
+m2 <- convert_methrix(m)
+
+
+
+test_that("Expected results", {
+  expect_equal(remove_uncovered(methrix_data), methrix_data)
+  expect_equal(remove_uncovered(m), methrix_data[-1,])
+  expect_equivalent(remove_uncovered(m2), convert_methrix(methrix_data[-1,]))
+})
+
+test_that("Expected errors", {
+  expect_error(remove_uncovered("not methrix"))
+})

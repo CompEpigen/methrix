@@ -499,6 +499,11 @@ cast_ranges <- function(regions) {
     data.table::setDT(x = target_regions, key = c("chr", "start", "end"))
     target_regions <- target_regions[, .(chr, start, end)]
   } else if (is(regions, "data.frame")) {
+    if (all(c("chr", "start", "end") %in% colnames(regions))){
+      regions <- regions[,c("chr", "start", "end")]
+    } else {
+      warning("Columns with names chr, start and end are not found. Assuming that the first three columns are chr, start and end.")
+    }
     target_regions <- data.table::as.data.table(x = regions)
     colnames(target_regions)[seq_len(3)] <- c("chr", "start", "end")
     target_regions <- target_regions[, .(chr, start, end)]

@@ -36,9 +36,12 @@ This vignette describes basic usage of the package intended to process several l
 ## Reading bedgraph files
 `read_bedgraphs` function is a versatile bedgraph reader intended to import bedgraph files generated virtually by any sort of methylation calling program. It requires user to provide indices for chromosome names, start position and other required fields. There are also presets available to import `bedgraphs` from most common programs such as `Bismark`, `MethylDackel`, and `MethylcTools`.
 
-```{r, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE, eval=TRUE}
 #Load library
 library(methrix)
+```
+
+```{r, eval=FALSE}
 #Genome of your preference to work with
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
@@ -50,6 +53,7 @@ BiocManager::install("BSgenome.Hsapiens.UCSC.hg19")
 }
 library(BSgenome.Hsapiens.UCSC.hg19) 
 ```
+
 
 
 ```{r}

@@ -9,7 +9,7 @@ get_stats(m, per_chr = TRUE)
 \arguments{
 \item{m}{\code{\link{methrix}} object}
 
-\item{per_chr}{Estimate stats per chromosome. Default FALSE}
+\item{per_chr}{Estimate stats per chromosome. Default TRUE}
 }
 \value{
 data.table of summary stats

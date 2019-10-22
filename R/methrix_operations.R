@@ -332,8 +332,6 @@ methrix2bsseq <- function(m) {
 #'
 remove_uncovered <- function(m) {
 
-
-
     V1 <- N <- NULL
     start_proc_time <- proc.time()
     if (!is(m, "methrix")){
@@ -354,7 +352,11 @@ remove_uncovered <- function(m) {
     gc()
     message("-Finished in:  ", data.table::timetaken(start_proc_time),
         "\n")
+    if (length(row_idx)==0){
+        m
+    } else {
     m[-row_idx, ]
+        }
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
@@ -422,6 +424,9 @@ mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99) {
 
     if (!is.null(low_count)) {
 
+        if(!is.numeric(low_count)){
+            stop("low_count must be a numeric value.")
+        }
         row_idx <- which(get_matrix(m = m, type = "C") < low_count, arr.ind = FALSE)
 
         message(paste0("-Masked ", format(length(row_idx), big.mark = ","),
@@ -441,8 +446,11 @@ mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99) {
             stop("High quantile should be between 0 and 1. ")
         }
         if (is_h5(m)) {
-            quantiles <- DelayedMatrixStats::colQuantiles(assays(m)[[2]],
+            no_dimnames <- assays(m, withDimnames = FALSE)$cov
+            dimnames(no_dimnames) <- NULL
+            quantiles <- DelayedMatrixStats::colQuantiles(no_dimnames,
                 probs = high_quantile, na.rm = TRUE)
+            rm(no_dimnames)
             quantiles <- as.vector(quantiles)
             names(quantiles) <- rownames(m@colData)
         } else {
@@ -514,7 +522,7 @@ combine_methrix <- function(m1, m2, by = c("row", "col")) {
 #' Estimate descriptive statistics
 #' @details Calculate descriptive statistics
 #' @param m \code{\link{methrix}} object
-#' @param per_chr Estimate stats per chromosome. Default FALSE
+#' @param per_chr Estimate stats per chromosome. Default TRUE
 #' @seealso \code{\link{plot_stats}}
 #' @examples
 #' data('methrix_data')
