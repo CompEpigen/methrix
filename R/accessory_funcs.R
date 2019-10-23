@@ -427,22 +427,39 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
 
   if (h5) {
     for (i in seq_along(files)) {
-      b <- read_bdg(bdg = files[i], col_list = col_idx, genome = genome,
-                    strand_collapse = strand_collapse, contigs = contigs, synced_coordinates = synced_coordinates,
-                    file_uncovered = file_uncovered, zero_based = zero_based)
+      if (i == 1) {
+        b <- read_bdg(bdg = files[i], col_list = col_idx, genome = genome,
+                      strand_collapse = strand_collapse, contigs = contigs, synced_coordinates = synced_coordinates,
+                      file_uncovered = file_uncovered, zero_based = zero_based)
 
-      DelayedArray::write_block(block = as.matrix(b$bdg[, .(beta)]),
-                                viewport = grid[[i]], x = M_sink)
-      DelayedArray::write_block(block = as.matrix(b$bdg[, .(cov)]),
-                                viewport = grid[[i]], x = cov_sink)
-      genome_stat_final <- rbind(genome_stat_final, b$genome_stat[,
-                                                                  `:=`(Sample_Name, rownames(coldata)[i])])
-      chr_stat_final <- rbind(chr_stat_final, b$chr_stat[, `:=`(Sample_Name,
-                                                                rownames(coldata)[i])])
-      ncpg_final <- rbind(ncpg_final, b$ncpg[, `:=`(Sample_Name,
-                                                    rownames(coldata)[i])])
-      rm(b)
-      gc()
+        DelayedArray::write_block(block = as.matrix(b$bdg[, .(beta)]),
+                                  viewport = grid[[i]], x = M_sink)
+        DelayedArray::write_block(block = as.matrix(b$bdg[, .(cov)]),
+                                  viewport = grid[[i]], x = cov_sink)
+        genome_stat_final <- b$genome_stat[, `:=`(Sample_Name,
+                                                  rownames(coldata)[i])]
+        chr_stat_final <- b$chr_stat[, `:=`(Sample_Name, rownames(coldata)[i])]
+        ncpg_final <- b$ncpg[, `:=`(Sample_Name, rownames(coldata)[i])]
+        rm(b)
+        gc()
+      } else {
+        b <- read_bdg(bdg = files[i], col_list = col_idx, genome = genome,
+                      strand_collapse = strand_collapse, contigs = contigs, synced_coordinates = synced_coordinates,
+                      file_uncovered = file_uncovered, zero_based = zero_based)
+
+        DelayedArray::write_block(block = as.matrix(b$bdg[, .(beta)]),
+                                  viewport = grid[[i]], x = M_sink)
+        DelayedArray::write_block(block = as.matrix(b$bdg[, .(cov)]),
+                                  viewport = grid[[i]], x = cov_sink)
+        genome_stat_final <- rbind(genome_stat_final, b$genome_stat[,
+                                                                    `:=`(Sample_Name, rownames(coldata)[i])])
+        chr_stat_final <- rbind(chr_stat_final, b$chr_stat[, `:=`(Sample_Name,
+                                                                  rownames(coldata)[i])])
+        ncpg_final <- rbind(ncpg_final, b$ncpg[, `:=`(Sample_Name,
+                                                      rownames(coldata)[i])])
+        rm(b)
+        gc()
+      }
     }
     ncpg_final <- data.table::dcast(data = ncpg_final, chr ~ Sample_Name,
                                     value.var = "N")
