@@ -12,7 +12,7 @@ prepare_plot_data <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL){
     if (!is.null(ranges)) {
         meth_sub <- subset_methrix(m = m, regions = ranges)
         if (!is.null(n_cpgs)) {
-            message("Randomly selecting ", n_cpgs, " sites. \n")
+            message("Randomly selecting ", n_cpgs, " sites")
             ids <- sample(x = seq_along(meth_sub), replace = FALSE, size = min(n_cpgs,
                                                                                nrow(meth_sub)))
             meth_sub <- get_matrix(m = meth_sub[ids, ], type = "M", add_loci = FALSE)
@@ -20,7 +20,7 @@ prepare_plot_data <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL){
             meth_sub <- get_matrix(m = meth_sub, type = "M", add_loci = FALSE)
         }
     } else if (!is.null(n_cpgs)) {
-        message("Randomly selecting ", n_cpgs, " sites. \n")
+        message("Randomly selecting ", n_cpgs, " sites")
 
         ids <- sample(x = seq_along(m), replace = FALSE, size = min(n_cpgs,
                                                                     nrow(m)))
@@ -159,13 +159,13 @@ methrix_pca <- function(m, var = "top", top_var = 1000, ranges = NULL,
 
     ## subset based on the input ranges
     if (!is.null(ranges)) {
-        message("GenomicRanges will be used for the PCA\n")
+        message("GenomicRanges will be used for the PCA")
         meth_sub <- subset_methrix(m = m, regions = ranges)
         meth_sub <- methrix::get_matrix(m = meth_sub, type = "M", add_loci = FALSE)
     }
 
     if (is.null(top_var)) {
-        message("All CpGs in the dataset will be used for the PCA\n")
+        message("All CpGs in the dataset will be used for the PCA")
         if (is.null(ranges)) {
             meth_sub <- get_matrix(m = m, type = "M", add_loci = FALSE)
         }
@@ -176,11 +176,11 @@ methrix_pca <- function(m, var = "top", top_var = 1000, ranges = NULL,
         top_var <- as.integer(as.character(top_var))
         if (var_select == "rand") {
             if (!is.null(ranges)) {
-                message("Random CpGs within provided GRanges will be used for the PCA\n")
+                message("Random CpGs within provided GRanges will be used for the PCA")
                 ids <- sample(x = seq_along(meth_sub), replace = FALSE,
                   size = min(top_var, nrow(meth_sub)))
             } else {
-                message("Random CpGs will be used for the PCA\n")
+                message("Random CpGs will be used for the PCA")
                 ids <- sample(x = seq_along(m), replace = FALSE, size = as.integer(as.character(min(top_var,
                   nrow(m)))))
             }
@@ -372,7 +372,7 @@ plot_coverage <- function(m, type = c("hist", "dens"), pheno = NULL, perGroup = 
 
     if (nrow(m) > size.lim) {
         message("The dataset is bigger than the size limit. A random subset of the object will be used that contains ~",
-            size.lim, " observations. \n")
+            size.lim, " observations.")
         n_rows <- trunc(size.lim/nrow(m@colData))
         sel_rows <- sample(seq_along(m@elementMetadata), size = n_rows,
             replace = FALSE)

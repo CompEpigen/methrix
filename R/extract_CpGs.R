@@ -45,7 +45,7 @@ extract_CPGs = function(ref_genome = NULL) {
         length = seqlengths(x = ref_genome))
     chrs = names(ref_genome)
 
-    message("-Extracting CpGs\n")
+    message("-Extracting CpGs")
 
     # Code borrwed from from: https://support.bioconductor.org/p/95239/
     cgs = lapply(chrs, function(x) start(Biostrings::matchPattern("CG", ref_genome[[x]])))
@@ -57,7 +57,7 @@ extract_CPGs = function(ref_genome = NULL) {
         as.numeric(end))][, `:=`(width, as.numeric(width))]
     data.table::setkey(x = cpgs, "chr", "start")
     message(paste0("-Done. Extracted ", format(nrow(cpgs), big.mark = ","), " CpGs from ",
-        length(chrs), " contigs.\n"))
+        length(chrs), " contigs."))
 
     return(list(cpgs = cpgs, contig_lens = chrom_sizes, release_name = ref_build))
 }

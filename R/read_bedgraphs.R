@@ -79,9 +79,9 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
 
     # Final aim is to bring input data to the following order: chr start
     # end beta cov starnd <rest..>
-    message(paste0("----------------------------", "\n"))
+    message(paste0("----------------------------"))
     if (is.null(pipeline)) {
-        message(paste0("-Preset:        Custom \n"))
+        message(paste0("-Preset:        Custom"))
         col_idx <- parse_source_idx(chr = chr_idx, start = start_idx, end = end_idx,
             beta = beta_idx, cov = cov_idx, strand = strand_idx, n_meth = M_idx,
             n_unmeth = U_idx, verbose = verbose)
@@ -90,14 +90,14 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
         pipeline <- match.arg(arg = pipeline, choices = c("Bismark_cov",
             "MethylDackel", "MethylcTools"))
         if (verbose) {
-            message(paste0("-Preset:        ", pipeline, "\n"))
+            message(paste0("-Preset:        ", pipeline))
         }
 
         col_idx <- get_source_idx(protocol = pipeline)
 
         if (any(pipeline %in% c("Bismark_cov"))) {
             if (zero_based) {
-                message("*BismarkCov files are one based. You may want to re-run with zero_based=FALSE\n")
+                message("*BismarkCov files are one based. You may want to re-run with zero_based=FALSE")
             }
         }
     }
@@ -127,8 +127,7 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
     }
 
     if (verbose) {
-        message(paste0("-CpGs raw:      ", format(nrow(genome), big.mark = ","),
-            "\n"))
+        message(paste0("-CpGs raw:      ", format(nrow(genome), big.mark = ",")))
     }
     genome <- genome[chr %in% as.character(contigs)]
 
@@ -142,8 +141,7 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
     }
 
     if (verbose) {
-        message(paste0("-CpGs filtered: ", format(nrow(genome), big.mark = ","),
-            "\n"))
+        message(paste0("-CpGs filtered: ", format(nrow(genome), big.mark = ",")))
     }
 
     # check it with the strand column
@@ -154,8 +152,7 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
         genome[, `:=`(strand, "-")]
         genome <- data.table::rbindlist(list(genome, genome_plus), use.names = TRUE)
         data.table::setkeyv(genome, cols = c("chr", "start"))
-        message(paste0("-CpGs stranded: ", format(nrow(genome), big.mark = ","),
-            "\n"))
+        message(paste0("-CpGs stranded: ", format(nrow(genome), big.mark = ",")))
         rm(genome_plus)
         gc()
     }
@@ -172,17 +169,16 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
             modified <- which(make.names(rownames(coldata), unique = TRUE) !=
                 rownames(coldata))
             message("The sample names contained a non-valid character or were duplicated.
-                The following changes were made:\n")
+                The following changes were made:")
             message(paste(paste(rownames(coldata)[modified], make.names(rownames(coldata),
-                unique = TRUE)[modified], sep = " => "), collapse = " \n "),
-                "\n")
+                unique = TRUE)[modified], sep = " => "), collapse = " \n "))
             rownames(coldata) <- make.names(rownames(coldata), unique = TRUE)
 
         }
 
     }
 
-    message(paste0("----------------------------", "\n"))
+    message(paste0("----------------------------"))
 
     # Summarize bedgraphs and create a matrix
     if (vect) {
@@ -224,6 +220,6 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
     rm(genome)
     gc()
 
-    message("-Finished in:  ", data.table::timetaken(start_proc_time), "\n")
+    message("-Finished in:  ", data.table::timetaken(start_proc_time))
     return(m_obj)
 }

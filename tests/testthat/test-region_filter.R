@@ -9,8 +9,8 @@ colnames(gr_df2)[1] <- "chr"
 
 
 test_that("selected by regions", {
-  expect_identical(region_filter(methrix_data, regions = gr), methrix_data[-(1:3),])
-  expect_identical(region_filter(methrix_data, regions = gr_df2), methrix_data[-(1:3),])
+  expect_equal(region_filter(methrix_data, regions = gr), methrix_data[-(1:3),])
+  expect_equal(region_filter(methrix_data, regions = gr_df2), methrix_data[-(1:3),])
 })
 
 
@@ -21,7 +21,7 @@ test_that("Wrong input", {
 })
 
 test_that("selected by regions, HDF5", {
-  expect_identical(region_filter(m2, regions = gr), m2[-(1:3),])
-  expect_identical(region_filter(m2, regions = gr_df2), m2[-(1:3),])
+  expect_equal(region_filter(m2, regions = gr), m2[-(1:3),])
+  expect_equal(region_filter(m2, regions = gr_df2), m2[-(1:3),])
 })
 

@@ -66,13 +66,13 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
 
     if (reduce_filtering) {
 
-        message("Keep in mind that the filtering is in experimental state, the cut-off is arbitrary. \n ")
+        message("Keep in mind that the filtering is in experimental state, the cut-off is arbitrary.")
 
         if (ncol(m) < 10 & forced == FALSE) {
             stop("The reduce filtering option is not recommended for sample number below 10.
-                 Use the forced option if you still want to do it.  \n")
+                 Use the forced option if you still want to do it.")
         } else if (ncol(m) < 10 & forced == TRUE) {
-            message("The reduce filtering option is not recommended for sample number below 10. \n")
+            message("The reduce filtering option is not recommended for sample number below 10.")
         }
 
         snp_test <- unique(c(unique(which(as.data.table(score(mafdb, regions,
@@ -98,9 +98,9 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
     removed_snps <- data.table::as.data.table(m@elementMetadata)[snp_rows,
         ]
 
-    message("Number of SNPs removed: \n")
+    message("Number of SNPs removed:")
     print(removed_snps[, .N, by = chr])
-    message("\n Sum: ")
+    message("Sum: ")
     print(removed_snps[, .N])
     m <- m[-snp_rows, ]
 

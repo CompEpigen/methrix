@@ -40,7 +40,7 @@ get_region_summary <- function(m, regions = NULL, type = "M", how = "mean",
     data.table::setDT(x = r_dat, key = c("chr", "start", "end"))
 
     if (verbose) {
-        message("-Checking for overlaps..\n")
+        message("-Checking for overlaps..")
     }
 
     overlap_indices <- data.table::foverlaps(x = r_dat, y = target_regions,
@@ -70,19 +70,19 @@ get_region_summary <- function(m, regions = NULL, type = "M", how = "mean",
     dat <- cbind(overlap_indices, dat)
 
     if (how == "mean") {
-        message("-Summarizing by average\n")
+        message("-Summarizing by average")
         output <- dat[, lapply(.SD, mean, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
     } else if (how == "median") {
-        message("-Summarizing by median\n")
+        message("-Summarizing by median")
         output <- dat[, lapply(.SD, median, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
     } else if (how == "max") {
-        message("-Summarizing by maximum\n")
+        message("-Summarizing by maximum")
         output <- dat[, lapply(.SD, max, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
     } else if (how == "min") {
-        message("-Summarizing by minimum\n")
+        message("-Summarizing by minimum")
         output <- dat[, lapply(.SD, min, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
     } else if (how == "sum") {
-        message("-Summarizing by sum\n")
+        message("-Summarizing by sum")
         output <- dat[, lapply(.SD, sum, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
     }
 
@@ -93,8 +93,7 @@ get_region_summary <- function(m, regions = NULL, type = "M", how = "mean",
 
 
     if (verbose) {
-        message("-Done! Finished in:", data.table::timetaken(start_proc_time),
-            "\n")
+        message("-Done! Finished in:", data.table::timetaken(start_proc_time))
     }
 
     return(output)
@@ -148,7 +147,7 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL) {
     r_dat <- data.table::as.data.table(rowData(m))
 
     if (!is.null(regions)) {
-        message("-Subsetting by genomic regions\n")
+        message("-Subsetting by genomic regions")
 
         target_regions <- cast_ranges(regions)
 
@@ -164,7 +163,7 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL) {
     }
 
     if (!is.null(contigs)) {
-        message("-Subsetting by contigs\n")
+        message("-Subsetting by contigs")
         selected_rows <- which(r_dat$chr %in% contigs)
 
         if (length(selected_rows) == 0) {
@@ -174,7 +173,7 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL) {
     }
 
     if (!is.null(samples)) {
-        message("Subsetting by samples\n")
+        message("Subsetting by samples")
 
         samples <- which(rownames(colData(m)) %in% samples)
         if (length(samples) == 0) {
@@ -226,9 +225,8 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1) {
 
     gc()
     message(paste0("-Retained ", format(length(row_idx), big.mark = ","),
-        " of ", format(nrow(m), big.mark = ","), " sites\n"))
-    message("-Finished in:  ", data.table::timetaken(start_proc_time),
-        "\n")
+        " of ", format(nrow(m), big.mark = ","), " sites"))
+    message("-Finished in:  ", data.table::timetaken(start_proc_time))
 
     return(m[row_idx, ])
 }
@@ -347,11 +345,10 @@ remove_uncovered <- function(m) {
     }
     message(paste0("-Removed ", format(length(row_idx), big.mark = ","),
         " [", round(length(row_idx)/nrow(m) * 100, digits = 2), "%] uncovered loci of ",
-        format(nrow(m), big.mark = ","), " sites\n"))
+        format(nrow(m), big.mark = ","), " sites"))
 
     gc()
-    message("-Finished in:  ", data.table::timetaken(start_proc_time),
-        "\n")
+    message("-Finished in:  ", data.table::timetaken(start_proc_time))
     if (length(row_idx)==0){
         m
     } else {
@@ -393,9 +390,8 @@ region_filter <- function(m, regions, type = "within") {
     }
 
     message(paste0("-Removed ", format(nrow(overlap), big.mark = ","),
-        " CpGs\n"))
-    message("-Finished in:  ", data.table::timetaken(start_proc_time),
-        "\n")
+        " CpGs"))
+    message("-Finished in:  ", data.table::timetaken(start_proc_time))
 
     m[-overlap$xid, ]
 }
@@ -430,7 +426,7 @@ mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99) {
         row_idx <- which(get_matrix(m = m, type = "C") < low_count, arr.ind = FALSE)
 
         message(paste0("-Masked ", format(length(row_idx), big.mark = ","),
-            " CpGs due to low coverage. \n"))
+            " CpGs due to low coverage."))
         if (is_h5(m)) {
             assays(m)[[1]][assays(m)[[2]] < low_count] <- NA
             assays(m)[[2]][assays(m)[[2]] < low_count] <- NA
@@ -469,11 +465,10 @@ mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99) {
 
 
             message(paste0("-Masked ", length(row_idx), " CpGs due to too high coverage in sample ",
-                names(quantiles[quant]), ".\n"))
+                names(quantiles[quant]), "."))
         }
     }
-    message("-Finished in:  ", data.table::timetaken(start_proc_time),
-        "\n")
+    message("-Finished in:  ", data.table::timetaken(start_proc_time))
     return(m)
 }
 
@@ -629,8 +624,7 @@ get_stats <- function(m, per_chr = TRUE) {
     }
 
     gc()
-    message("-Finished in:  ", data.table::timetaken(start_proc_time),
-        "\n")
+    message("-Finished in:  ", data.table::timetaken(start_proc_time))
 
     stats
 }

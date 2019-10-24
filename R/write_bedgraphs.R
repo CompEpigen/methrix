@@ -29,8 +29,8 @@ write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
         output_dir <- getwd()
     }
     
-    message("----------------------\n")
-    message("*Writing bedGraphs:\n")
+    message("----------------------")
+    message("*Writing bedGraphs:")
     op_bdgs <- lapply(seq_len(nrow(colData(m))), function(i) {
         mat_i <- mat[, c(seq_len(3), i + 4), with = FALSE]
         if (rm_NA) {
@@ -47,20 +47,20 @@ write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
         
         if (file.exists(op_bdg)) {
             if (force) {
-                message(paste0("**Writing ", rownames(colData(m))[i], "\n"))
+                message(paste0("**Writing ", rownames(colData(m))[i]))
                 colnames(mat_i) <- paste0("V", seq_len(ncol(mat_i)))
                 data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", 
                   col.names = FALSE, nThread = n_thr, scipen = 7, compress = "auto")
             } else {
-                message(paste0("**File ", basename(op_bdg), " already exists. Skipped re-writing\n"))
+                message(paste0("**File ", basename(op_bdg), " already exists. Skipped re-writing"))
             }
         } else {
-            message(paste0("**Writing ", rownames(colData(m))[i], "\n"))
+            message(paste0("**Writing ", rownames(colData(m))[i]))
             colnames(mat_i) <- paste0("V", seq_len(ncol(mat_i)))
             data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", col.names = FALSE, 
                 nThread = n_thr)
         }
         op_bdg
     })
-    message("----------------------\n")
+    message("----------------------")
 }

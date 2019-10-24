@@ -24,6 +24,3 @@ test_that("Expected errors", {
   expect_error(mask_methrix(m1, low_count = 1, high_quantile = "not valid"), "High quantile should be between 0 and 1.")
   expect_equal(nrow(remove_uncovered(mask_methrix(m1, low_count = 300, high_quantile = .99))), 0)
 })
-
-
-

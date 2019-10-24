@@ -14,11 +14,11 @@
 methrix <- setClass(Class = "methrix", contains = "SummarizedExperiment")
 
 setMethod(f = "show", signature = "methrix", definition = function(object) {
-    message(paste0("An object of class ", class(object), "\n"))
-    message(paste0("   n_CpGs: ", format(nrow(object), big.mark = ","), "\n"))
-    message(paste0("n_samples: ", ncol(object), "\n"))
-    message(paste0("    is_h5: ", is_h5(object), "\n"))
-    message(paste0("Reference: ", object@metadata$genome, "\n"))
+    cat(paste0("An object of class ", class(object), "\n"))
+    cat(paste0("   n_CpGs: ", format(nrow(object), big.mark = ","), "\n"))
+    cat(paste0("n_samples: ", ncol(object), "\n"))
+    cat(paste0("    is_h5: ", is_h5(object), "\n"))
+    cat(paste0("Reference: ", object@metadata$genome, "\n"))
 })
 
 # Create methrix obj

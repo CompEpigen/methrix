@@ -37,10 +37,10 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     }
 
     # Methylation/Coverage per chromosome
-    message(paste0("Step 1 of 5: Methylation/Coverage per chromosome\n"))
+    message(paste0("Step 1 of 5: Methylation/Coverage per chromosome"))
     of1 <- suppressWarnings(normalizePath(file.path(output_dir, "/MC_per_chr.tsv")))
     if (file.exists(of1)) {
-        message("File already present. Skipping step 1..\n")
+        message("File already present. Skipping step 1..")
     } else {
         if (recal_stats) {
             per_chr_stat <- get_stats(m = meth, per_chr = TRUE)
@@ -56,7 +56,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     message(paste0("Step 2 of 5: Global methylation/Coverage per sample\n"))
     of2 <- suppressWarnings(normalizePath(file.path(output_dir, "global_MC_per_samp.tsv")))
     if (file.exists(of2)) {
-        message("File already present. Skipping step 2..\n")
+        message("File already present. Skipping step 2..")
     } else {
         if (recal_stats) {
             genome_stat <- get_stats(m = meth, per_chr = FALSE)
@@ -68,12 +68,12 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     }
 
     # n CpGs covered per chromomse
-    message(paste0("Step 3 of 5: Reference CpGs covered per chromosome\n"))
+    message(paste0("Step 3 of 5: Reference CpGs covered per chromosome"))
     of3 <- suppressWarnings(normalizePath(file.path(output_dir, "n_covered_per_chr.tsv")))
     contig_nCpGs <- meth@metadata$ref_CpG
     colnames(contig_nCpGs) <- c("chr", "total_CpGs")
     if (file.exists(of3)) {
-        message("File already present. Skipping step 3..\n")
+        message("File already present. Skipping step 3..")
     } else {
         if (recal_stats) {
             non_cov_tbl <- lapply(seq_len(ncol(meth)), function(i) {
@@ -101,10 +101,10 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
 
 
     # Common CpGs covered by all samples
-    message(paste0("Step 4 of 5: Common reference CpGs covered across all samples\n"))
+    message(paste0("Step 4 of 5: Common reference CpGs covered across all samples"))
     of4 <- suppressWarnings(normalizePath(file.path(output_dir, "n_covered_by_all_samples.tsv")))
     if (file.exists(of4)) {
-        message("File already present. Skipping step 4..\n")
+        message("File already present. Skipping step 4..")
     } else {
         # na_vec = apply(get_matrix(meth, type = 'M'), MARGIN = 1, anyNA)
         if (is_h5(meth)) {
@@ -132,11 +132,11 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     }
 
     # Density plot data
-    message(paste0("Step 5 of 5: beta value distribution\n"))
+    message(paste0("Step 5 of 5: beta value distribution"))
     if (plot_beta_dist) {
         dens_files <- list.files(path = output_dir, pattern = "*_density\\.tsv\\.gz$")
         if (length(dens_files) == nrow(colData(meth))) {
-            message("Files already present. Skipping step 5..\n")
+            message("Files already present. Skipping step 5..")
         } else {
             if (!exists(x = "na_vec")) {
                 na_vec <- apply(get_matrix(meth, type = "M"), MARGIN = 1,
@@ -163,7 +163,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     of5 <- suppressWarnings(normalizePath(file.path(output_dir, "contig_lens.tsv")))
     data.table::fwrite(x = meth@metadata$chrom_sizes, file = of5, sep = "\t")
 
-    message(paste0("Knitting report\n"))
+    message(paste0("Knitting report"))
     md <- system.file("report", "summarize_methrix.Rmd", package = "methrix")
 
     rmarkdown::render(input = md, output_file = "methrix_reports.html",
@@ -172,5 +172,5 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
             mc_per_sample_stat = of2, chr_lens = of5))
     browseURL(url = paste0(output_dir, "/methrix_reports.html"))
 
-    message(data.table::timetaken(started.at = start_proc_time), sep = "\n")
+    message(data.table::timetaken(started.at = start_proc_time))
 }
