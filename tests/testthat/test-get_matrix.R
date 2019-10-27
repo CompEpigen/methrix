@@ -7,10 +7,10 @@ m2 <- convert_methrix(methrix_data)
 
 dt <- as.data.frame(cbind(m1@elementMetadata, m1@assays$data$beta))
 data.table::setDT(x = dt)
-dt2 <-m1@assays$data$beta
+dt2 <- assays(m1)$beta
 
 dt_c <- setDT(as.data.frame(cbind(m1@elementMetadata, m1@assays$data$cov)))
-dt2_c <- m1@assays$data$cov
+dt2_c <- assays(m1)$cov
 
 
 test_that("Check output", {

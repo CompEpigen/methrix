@@ -1,7 +1,7 @@
 
 library(GenomicRanges)
 
-gr <- GRanges(paste0(methrix_data@elementMetadata[1,1], ":", methrix_data@elementMetadata[1,2], "-", methrix_data@elementMetadata[3,2]))
+gr <- GenomicRanges::GRanges(paste0(methrix_data@elementMetadata[1,1], ":", methrix_data@elementMetadata[1,2], "-", methrix_data@elementMetadata[3,2]))
 data("methrix_data")
 
 

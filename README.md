@@ -8,7 +8,7 @@ Fast and efficient summarization of generic bedGraph files from Bisufite sequenc
 
 [![Travis build status](https://travis-ci.com/CompEpigen/methrix.svg?branch=master)](https://travis-ci.com/CompEpigen/methrix)
 [![Lifecycle: maturing](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-[![BioC status](http://www.bioconductor.org/shields/build/release/bioc/methrix.svg)](https://bioconductor.org/checkResults/release/bioc-LATEST/methrix)
+[![BioC status](http://www.bioconductor.org/shields/build/devel/bioc/methrix.svg)](https://bioconductor.org/checkResults/release/bioc-LATEST/methrix)
 
 <!-- badges: end -->
 
@@ -128,8 +128,8 @@ To be added
 - [X] Write methods
 - [X] Add vignette
 - [X] Add examples
-- [ ] Clear BiocCheck warnings and notes
-- [ ] Submit to BioConductor for Fall (3.10) release
+- [X] Clear BiocCheck warnings and notes
+- [X] Submit to BioConductor for Fall (3.10) release
 
 
 ### Note

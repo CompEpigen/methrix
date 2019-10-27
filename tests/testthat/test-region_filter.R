@@ -2,7 +2,7 @@ data('methrix_data')
 m2 <- convert_methrix(methrix_data)
 
 
-gr <-  GRanges(paste0(methrix_data@elementMetadata[1,1], ":", methrix_data@elementMetadata[1,2], "-", methrix_data@elementMetadata[3,2]+1))
+gr <-  GenomicRanges::GRanges(paste0(methrix_data@elementMetadata[1,1], ":", methrix_data@elementMetadata[1,2], "-", methrix_data@elementMetadata[3,2]+1))
 gr_df <- as.data.frame(gr)
 gr_df2 <- gr_df
 colnames(gr_df2)[1] <- "chr"
