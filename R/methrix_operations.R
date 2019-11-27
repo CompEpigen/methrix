@@ -215,7 +215,7 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, group = NULL) {
         stop("cov_thr and min_samples variables are not numeric.")
     }
     
-    if (!is.null(group) & !(group %in% colnames(methrix_data@colData))){
+    if (!is.null(group) & !(group %in% colnames(m@colData))){
         stop(paste("The column name ", group, " can't be found in colData. Please provid a valid group column."))
     } 
 
