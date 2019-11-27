@@ -176,7 +176,6 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
                     if (!dir.exists(paste0(output_dir, "/", prefix, "/"))) {
                         dir.create(path = paste0(output_dir, "/", prefix, "/"), showWarnings = FALSE, recursive = TRUE)
                     }
-                    browser()
                     data.table::fwrite(x = data.table::data.table(x = i_dens$x,
                     y = i_dens$y), file = paste0(output_dir, "/", prefix, "/", rownames(colData(x = meth))[i],
                      "_density.tsv.gz"), sep = "\t")
