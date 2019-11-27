@@ -11,6 +11,7 @@ output:
     theme: sandstone
     highlight: tango
 params:
+  prefix: NULL
   n_covered_tsv: NULL
   n_covered_by_all_samples_tsv: NULL
   mc_per_chr_stat: NULL
@@ -140,7 +141,10 @@ plotly::ggplotly(p = p)
 
 ## Beta value distribution
 ```{r, eval=TRUE}
-dens_files = list.files(pattern = "*_density\\.tsv\\.gz$", path = normalizePath(dirname(path = params$mc_per_sample_stat)), full.names = TRUE)
+if (!is.null(params$prefix)){
+dens_files = list.files(pattern = "*_density\\.tsv\\.gz$", path = normalizePath(paste0(dirname(path = params$mc_per_sample_stat), "/", prefix, "/")), full.names = TRUE)} else {
+  dens_files = list.files(pattern = "*_density\\.tsv\\.gz$", path = normalizePath(dirname(path = params$mc_per_sample_stat)), full.names = TRUE)
+}
 dens_files = normalizePath(path = dens_files)
 
 if(length(dens_files) > 0){
