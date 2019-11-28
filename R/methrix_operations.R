@@ -153,7 +153,7 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL) {
         target_regions <- cast_ranges(regions)
 
         r_dat[, `:=`(end, start + 1)]
-        data.table::setDT(x = r_dat, key = c("chr", "start", "end"))
+        #data.table::setDT(x = r_dat, key = c("chr", "start", "end"))
         overlaps <- data.table::foverlaps(x = r_dat, y = target_regions,
             type = "within", nomatch = NULL, which = TRUE)
         if (nrow(overlaps) == 0) {
@@ -215,7 +215,7 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, group = NULL) {
         stop("cov_thr and min_samples variables are not numeric.")
     }
     
-    if (!is.null(group) & !(group %in% colnames(m@colData))){
+    if (!is.null(group) && !(group %in% colnames(m@colData))){
         stop(paste("The column name ", group, " can't be found in colData. Please provid a valid group column."))
     } 
 
@@ -226,12 +226,14 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, group = NULL) {
         if (!is.null(group)){
             res[.(V2 = unique(res$V2), to = m@colData[unique(res$V2), group]), on = "V2", col2 := i.to]
             res <- res[, .(Count = (.N)), by = .(V1, col2)]
+            setDT(res, key="V1")
             row_idx <- res[res$Count >= min_samples, V1, by = col2]
             row_idx <- row_idx[, .(Count2 = (.N)), by = V1]
             row_idx <- row_idx[Count2==length(unique(m@colData[,group])),V1]
             row_idx[order(row_idx, decreasing = F)]
         } else {
             res <- res[, .(Count = (.N)), by = V1]
+            setDT(res, key="V1")
             row_idx <- res[res$Count >= min_samples, V1]
         }
         
@@ -241,11 +243,13 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, group = NULL) {
         if (!is.null(group)){
             res[.(col = unique(res$col), to = m@colData[unique(res$col), group]), on = "col", col2 := i.to]
             res <- res[, .(Count = (.N)), by = .(row, col2)]
+            setDT(res, key="row")
             row_idx <- res[res$Count >= min_samples, row, by = col2]
             row_idx <- row_idx[, .(Count2 = (.N)), by = row]
             row_idx <- row_idx[Count2==length(unique(res$col)),row]
             } else {
             res <- res[, .(Count = (.N)), by = row]
+            setDT(res, key="row")
             row_idx <- res[res$Count >= min_samples, row]
         }
     }

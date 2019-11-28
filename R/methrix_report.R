@@ -6,6 +6,7 @@
 #' @param recal_stats Whether summary statistics should be recalculated? If you are using subsetted methrix object set this to TRUE.
 #' @param plot_beta_dist Default TRUE. Can be time consuming.
 #' @param beta_nCpG Number of CpGs rto use for estimating beta value distribution. Default 10000
+#' @param prefix Name prefix for the report and the created intermediate files. Default: NULL
 #' @param n_thr Default 4. Only used if \code{plot_beta_dist} is TRUE
 #' @return an interactive html report
 #' @examples

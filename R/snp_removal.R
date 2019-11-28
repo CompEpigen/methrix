@@ -9,7 +9,8 @@
 #' @param reduce_filtering If TRUE, the SNPs with a MAF < 0.1 will be evaluated and only the highly variable ones will be removed.
 #' Default FALSE.
 #' @param forced the reduce_filtering is not recommended with less than 10 samples, but can be forced. Default is FALSE.
-#' @return a coverage or methylation matrix
+#' @param keep Do you want to keep the sites that were filtered out? In this case, the function will return with a list of wo methrix objects. 
+#' @return methrix object or a list of methrix objects
 #' @importFrom BSgenome score
 #' @examples
 #' data('methrix_data')
@@ -18,7 +19,7 @@
 
 
 remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filtering = FALSE,
-    forced = FALSE) {
+    forced = FALSE, keep = FALSE) {
     genome <- m@metadata$genome
     chr <- NULL
 
@@ -54,8 +55,13 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
         stop("The maf_threshold should be 0.01 or 0.05. \n")
     }
 
+ 
     regions <- gr.nochr(GenomicRanges::makeGRangesFromDataFrame(elementMetadata(m),
         start.field = "start", end.field = "start"))
+    if ("M" %in% GenomeInfoDb::seqlevels(regions)){
+    warning("chrM was assumed to be the mitochondrial chromosome and modified according to the reference data for snpdb.")
+        seqlevels(regions) <- gsub("M", "MT", GenomeInfoDb::seqlevels(regions))
+    }
 
     snp_rows <- unique(c(unique(which(as.data.table(score(mafdb, regions,
         pop = populations)) >= maf_threshold, arr.ind = TRUE)[, 1]),
@@ -64,6 +70,7 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
 
     snp_rows <- snp_rows[order(snp_rows)]
 
+    
     if (reduce_filtering) {
 
         message("Keep in mind that the filtering is in experimental state, the cut-off is arbitrary. \n ")
@@ -102,11 +109,20 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
     print(removed_snps[, .N, by = chr])
     message("\n Sum: ")
     print(removed_snps[, .N])
+    
+    if (keep){
+        m2 <- m[snp_rows, ]
+    } 
+    
     m <- m[-snp_rows, ]
 
 
     gc()
-    return(m)
+    if (keep){
+    return(list("snp_filtered" = m, "removed_snps" = m2))
+    } else {
+            return(m)
+        }
 
 }
 
