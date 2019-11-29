@@ -99,7 +99,6 @@ plot_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
 #' @param n_cpgs Use these many random CpGs for plotting. Default 25000. Set it to \code{NULL} to use all - which can be memory expensive.
 #' @param ranges genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object
 #' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
-#' @param bw.adjust Multiplicate bandwide adjustment. See \code{\link{geom_density}} for more information
 #' @param col_palette Name of the RColorBrewer palette to use for plotting.
 #' @return ggplot2 object
 #' @export
@@ -108,7 +107,7 @@ plot_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
 #' data('methrix_data')
 #' plot_density(m = methrix_data)
 plot_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
-    bw.adjust = 2, col_palette = "RdYlGn") {
+     col_palette = "RdYlGn") {
 
     variable <- Meth <- NULL
 
@@ -405,28 +404,28 @@ plot_coverage <- function(m, type = c("hist", "dens"), pheno = NULL, perGroup = 
         if (type == "dens") {
             p <- ggplot2::ggplot(plot.data, aes(value, color = variable)) +
                 ggplot2::geom_density(alpha = 0.5, adjust = 1.5, lwd = 1,
-                  position = "stack") + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
+                  position = "identity") + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
                 ggplot2::scale_fill_manual(values = colors_palette)
 
         } else if (type == "hist") {
-            p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, color = variable)) +
-                ggplot2::geom_histogram(alpha = 0.5, binwidth = 1, color = RColorBrewer::brewer.pal(3,
-                  col_palette)[1], color = "black") + ggplot2::theme_classic() +
-                ggplot2::xlab("Coverage")
+            p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = variable)) + 
+                ggplot2::geom_histogram(alpha = 0.6, binwidth = 1, color = "black") + ggplot2::theme_classic() +
+                ggplot2::xlab("Coverage")+
+                ggplot2::scale_fill_manual(values = colors_palette)
             # print(p)
         }
     } else {
         if (type == "dens") {
             p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, color = variable)) +
                 ggplot2::geom_density(alpha = 0.6, adjust = 1.5, lwd = 1,
-                  position = "stack") + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
+                  position = "identity") + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
                 ggplot2::labs(fill = "Groups") +
                 ggplot2::scale_fill_manual(values = colors_palette)
             # print(p)
         } else if (type == "hist") {
-            p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, color = variable)) +
-                ggplot2::geom_histogram(alpha = 0.6, binwidth = 1, color = "grey90",
-                  lwd = 1) + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
+            p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = variable)) +
+                ggplot2::geom_histogram(alpha = 0.6, binwidth = 1, color = "black") + 
+                ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
                 ggplot2::labs(fill = "Groups") +
                 ggplot2::scale_fill_manual(values = colors_palette)
             # print(p)

@@ -1,3 +1,12 @@
 CHANGES IN VERSION 0.99.0
 -------------------------
     o Submission to Bioconductor
+
+CHANGES IN VERSION 1.01.0
+-------------------------
+    o Bugfixes in the coverge_filter function --> the output methrix is now sorted
+    o Bugfixes in the subset_methrix function --> works on unsorted methrix
+    o Added group option to coverage_filter
+    o Added prefix option to methrix_report
+    o Added keep option to snp_removal
+    o minor changes in plotting functions 
