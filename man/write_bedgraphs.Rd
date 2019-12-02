@@ -4,8 +4,14 @@
 \alias{write_bedgraphs}
 \title{Writes bedGraphs from methrix object}
 \usage{
-write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
-  n_thr = 4, compress = TRUE)
+write_bedgraphs(
+  m,
+  output_dir = NULL,
+  rm_NA = TRUE,
+  force = FALSE,
+  n_thr = 4,
+  compress = TRUE
+)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}

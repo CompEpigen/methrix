@@ -4,8 +4,15 @@
 \alias{methrix_pca}
 \title{Principal Component Analysis}
 \usage{
-methrix_pca(m, var = "top", top_var = 1000, ranges = NULL,
-  pheno = NULL, do_plot = TRUE, n_pc = 2)
+methrix_pca(
+  m,
+  var = "top",
+  top_var = 1000,
+  ranges = NULL,
+  pheno = NULL,
+  do_plot = TRUE,
+  n_pc = 2
+)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}

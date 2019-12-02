@@ -4,8 +4,13 @@
 \alias{remove_snps}
 \title{Removes CpG sites from the object if they overlap with common SNPs}
 \usage{
-remove_snps(m, populations = NULL, maf_threshold = 0.01,
-  reduce_filtering = FALSE, forced = FALSE)
+remove_snps(
+  m,
+  populations = NULL,
+  maf_threshold = 0.01,
+  reduce_filtering = FALSE,
+  forced = FALSE
+)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}

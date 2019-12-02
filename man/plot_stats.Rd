@@ -4,8 +4,15 @@
 \alias{plot_stats}
 \title{Plot descriptive statistics}
 \usage{
-plot_stats(plot_dat, what = "M", stat = "mean", ignore_chr = NULL,
-  samples = NULL, n_col = NULL, n_row = NULL)
+plot_stats(
+  plot_dat,
+  what = "M",
+  stat = "mean",
+  ignore_chr = NULL,
+  samples = NULL,
+  n_col = NULL,
+  n_row = NULL
+)
 }
 \arguments{
 \item{plot_dat}{results from \code{\link{get_stats}}}
