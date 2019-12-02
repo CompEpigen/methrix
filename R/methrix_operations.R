@@ -152,7 +152,7 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL) {
         target_regions <- cast_ranges(regions)
 
         r_dat[, `:=`(end, start + 1)]
-        data.table::setDT(x = r_dat, key = c("chr", "start", "end"))
+        #data.table::setDT(x = r_dat, key = c("chr", "start", "end"))
         overlaps <- data.table::foverlaps(x = r_dat, y = target_regions,
             type = "within", nomatch = NULL, which = TRUE)
         if (nrow(overlaps) == 0) {
@@ -232,6 +232,7 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, group = NULL) {
             row_idx[order(row_idx, decreasing = F)]
         } else {
             res <- res[, .(Count = (.N)), by = V1]
+            setDT(res, key="V1")
             row_idx <- res[res$Count >= min_samples, V1]
         }
         
@@ -244,6 +245,7 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, group = NULL) {
             row_idx <- row_idx[Count2==length(unique(res$col)),row]
         } else {
             res <- res[, .(Count = (.N)), by = row]
+            setDT(res, key="row")
             row_idx <- res[res$Count >= min_samples, row]
         }
     }
