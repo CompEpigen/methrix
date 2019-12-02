@@ -6,6 +6,7 @@
 #' @param recal_stats Whether summary statistics should be recalculated? If you are using subsetted methrix object set this to TRUE.
 #' @param plot_beta_dist Default TRUE. Can be time consuming.
 #' @param beta_nCpG Number of CpGs rto use for estimating beta value distribution. Default 10000
+#' @param prefix If provided, the name of the report and the intermediate files will start with the prefix. 
 #' @param n_thr Default 4. Only used if \code{plot_beta_dist} is TRUE
 #' @return an interactive html report
 #' @examples
@@ -15,7 +16,7 @@
 #' }
 #' @export
 methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
-    plot_beta_dist = TRUE, beta_nCpG = 10000, n_thr = 4) {
+    plot_beta_dist = TRUE, beta_nCpG = 10000, prefix=NULL, n_thr = 4) {
 
     n_covered <- total_CpGs <- n_non_covered <- fract_CpG <- n_CpG <- NULL
     if (!recal_stats) {
@@ -25,7 +26,11 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
             stop("No previous statistics is available. Set recal_stats to TRUE.")
         }
     }
-
+    if (!is.null(prefix)){
+        if (!is.character(prefix))
+            stop("The provided prefix is not valid, please provide a string.")
+    }
+    
     start_proc_time <- proc.time()
 
     if (is.null(output_dir)) {
@@ -38,7 +43,12 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
 
     # Methylation/Coverage per chromosome
     message(paste0("Step 1 of 5: Methylation/Coverage per chromosome"))
-    of1 <- suppressWarnings(normalizePath(file.path(output_dir, "/MC_per_chr.tsv")))
+    if (!is.null(prefix)){
+        of1 <- suppressWarnings(normalizePath(file.path(output_dir, paste0(prefix, "_MC_per_chr.tsv"))))
+    } else {
+        of1 <- suppressWarnings(normalizePath(file.path(output_dir, "MC_per_chr.tsv")))
+    }
+    
     if (file.exists(of1)) {
         message("File already present. Skipping step 1..")
     } else {
@@ -54,7 +64,11 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
 
     # Global methylation/Coverage
     message(paste0("Step 2 of 5: Global methylation/Coverage per sample\n"))
-    of2 <- suppressWarnings(normalizePath(file.path(output_dir, "global_MC_per_samp.tsv")))
+    if (!is.null(prefix)){
+        of2 <- suppressWarnings(normalizePath(file.path(output_dir, paste0(prefix, "_global_MC_per_samp.tsv"))))
+    } else {
+        of2 <- suppressWarnings(normalizePath(file.path(output_dir, "global_MC_per_samp.tsv")))
+    }
     if (file.exists(of2)) {
         message("File already present. Skipping step 2..")
     } else {
@@ -69,7 +83,11 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
 
     # n CpGs covered per chromomse
     message(paste0("Step 3 of 5: Reference CpGs covered per chromosome"))
-    of3 <- suppressWarnings(normalizePath(file.path(output_dir, "n_covered_per_chr.tsv")))
+    if (!is.null(prefix)){
+        of3 <- suppressWarnings(normalizePath(file.path(output_dir, paste0(prefix, "_n_covered_per_chr.tsv"))))
+    } else {
+        of3 <- suppressWarnings(normalizePath(file.path(output_dir, "n_covered_per_chr.tsv")))
+    }
     contig_nCpGs <- meth@metadata$ref_CpG
     colnames(contig_nCpGs) <- c("chr", "total_CpGs")
     if (file.exists(of3)) {
@@ -102,7 +120,11 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
 
     # Common CpGs covered by all samples
     message(paste0("Step 4 of 5: Common reference CpGs covered across all samples"))
-    of4 <- suppressWarnings(normalizePath(file.path(output_dir, "n_covered_by_all_samples.tsv")))
+    if (!is.null(prefix)){
+        of4 <- suppressWarnings(normalizePath(file.path(output_dir, paste0(prefix, "_n_covered_by_all_samples.tsv"))))
+    } else {
+        of4 <- suppressWarnings(normalizePath(file.path(output_dir, "n_covered_by_all_samples.tsv")))
+    }
     if (file.exists(of4)) {
         message("File already present. Skipping step 4..")
     } else {
@@ -147,30 +169,52 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
                 length(which(na_vec == FALSE))), replace = FALSE)
 
             lapply(X = seq_len(nrow(colData(meth))), FUN = function(i) {
-
+                
                 i_dens <- density(get_matrix(meth, type = "M")[row_idx,
-                  i], na.rm = TRUE)
-                data.table::fwrite(x = data.table::data.table(x = i_dens$x,
-                  y = i_dens$y), file = paste0(output_dir, "/", rownames(colData(x = meth))[i],
-                  "_density.tsv.gz"), sep = "\t")
-
+                                                               i], na.rm = TRUE)
+                if (!is.null(prefix)){
+                    if (!dir.exists(paste0(output_dir, "/", prefix, "/"))) {
+                        dir.create(path = paste0(output_dir, "/", prefix, "/"), showWarnings = FALSE, recursive = TRUE)
+                    }
+                    data.table::fwrite(x = data.table::data.table(x = i_dens$x,
+                                                                  y = i_dens$y), file = paste0(output_dir, "/", prefix, "/", rownames(colData(x = meth))[i],
+                                                                                               "_density.tsv.gz"), sep = "\t")
+                } else {
+                    data.table::fwrite(x = data.table::data.table(x = i_dens$x,
+                                                                  y = i_dens$y), file = paste0(output_dir, "/", rownames(colData(x = meth))[i],
+                                                                                               "_density.tsv.gz"), sep = "\t")
+                }
             })
             rm(na_vec)
         }
         gc()
     }
 
-    of5 <- suppressWarnings(normalizePath(file.path(output_dir, "contig_lens.tsv")))
+    if (!is.null(prefix)){
+        of5 <- suppressWarnings(normalizePath(file.path(output_dir, paste0(prefix, "_contig_lens.tsv"))))
+    } else {
+        of5 <- suppressWarnings(normalizePath(file.path(output_dir, "contig_lens.tsv")))
+    }
+    
     data.table::fwrite(x = meth@metadata$chrom_sizes, file = of5, sep = "\t")
 
     message(paste0("Knitting report"))
     md <- system.file("report", "summarize_methrix.Rmd", package = "methrix")
 
+    if (!is.null(prefix)){
+        output_file <- paste0(prefix, "_methrix_reports.html")
+    } else {
+        output_file <- "methrix_reports.html"
+    }
+    
     rmarkdown::render(input = md, output_file = "methrix_reports.html",
-        output_dir = output_dir, clean = TRUE, params = list(n_covered_tsv = of3,
+        output_dir = output_dir, clean = TRUE, params = list(prefix = prefix, n_covered_tsv = of3,
             n_covered_by_all_samples_tsv = of4, mc_per_chr_stat = of1,
             mc_per_sample_stat = of2, chr_lens = of5))
-    browseURL(url = paste0(output_dir, "/methrix_reports.html"))
+    
+    browseURL(url = paste0(output_dir, "/", output_file))
 
     message(data.table::timetaken(started.at = start_proc_time))
 }
+
+

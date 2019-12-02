@@ -193,6 +193,8 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL) {
 #' @param m \code{\link{methrix}} object
 #' @param cov_thr minimum coverage required to call a loci covered
 #' @param min_samples At-least these many samples should have a loci with coverage >= \code{cov_thr}
+#' @param group a column name from sample annotation that defines groups. In this case, the number of min_samples will be 
+#' tested group-wise. 
 #' @importFrom methods is as new
 #' @examples
 #' data('methrix_data')
@@ -200,10 +202,10 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL) {
 #' coverage_filter(m = methrix_data, cov_thr = 1, min_samples = 3)
 #' @return An object of class \code{\link{methrix}}
 #' @export
-coverage_filter <- function(m, cov_thr = 1, min_samples = 1) {
+coverage_filter <- function(m, cov_thr = 1, min_samples = 1, group = NULL) {
 
     start_proc_time <- proc.time()
-    V1 <- . <- NULL
+    V1 <- . <- col2 <- Count2 <- i.to <- NULL
     if (!is(m, "methrix")){
         stop("A valid methrix object needs to be supplied.")
     }
@@ -211,16 +213,39 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1) {
     if (!(is.numeric(cov_thr) & is.numeric(min_samples))){
         stop("cov_thr and min_samples variables are not numeric.")
     }
+    
+    if (!is.null(group) && !(group %in% colnames(m@colData))){
+        stop(paste("The column name ", group, " can't be found in colData. Please provid a valid group column."))
+    } 
+    
 
     res <- data.table::as.data.table(which(get_matrix(m = m, type = "C") >=
         cov_thr, arr.ind = TRUE))
 
     if (is_h5(m)) {
-        res <- res[, .(Count = (.N)), by = V1]
-        row_idx <- res[res$Count >= min_samples, V1]
+        if (!is.null(group)){
+            res[.(V2 = unique(res$V2), to = m@colData[unique(res$V2), group]), on = "V2", col2 := i.to]
+            res <- res[, .(Count = (.N)), by = .(V1, col2)]
+            row_idx <- res[res$Count >= min_samples, V1, by = col2]
+            row_idx <- row_idx[, .(Count2 = (.N)), by = V1]
+            row_idx <- row_idx[Count2==length(unique(m@colData[,group])),V1]
+            row_idx[order(row_idx, decreasing = F)]
+        } else {
+            res <- res[, .(Count = (.N)), by = V1]
+            row_idx <- res[res$Count >= min_samples, V1]
+        }
+        
     } else {
-        res <- res[, .(Count = (.N)), by = row]
-        row_idx <- res[res$Count >= min_samples, row]
+        if (!is.null(group)){
+            res[.(col = unique(res$col), to = m@colData[unique(res$col), group]), on = "col", col2 := i.to]
+            res <- res[, .(Count = (.N)), by = .(row, col2)]
+            row_idx <- res[res$Count >= min_samples, row, by = col2]
+            row_idx <- row_idx[, .(Count2 = (.N)), by = row]
+            row_idx <- row_idx[Count2==length(unique(res$col)),row]
+        } else {
+            res <- res[, .(Count = (.N)), by = row]
+            row_idx <- res[res$Count >= min_samples, row]
+        }
     }
 
     gc()
