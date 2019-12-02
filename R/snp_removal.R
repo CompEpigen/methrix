@@ -103,6 +103,11 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
     print(removed_snps[, .N, by = chr])
     message("Sum: ")
     print(removed_snps[, .N])
+    
+    if (keep){
+        m2 <- m[snp_rows,]
+    }
+    
     m <- m[-snp_rows, ]
 
 
