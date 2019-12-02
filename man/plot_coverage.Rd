@@ -4,9 +4,15 @@
 \alias{plot_coverage}
 \title{Coverage QC Plots}
 \usage{
-plot_coverage(m, type = c("hist", "dens"), pheno = NULL,
-  perGroup = FALSE, lim = 100, size.lim = 1e+06,
-  col_palette = "RdYlGn")
+plot_coverage(
+  m,
+  type = c("hist", "dens"),
+  pheno = NULL,
+  perGroup = FALSE,
+  lim = 100,
+  size.lim = 1e+06,
+  col_palette = "RdYlGn"
+)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}

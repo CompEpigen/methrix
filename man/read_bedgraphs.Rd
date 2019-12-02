@@ -4,14 +4,33 @@
 \alias{read_bedgraphs}
 \title{Versatile BedGraph reader.}
 \usage{
-read_bedgraphs(files = NULL, pipeline = NULL, zero_based = TRUE,
-  stranded = FALSE, collapse_strands = FALSE, ref_cpgs = NULL,
-  ref_build = NULL, contigs = NULL, vect = FALSE,
-  vect_batch_size = NULL, coldata = NULL, chr_idx = NULL,
-  start_idx = NULL, end_idx = NULL, beta_idx = NULL, M_idx = NULL,
-  U_idx = NULL, strand_idx = NULL, cov_idx = NULL,
-  synced_coordinates = FALSE, n_threads = 1, h5 = FALSE,
-  h5_dir = NULL, h5temp = NULL, verbose = TRUE)
+read_bedgraphs(
+  files = NULL,
+  pipeline = NULL,
+  zero_based = TRUE,
+  stranded = FALSE,
+  collapse_strands = FALSE,
+  ref_cpgs = NULL,
+  ref_build = NULL,
+  contigs = NULL,
+  vect = FALSE,
+  vect_batch_size = NULL,
+  coldata = NULL,
+  chr_idx = NULL,
+  start_idx = NULL,
+  end_idx = NULL,
+  beta_idx = NULL,
+  M_idx = NULL,
+  U_idx = NULL,
+  strand_idx = NULL,
+  cov_idx = NULL,
+  synced_coordinates = FALSE,
+  n_threads = 1,
+  h5 = FALSE,
+  h5_dir = NULL,
+  h5temp = NULL,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{files}{bedgraph files.}
@@ -83,7 +102,7 @@ Optionally arrays can be serialized as on-disk HDFS5 arrays.
 \examples{
 \dontrun{
 bdg_files = list.files(path = system.file('extdata', package = 'methrix'),
-pattern = '*\\\\.bedGraph\\\\.gz$', full.names = TRUE)
+pattern = '*\\.bedGraph\\.gz$', full.names = TRUE)
 hg19_cpgs = methrix::extract_CPGs(ref_genome = 'BSgenome.Hsapiens.UCSC.hg19')
 meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = hg19_cpgs,
 chr_idx = 1, start_idx = 2, M_idx = 3, U_idx = 4,

@@ -4,8 +4,14 @@
 \alias{remove_snps}
 \title{Removes CpG sites from the object if they overlap with common SNPs}
 \usage{
-remove_snps(m, populations = NULL, maf_threshold = 0.01,
-  reduce_filtering = FALSE, forced = FALSE)
+remove_snps(
+  m,
+  populations = NULL,
+  maf_threshold = 0.01,
+  reduce_filtering = FALSE,
+  forced = FALSE,
+  keep = FALSE
+)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
@@ -18,9 +24,11 @@ remove_snps(m, populations = NULL, maf_threshold = 0.01,
 Default FALSE.}
 
 \item{forced}{the reduce_filtering is not recommended with less than 10 samples, but can be forced. Default is FALSE.}
+
+\item{keep}{Do you want to keep the sites that were filtered out? In this case, the function will return with a list of wo methrix objects.}
 }
 \value{
-a coverage or methylation matrix
+methrix object or a list of methrix objects
 }
 \description{
 Removes CpG sites from the object if they overlap with common SNPs

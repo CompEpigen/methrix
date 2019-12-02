@@ -4,8 +4,15 @@
 \alias{methrix_report}
 \title{Creates a detailed interative html summary report from Methrix object}
 \usage{
-methrix_report(meth, output_dir = NULL, recal_stats = FALSE,
-  plot_beta_dist = TRUE, beta_nCpG = 10000, n_thr = 4)
+methrix_report(
+  meth,
+  output_dir = NULL,
+  recal_stats = FALSE,
+  plot_beta_dist = TRUE,
+  beta_nCpG = 10000,
+  prefix = NULL,
+  n_thr = 4
+)
 }
 \arguments{
 \item{meth}{\code{\link{methrix}} object}
@@ -17,6 +24,8 @@ methrix_report(meth, output_dir = NULL, recal_stats = FALSE,
 \item{plot_beta_dist}{Default TRUE. Can be time consuming.}
 
 \item{beta_nCpG}{Number of CpGs rto use for estimating beta value distribution. Default 10000}
+
+\item{prefix}{If provided, the name of the report and the intermediate files will start with the prefix.}
 
 \item{n_thr}{Default 4. Only used if \code{plot_beta_dist} is TRUE}
 }

@@ -4,8 +4,13 @@
 \alias{plot_density}
 \title{Density Plot of \eqn{\beta}-Values}
 \usage{
-plot_density(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
-  bw.adjust = 2, col_palette = "RdYlGn")
+plot_density(
+  m,
+  ranges = NULL,
+  n_cpgs = 25000,
+  pheno = NULL,
+  col_palette = "RdYlGn"
+)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}
@@ -15,8 +20,6 @@ plot_density(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
 \item{n_cpgs}{Use these many random CpGs for plotting. Default 25000. Set it to \code{NULL} to use all - which can be memory expensive.}
 
 \item{pheno}{Column name of colData(m). Will be used as a factor to color different groups in the violin plot.}
-
-\item{bw.adjust}{Multiplicate bandwide adjustment. See \code{\link{geom_density}} for more information}
 
 \item{col_palette}{Name of the RColorBrewer palette to use for plotting.}
 }
