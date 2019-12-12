@@ -29,11 +29,13 @@ get_region_summary <- function(m, regions = NULL, type = "M", how = "mean",
 
     start_proc_time <- proc.time()
 
-    target_regions <- cast_ranges(regions)
+    target_regions <- cast_ranges(regions, set.key = FALSE)
     # Add a unique id for every target range (i.e, rows)
-    target_regions[, `:=`(rid, paste0("rid_", seq_len(nrow(target_regions))))]
-
-
+    target_regions[, `:=`(rid, seq_len(nrow(target_regions)))]
+    data.table::setDT(x = target_regions, key = c("chr", "start", "end"))
+    target_regions[, `:=`(yid, paste0("yid_", seq_len(nrow(target_regions))))]
+    
+    
     r_dat <- data.table::as.data.table(rowData(x = m))
     r_dat[, `:=`(chr, as.character(chr))]
     r_dat[, `:=`(end, start + 1)]
@@ -51,9 +53,9 @@ get_region_summary <- function(m, regions = NULL, type = "M", how = "mean",
         return(NULL)
     }
 
-    overlap_indices[, `:=`(yid, paste0("rid_", yid))]
+    overlap_indices[, `:=`(yid, paste0("yid_", yid))]
     n_overlap_cpgs <- overlap_indices[, .N, yid]
-    colnames(n_overlap_cpgs) <- c("rid", "n_overlap_CpGs")
+    colnames(n_overlap_cpgs) <- c("yid", "n_overlap_CpGs")
 
 
     if (type == "M") {
@@ -86,9 +88,11 @@ get_region_summary <- function(m, regions = NULL, type = "M", how = "mean",
         output <- dat[, lapply(.SD, sum, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
     }
 
-    output <- merge(target_regions, output, by.x = "rid", by.y = "yid",
+    output <- merge(target_regions, output, by.x = "yid", by.y = "yid",
         all.x = TRUE)
-    output <- merge(n_overlap_cpgs, output, by = "rid")
+    output <- merge(n_overlap_cpgs, output, by = "yid")
+    setDT(output, key=c("rid"))
+    output[, `:=`(yid, NULL)]
     output[, `:=`(rid, NULL)]
 
 
@@ -138,14 +142,13 @@ order_by_sd <- function(m) {
 #' subset_methrix(methrix_data, contigs = 'chr21')
 #' @return An object of class \code{\link{methrix}}
 #' @export
-subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL) {
+subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL, overlap_type="within") {
 
     if (!is(m, "methrix")){
         stop("A valid methrix object needs to be supplied.")
     }
 
     r_dat <- data.table::as.data.table(rowData(m))
-
     if (!is.null(regions)) {
         message("-Subsetting by genomic regions")
 
@@ -154,7 +157,7 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL) {
         r_dat[, `:=`(end, start + 1)]
         #data.table::setDT(x = r_dat, key = c("chr", "start", "end"))
         overlaps <- data.table::foverlaps(x = r_dat, y = target_regions,
-            type = "within", nomatch = NULL, which = TRUE)
+            type = overlap_type, nomatch = NULL, which = TRUE)
         if (nrow(overlaps) == 0) {
             stop("Subsetting resulted in zero entries")
         }

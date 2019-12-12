@@ -373,7 +373,7 @@ plot_coverage <- function(m, type = c("hist", "dens"), pheno = NULL, perGroup = 
         message("The dataset is bigger than the size limit. A random subset of the object will be used that contains ~",
             size.lim, " observations.")
         n_rows <- trunc(size.lim/nrow(m@colData))
-        sel_rows <- sample(seq_along(m@elementMetadata), size = n_rows,
+        sel_rows <- sample(seq_len(nrow(m@elementMetadata)), size = n_rows,
             replace = FALSE)
 
         meth_sub <- methrix::get_matrix(m = m[sel_rows, ], type = "C",
