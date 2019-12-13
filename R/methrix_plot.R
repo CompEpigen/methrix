@@ -213,10 +213,11 @@ methrix_pca <- function(m, var = "top", top_var = 1000, ranges = NULL,
     # Variance explained by PC's
     pc_vars <- meth_pca$sdev^2/sum(meth_pca$sdev^2)
     names(pc_vars) <- colnames(meth_pca$x)
-    pc_vars <- round(pc_vars * 100, digits = 2)
+    pc_vars <- round(pc_vars, digits = 2)
 
     #-----------------------------------------------------------------------------------------------------------------------
     # Draw cumulative variance explained by PCs
+    
     if (do_plot) {
         par(bty = "n", mgp = c(2.5, 0.5, 0), mar = c(3, 4, 2, 2) + 0.1,
             tcl = -0.25, las = 1)
@@ -224,13 +225,10 @@ methrix_pca <- function(m, var = "top", top_var = 1000, ranges = NULL,
             ylim = c(0, 1), yaxs = "i")
         mtext(side = 1, "Principal component", line = 2)
         cum_var <- cumsum(meth_pca$sdev^2)/sum(meth_pca$sdev^2) * meth_pca$sdev[1]^2/sum(meth_pca$sdev^2)
-        lines(cum_var, type = "s")
-        axis(side = 4, at = pretty(c(0, 1)) * meth_pca$sdev[1]^2/sum(meth_pca$sdev^2),
-            labels = pretty(c(0, 1)))
-        legend("topright", col = c("red", "black"), lty = 1, c("Per PC",
-            "Cumulative"), bty = "n")
-        lines(x = c(length(meth_pca$sdev), n_pc, n_pc), y = c(cum_var[n_pc],
-            cum_var[n_pc], 0), lty = 3)
+        lines(cumsum(cum_var), type = "s")
+        axis(side = 4, at = pretty(c(0, 1)), labels = pretty(c(0, 1)))
+        legend("topright", col = c("red", "black"), lty = 1, c("Per PC", "Cumulative"), bty = "n")
+        #lines(x = c(length(meth_pca$sdev), n_pc, n_pc), y = c(cum_var[n_pc], cum_var[n_pc], 0), lty = 3)
         title(main = paste0("Variance explained by ", n_pc, " PC: ", round(sum(c(meth_pca$sdev^2/sum(meth_pca$sdev^2))[seq_len(n_pc)]),
             digits = 2)), adj = 0)
     }

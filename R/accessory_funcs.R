@@ -156,7 +156,8 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
   
   if ("beta" %in% colnames(bdg_dat)) {
     if (nrow(bdg_dat) < 1000) {
-      max_beta = max(bdg_dat[sample_row_idx, beta], na.rm = TRUE)
+      sample_row_idx = 1:nrow(bdg_dat)
+      max_beta = max(bdg_dat[, beta], na.rm = TRUE)
     } else {
       # Choose 1000 random beta values
       sample_row_idx = sample(x = seq_len(nrow(bdg_dat)), size = 1000,
