@@ -4,7 +4,13 @@
 \alias{subset_methrix}
 \title{Subsets \code{\link{methrix}} object based on given conditions.}
 \usage{
-subset_methrix(m, regions = NULL, contigs = NULL, samples = NULL)
+subset_methrix(
+  m,
+  regions = NULL,
+  contigs = NULL,
+  samples = NULL,
+  overlap_type = "within"
+)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
@@ -14,6 +20,9 @@ subset_methrix(m, regions = NULL, contigs = NULL, samples = NULL)
 \item{contigs}{chromosome names to subset by}
 
 \item{samples}{sample names to subset by}
+
+\item{overlap_type}{defines the type of the overlap of the CpG sites with the target region. Default value is `within`. For detailed description,
+see the \code{foverlaps} function of the \code{\link{data.table}} package.}
 }
 \value{
 An object of class \code{\link{methrix}}

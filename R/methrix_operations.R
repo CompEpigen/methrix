@@ -136,6 +136,8 @@ order_by_sd <- function(m) {
 #' @param regions genomic regions to subset by. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object
 #' @param contigs chromosome names to subset by
 #' @param samples sample names to subset by
+#' @param overlap_type defines the type of the overlap of the CpG sites with the target region. Default value is `within`. For detailed description,
+#' see the \code{foverlaps} function of the \code{\link{data.table}} package.
 #' @examples
 #' data('methrix_data')
 #' #Subset to chromosome 1
