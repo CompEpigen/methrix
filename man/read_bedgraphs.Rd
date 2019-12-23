@@ -102,7 +102,7 @@ Optionally arrays can be serialized as on-disk HDFS5 arrays.
 \examples{
 \dontrun{
 bdg_files = list.files(path = system.file('extdata', package = 'methrix'),
-pattern = '*\\.bedGraph\\.gz$', full.names = TRUE)
+pattern = '*\\\\.bedGraph\\\\.gz$', full.names = TRUE)
 hg19_cpgs = methrix::extract_CPGs(ref_genome = 'BSgenome.Hsapiens.UCSC.hg19')
 meth = methrix::read_bedgraphs( files = bdg_files, ref_cpgs = hg19_cpgs,
 chr_idx = 1, start_idx = 2, M_idx = 3, U_idx = 4,

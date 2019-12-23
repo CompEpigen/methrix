@@ -18,7 +18,7 @@ get_source_idx = function(protocol = NULL) {
     return(list(col_idx = c(chr = 1, start = 2, end = 3, beta = 4,
                             M = 5, U = 6),
                 col_classes = c("character", "numeric", "numeric",
-                                "numeric", "integer", "integer"),
+                                "numeric", "numeric", "numeric"),
                 fix_missing = c("cov := M+U",
                                 "strand := '.'")))
   }
@@ -130,7 +130,8 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
       }
       
       return(list(col_idx = c(chr = chr, start = start, end = end,
-                              strand = strand, beta = beta, cov = cov),
+                              strand = strand, beta = beta, cov = cov, M = n_meth,
+                              U = n_unmeth),
                   fix_missing = NULL))
     }
   }
@@ -497,6 +498,7 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
       }
       colnames(beta_mat)[ncol(beta_mat)] <- colnames(cov_mat)[ncol(cov_mat)] <- rownames(coldata)[i]
     }
+    
     ncpg_final <- data.table::dcast(data = ncpg_final, chr ~ Sample_Name,
                                     value.var = "N")
     return(list(beta_matrix = beta_mat[, -(seq_len(2))], cov_matrix = cov_mat[, -(seq_len(2))],
