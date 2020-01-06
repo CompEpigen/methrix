@@ -101,7 +101,7 @@ plotly::ggplotly(p = p)
 
 ### Median
 ```{r}
-p = ggplot(data = m_stat, aes(x = median_meth, y = Sample_Name, color = Chromosome, label = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+p = ggplot(data = m_stat, aes(x = median_cov, y = Sample_Name, color = Chromosome, label = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 
 plotly::ggplotly(p = p)
 ```
