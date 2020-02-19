@@ -23,8 +23,8 @@ collapse_samples <- function(m, col=NULL){
     # new_beta <- sapply(sp, function(i) rowSums(new_beta[,i, drop = FALSE], na.rm=T))
     # new_beta <- new_beta/new_cov
   } else {
-    new_cov <- sapply(sp, function(i) matrixStats::rowSums2(m@assays[[2]][,i, drop = FALSE], na.rm=TRUE))
-    new_beta <- m@assays[[1]]*m@assays[[2]]
+    new_cov <- sapply(sp, function(i) matrixStats::rowSums2(assays(m)[[2]][,i, drop = FALSE], na.rm=TRUE))
+    new_beta <- assays(m)[[1]]*assays(m)[[2]]
     new_beta <- sapply(sp, function(i) matrixStats::rowSums2(new_beta[,i, drop = FALSE], na.rm=TRUE))
     new_beta <- new_beta/new_cov
   }
@@ -34,8 +34,8 @@ collapse_samples <- function(m, col=NULL){
   combined <- m[,unlist(lapply(sp, '[', 1))]
   dimnames(combined)=dimnames(new_cov)
 
-  combined@assays[[1]] <- new_beta
-  combined@assays[[2]] <- new_cov
+  assays(combined)[[1]] <- new_beta
+  assays(combined)[[2]] <- new_cov
 
 
 
