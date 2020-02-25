@@ -164,23 +164,25 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
     if (is.null(coldata)) {
         coldata <- data.frame(row.names = unlist(data.table::tstrsplit(x = basename(files),
             split = "\\.", keep = 1)), stringsAsFactors = FALSE)
-    } else {
-        if (length(files) != nrow(coldata)) {
-            stop("Number of samples in coldata does not match the number of input files.")
-        }
-        if (any(make.names(rownames(coldata), unique = TRUE) != rownames(coldata))) {
-            modified <- which(make.names(rownames(coldata), unique = TRUE) !=
-                rownames(coldata))
-            message("The sample names contained a non-valid character or were duplicated.
-                The following changes were made:\n")
-            message(paste(paste(rownames(coldata)[modified], make.names(rownames(coldata),
-                unique = TRUE)[modified], sep = " => "), collapse = " \n "),
-                "\n")
-            rownames(coldata) <- make.names(rownames(coldata), unique = TRUE)
-
-        }
-
     }
+    
+    
+    if (length(files) != nrow(coldata)) {
+        stop("Number of samples in coldata does not match the number of input files.")
+    }
+    if (any(make.names(rownames(coldata), unique = TRUE) != rownames(coldata))) {
+        modified <- which(make.names(rownames(coldata), unique = TRUE) !=
+                              rownames(coldata))
+        message("The sample names contained a non-valid character or were duplicated.
+                The following changes were made:\n")
+        message(paste(paste(rownames(coldata)[modified], make.names(rownames(coldata),
+                                                                    unique = TRUE)[modified], sep = " => "), collapse = " \n "),
+                "\n")
+        rownames(coldata) <- make.names(rownames(coldata), unique = TRUE)
+    }
+    
+
+    
 
     message(paste0("----------------------------", "\n"))
 
