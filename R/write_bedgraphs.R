@@ -40,8 +40,6 @@ write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
   parameters <- paste0(" ", paste(names(parameters), parameters, 
                                   sep = "=", collapse = " "))
   
-  header <- data.table(paste0('track type=bedGraph name="', rownames(colData(m))[i], '"', parameters))
-  
   
   
     message("----------------------\n")
@@ -59,6 +57,7 @@ write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
             op_bdg <- paste0(output_dir, "/", rownames(colData(m))[i], 
                 ".bedGraph")
         }
+        header <- data.table(paste0('track type=bedGraph name="', rownames(colData(m))[i], '"', parameters))
         
         if (file.exists(op_bdg)) {
             if (force) {
