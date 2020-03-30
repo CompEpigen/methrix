@@ -565,93 +565,73 @@ get_stats <- function(m, per_chr = TRUE) {
     }
 
 
-    row_idx <- data.table::as.data.table(which(is.na(get_matrix(m = m,
-        type = "C")), arr.ind = TRUE))
-    colnames(row_idx) <- c("row", "col")
-    row_idx <- split(row_idx, as.factor(as.character(row_idx$col)))
+    # row_idx <- data.table::as.data.table(which(is.na(get_matrix(m = m,
+    #     type = "C")), arr.ind = TRUE))
+    # colnames(row_idx) <- c("row", "col")
+    # row_idx <- split(row_idx, as.factor(as.character(row_idx$col)))
 
     if (per_chr) {
-        cov_stat <- lapply(row_idx, function(samp_idx) {
-            get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "C",
-                add_loci = TRUE)[, c(1, 4), with = FALSE][, .(mean_cov = lapply(.SD,
-                matrixStats::mean2, na.rm = TRUE), median_cov = lapply(.SD,
-                median, na.rm = TRUE), sd_cov = lapply(.SD, sd, na.rm = TRUE)),
-                by = chr]
+        cov_stat <- lapply(1:ncol(m), function(i){
+            get_matrix(m = m[,i], type = "C", add_loci = TRUE)[, c(1, 4), with = FALSE][, .(
+                mean_cov = lapply(.SD,
+                                  matrixStats::mean2, na.rm = TRUE),
+                median_cov = lapply(.SD,
+                                    median, na.rm = TRUE),
+                sd_cov = lapply(.SD, sd, na.rm = TRUE)
+            ),
+            by = chr]
         })
-
-        meth_stat <- lapply(row_idx, function(samp_idx) {
-            get_matrix(m = m[-samp_idx[, row], samp_idx[1, col]], "M",
-                add_loci = TRUE)[, c(1, 4), with = FALSE][, .(mean_meth = lapply(.SD,
-                matrixStats::mean2, na.rm = TRUE), median_meth = lapply(.SD,
-                median, na.rm = TRUE), sd_meth = lapply(.SD, sd, na.rm = TRUE)),
-                by = chr]
+        
+        meth_stat <- lapply(1:ncol(m), function(i){
+            get_matrix(m = m[,i], type = "M", add_loci = TRUE)[, c(1, 4), with = FALSE][, .(
+                mean_meth = lapply(.SD,
+                                  matrixStats::mean2, na.rm = TRUE),
+                median_meth = lapply(.SD,
+                                    median, na.rm = TRUE),
+                sd_meth = lapply(.SD, sd, na.rm = TRUE)
+            ),
+            by = chr]
         })
-
-        names(meth_stat) <- rownames(colData(m))[as.numeric(names(meth_stat))]
-        names(cov_stat) <- rownames(colData(m))[as.numeric(names(cov_stat))]
-
+        
+        names(meth_stat) <-  colnames(m)
+        names(cov_stat) <- colnames(m)
+        
         cov_stat <- data.table::rbindlist(l = cov_stat, use.names = TRUE,
-            idcol = "Sample_Name")
+                                          idcol = "Sample_Name")
         meth_stat <- data.table::rbindlist(l = meth_stat, use.names = TRUE,
-            idcol = "Sample_Name")
+                                           idcol = "Sample_Name")
         stats <- merge(meth_stat, cov_stat, by = c("chr", "Sample_Name"))
         colnames(stats)[1] <- "Chromosome"
         stats$Chromosome <- factor(x = stats$Chromosome, levels = m@metadata$chrom_sizes$contig)
     } else {
         if (is_h5(m)) {
-            cov_stat <- lapply(row_idx, function(samp_idx) {
-                me <- DelayedMatrixStats::colMeans2(get_matrix(m = m[-samp_idx[,
-                  row], samp_idx[1, col]], "C"))
-                med <- DelayedMatrixStats::colMedians(get_matrix(m = m[-samp_idx[,
-                  row], samp_idx[1, col]], "C"))
-                sd <- DelayedMatrixStats::colSds(get_matrix(m = m[-samp_idx[,
-                  row], samp_idx[1, col]], "C"))
-                data.table::data.table(mean_cov = me, median_cov = med,
-                  sd_cov = sd)
-            })
-
-            meth_stat <- lapply(row_idx, function(samp_idx) {
-                me <- DelayedMatrixStats::colMeans2(get_matrix(m = m[-samp_idx[,
-                  row], samp_idx[1, col]], "M"))
-                med <- DelayedMatrixStats::colMedians(get_matrix(m = m[-samp_idx[,
-                  row], samp_idx[1, col]], "M"))
-                sd <- DelayedMatrixStats::colSds(get_matrix(m = m[-samp_idx[,
-                  row], samp_idx[1, col]], "M"))
-                data.table::data.table(mean_meth = me, median_meth = med,
-                  sd_meth = sd)
-            })
+            cov_stat <- data.table::data.table(Sample_Name = colnames(m),
+                mean_cov = DelayedMatrixStats::colMeans2(get_matrix(m = m, "C"), na.rm = TRUE),
+                median_cov = DelayedMatrixStats::colMedians(get_matrix(m = m, "C"), na.rm = TRUE),
+                sd_cov = DelayedMatrixStats::colSds(get_matrix(m = m, "C"), na.rm = TRUE)
+            )
+            
+            meth_stat <- data.table::data.table(Sample_Name = colnames(m),
+                mean_meth = DelayedMatrixStats::colMeans2(get_matrix(m = m, "M"), na.rm = TRUE),
+                median_meth = DelayedMatrixStats::colMedians(get_matrix(m = m, "M"), na.rm = TRUE),
+                sd_meth = DelayedMatrixStats::colSds(get_matrix(m = m, "M"), na.rm = TRUE)
+            )
 
         } else {
-            cov_stat <- lapply(row_idx, function(samp_idx) {
-                me <- matrixStats::colMeans2(get_matrix(m = m[-samp_idx[,
-                  row], samp_idx[1, col]], "C"))
-                med <- matrixStats::colMedians(get_matrix(m = m[-samp_idx[,
-                  row], samp_idx[1, col]], "C"))
-                sd <- matrixStats::colSds(get_matrix(m = m[-samp_idx[,
-                  row], samp_idx[1, col]], "C"))
-                data.table::data.table(mean_cov = me, median_cov = med,
-                  sd_cov = sd)
-            })
-
-            meth_stat <- lapply(row_idx, function(samp_idx) {
-                me <- matrixStats::colMeans2(get_matrix(m = m[-samp_idx[,
-                  row], samp_idx[1, col]], "M"))
-                med <- matrixStats::colMedians(get_matrix(m = m[-samp_idx[,
-                  row], samp_idx[1, col]], "M"))
-                sd <- matrixStats::colSds(get_matrix(m = m[-samp_idx[,
-                  row], samp_idx[1, col]], "M"))
-                data.table::data.table(mean_meth = me, median_meth = med,
-                  sd_meth = sd)
-            })
+            cov_stat <- data.table::data.table(Sample_Name = colnames(m),
+                mean_cov = matrixStats::colMeans2(get_matrix(m = m, "C"), na.rm = TRUE),
+                median_cov = matrixStats::colMedians(get_matrix(m = m, "C"), na.rm = TRUE),
+                sd_cov = matrixStats::colSds(get_matrix(m = m, "C"), na.rm = TRUE)
+            )
+            
+            meth_stat <- data.table::data.table(Sample_Name = colnames(m),
+                mean_meth = matrixStats::colMeans2(get_matrix(m = m, "M"), na.rm = TRUE),
+                median_meth = matrixStats::colMedians(get_matrix(m = m, "M"), na.rm = TRUE),
+                sd_meth = matrixStats::colSds(get_matrix(m = m, "M"), na.rm = TRUE)
+            )
         }
 
-        names(meth_stat) <- rownames(colData(m))[as.numeric(names(meth_stat))]
-        names(cov_stat) <- rownames(colData(m))[as.numeric(names(cov_stat))]
-
-        cov_stat <- data.table::rbindlist(l = cov_stat, use.names = TRUE,
-            idcol = "Sample_Name")
-        meth_stat <- data.table::rbindlist(l = meth_stat, use.names = TRUE,
-            idcol = "Sample_Name")
+        
         stats <- merge(meth_stat, cov_stat, by = c("Sample_Name"))
     }
 
