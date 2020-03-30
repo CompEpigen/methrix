@@ -565,6 +565,7 @@ get_stats <- function(m, per_chr = TRUE) {
     }
 
 
+    #Counting NA's seems to be not-ideal (especially in cases of masked/coverage filtered cases.)
     # row_idx <- data.table::as.data.table(which(is.na(get_matrix(m = m,
     #     type = "C")), arr.ind = TRUE))
     # colnames(row_idx) <- c("row", "col")
