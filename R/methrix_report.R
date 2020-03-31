@@ -94,19 +94,19 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
         message("File already present. Skipping step 3..")
     } else {
         if (recal_stats) {
-            non_cov_tbl <- lapply(seq_len(ncol(meth)), function(i) {
-                data.table::as.data.table(as.data.frame(table(rowData(meth)[which(is.na(get_matrix(m = meth,
-                  "M")[, i])), "chr"])))
+            cov_tbl <- lapply(seq_len(ncol(meth)), function(i) {
+                data.table::as.data.table(as.data.frame(table(rowData(meth)[which(!is.na(get_matrix(m = meth,
+                                                                                                   "M")[, i])), "chr"])))
             })
-            names(non_cov_tbl) <- colnames(meth)
+            names(cov_tbl) <- colnames(meth)
             gc()
-            non_cov_tbl <- data.table::rbindlist(l = non_cov_tbl, use.names = TRUE,
+            cov_tbl <- data.table::rbindlist(l = cov_tbl, use.names = TRUE,
                 fill = TRUE, idcol = "Sample_Name")
-            colnames(non_cov_tbl) <- c("Sample_Name", "chr", "n_non_covered")
-            non_cov_tbl <- merge(non_cov_tbl, contig_nCpGs, by = "chr",
+            colnames(cov_tbl) <- c("Sample_Name", "chr", "n_covered")
+            non_cov_tbl <- merge(cov_tbl, contig_nCpGs, by = "chr",
                 all.x = TRUE)
-            non_cov_tbl[, `:=`(n_covered, total_CpGs - n_non_covered)]
-            non_cov_tbl[, `:=`(n_non_covered, NULL)]
+            #non_cov_tbl[, `:=`(n_covered, total_CpGs - n_non_covered)]
+            #non_cov_tbl[, `:=`(n_non_covered, NULL)]
         } else {
             non_cov_tbl <- data.table::melt(meth@metadata$descriptive_stats$n_cpgs_covered,
                 id.vars = "chr")
