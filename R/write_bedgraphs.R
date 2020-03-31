@@ -13,22 +13,36 @@
 #' @export
 
 write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE, 
-    n_thr = 4, compress = TRUE) {
+    n_thr = 4, compress = TRUE, SeqStyle="UCSC") {
     
     
     if (!dir.exists(output_dir)) {
         dir.create(path = output_dir, showWarnings = FALSE, recursive = TRUE)
     }
     
-    mat <- methrix::get_matrix(m = m, type = "M", add_loci = TRUE)
-    mat[, `:=`(end, start + 1)]
-    mat <- mat[, c("chr", "start", "end", "strand", rownames(colData(x = m))), 
-        with = FALSE]
+  mat_gr <- methrix::get_matrix(m = m, type = "M", add_loci = TRUE,in_granges = T)
+  
+  #change SeqlevelsStyle
+  seqlevelsStyle(mat_gr)<- SeqStyle
+  mat <- as.data.table(mat_gr) 
+  mat <- mat[, c("seqnames", "start", "end", "strand", rownames(colData(x = m))), 
+             with = FALSE]
     
     if (is.null(output_dir)) {
         output_dir <- getwd()
     }
-    
+   
+  #parameters of trackline for bedgraph 
+  parameters <-c("color" = "255,0,0", 
+                 "visibility"="full", 
+                 "altColor" = "128,128,128",
+                 "autoScale"="on", 
+                 "viewLimits"="0:1", 
+                 "windowingFunction"="mean")  
+  parameters <- paste0(" ", paste(names(parameters), parameters, 
+                                  sep = "=", collapse = " "))
+  
+  
     message("----------------------")
     message("*Writing bedGraphs:")
     op_bdgs <- lapply(seq_len(nrow(colData(m))), function(i) {
@@ -45,11 +59,16 @@ write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
                 ".bedGraph")
         }
         
+        #add sample name to trackline
+        header <- data.table(paste0('track type=bedGraph name="', rownames(colData(m))[i], '"', parameters))
+        
         if (file.exists(op_bdg)) {
             if (force) {
                 message(paste0("**Writing ", rownames(colData(m))[i]))
                 colnames(mat_i) <- paste0("V", seq_len(ncol(mat_i)))
-                data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", 
+                data.table::fwrite(x = header, file = op_bdg, sep = "\t", append=FALSE, quote=F,
+                                   col.names = FALSE, nThread = n_thr, scipen = 7, compress = "auto")
+                data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", append=TRUE,
                   col.names = FALSE, nThread = n_thr, scipen = 7, compress = "auto")
             } else {
                 message(paste0("**File ", basename(op_bdg), " already exists. Skipped re-writing"))
@@ -57,7 +76,9 @@ write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
         } else {
             message(paste0("**Writing ", rownames(colData(m))[i]))
             colnames(mat_i) <- paste0("V", seq_len(ncol(mat_i)))
-            data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", col.names = FALSE, 
+            data.table::fwrite(x = header, file = op_bdg, sep = "\t", col.names = FALSE, append=FALSE, quote=F,
+                               nThread = n_thr)
+            data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", col.names = FALSE, append=TRUE,
                 nThread = n_thr)
         }
         op_bdg
