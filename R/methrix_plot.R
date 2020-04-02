@@ -272,8 +272,8 @@ plot_pca <- function(pca_res, m = NULL, col_anno = NULL, shape_anno = NULL,
     pca_res <- as.data.frame(pca_res$PC_matrix)
     pca_res$row_names <- rownames(pca_res)
 
-    x_lab <- paste0(pc_x, " [", pc_vars[pc_x], " %]")
-    y_lab <- paste0(pc_x, " [", pc_vars[pc_y], " %]")
+    x_lab <- paste0(pc_x, " [", pc_vars[pc_x]*100, " %]")
+    y_lab <- paste0(pc_y, " [", pc_vars[pc_y]*100, " %]")
 
     if (!is.null(col_anno) || !is.null(shape_anno)) {
         if (!is(object = m, class2 = "methrix")) {
