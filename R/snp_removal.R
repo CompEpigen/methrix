@@ -9,7 +9,8 @@
 #' @param reduce_filtering If TRUE, the SNPs with a MAF < 0.1 will be evaluated and only the highly variable ones will be removed.
 #' Default FALSE.
 #' @param forced the reduce_filtering is not recommended with less than 10 samples, but can be forced. Default is FALSE.
-#' @return a coverage or methylation matrix
+#' @param keep Do you want to keep the sites that were filtered out? In this case, the function will return with a list of wo methrix objects. 
+#' @return methrix object or a list of methrix objects
 #' @importFrom BSgenome score
 #' @examples
 #' data('methrix_data')
@@ -18,9 +19,9 @@
 
 
 remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filtering = FALSE,
-    forced = FALSE) {
+    forced = FALSE, keep = FALSE) {
     genome <- m@metadata$genome
-    chr <- NULL
+    chr <- m2 <- NULL
 
     if (grepl("hg19|GRCh37|Hs37|hs37", genome)) {
         if (requireNamespace("MafDb.1Kgenomes.phase3.hs37d5", quietly = TRUE) &
@@ -102,11 +103,20 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
     print(removed_snps[, .N, by = chr])
     message("Sum: ")
     print(removed_snps[, .N])
+    
+    if (keep){
+        m2 <- m[snp_rows,]
+    }
+    
     m <- m[-snp_rows, ]
 
 
     gc()
-    return(m)
+    if (keep){
+        return(list("snp_filtered" = m, "removed_snps" = m2))
+    } else {
+        return(m)
+    }
 
 }
 

@@ -99,7 +99,6 @@ plot_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
 #' @param n_cpgs Use these many random CpGs for plotting. Default 25000. Set it to \code{NULL} to use all - which can be memory expensive.
 #' @param ranges genomic regions to be summarized. Could be a data.table with 3 columns (chr, start, end) or a \code{GenomicRanges} object
 #' @param pheno Column name of colData(m). Will be used as a factor to color different groups in the violin plot.
-#' @param bw.adjust Multiplicate bandwide adjustment. See \code{\link{geom_density}} for more information
 #' @param col_palette Name of the RColorBrewer palette to use for plotting.
 #' @return ggplot2 object
 #' @export
@@ -108,7 +107,7 @@ plot_violin <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
 #' data('methrix_data')
 #' plot_density(m = methrix_data)
 plot_density <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
-    bw.adjust = 2, col_palette = "RdYlGn") {
+     col_palette = "RdYlGn") {
 
     variable <- Meth <- NULL
 
@@ -214,10 +213,11 @@ methrix_pca <- function(m, var = "top", top_var = 1000, ranges = NULL,
     # Variance explained by PC's
     pc_vars <- meth_pca$sdev^2/sum(meth_pca$sdev^2)
     names(pc_vars) <- colnames(meth_pca$x)
-    pc_vars <- round(pc_vars * 100, digits = 2)
+    pc_vars <- round(pc_vars, digits = 2)
 
     #-----------------------------------------------------------------------------------------------------------------------
     # Draw cumulative variance explained by PCs
+    
     if (do_plot) {
         par(bty = "n", mgp = c(2.5, 0.5, 0), mar = c(3, 4, 2, 2) + 0.1,
             tcl = -0.25, las = 1)
@@ -225,13 +225,10 @@ methrix_pca <- function(m, var = "top", top_var = 1000, ranges = NULL,
             ylim = c(0, 1), yaxs = "i")
         mtext(side = 1, "Principal component", line = 2)
         cum_var <- cumsum(meth_pca$sdev^2)/sum(meth_pca$sdev^2) * meth_pca$sdev[1]^2/sum(meth_pca$sdev^2)
-        lines(cum_var, type = "s")
-        axis(side = 4, at = pretty(c(0, 1)) * meth_pca$sdev[1]^2/sum(meth_pca$sdev^2),
-            labels = pretty(c(0, 1)))
-        legend("topright", col = c("red", "black"), lty = 1, c("Per PC",
-            "Cumulative"), bty = "n")
-        lines(x = c(length(meth_pca$sdev), n_pc, n_pc), y = c(cum_var[n_pc],
-            cum_var[n_pc], 0), lty = 3)
+        lines(cumsum(cum_var), type = "s")
+        axis(side = 4, at = pretty(c(0, 1)), labels = pretty(c(0, 1)))
+        legend("topright", col = c("red", "black"), lty = 1, c("Per PC", "Cumulative"), bty = "n")
+        #lines(x = c(length(meth_pca$sdev), n_pc, n_pc), y = c(cum_var[n_pc], cum_var[n_pc], 0), lty = 3)
         title(main = paste0("Variance explained by ", n_pc, " PC: ", round(sum(c(meth_pca$sdev^2/sum(meth_pca$sdev^2))[seq_len(n_pc)]),
             digits = 2)), adj = 0)
     }
@@ -275,8 +272,8 @@ plot_pca <- function(pca_res, m = NULL, col_anno = NULL, shape_anno = NULL,
     pca_res <- as.data.frame(pca_res$PC_matrix)
     pca_res$row_names <- rownames(pca_res)
 
-    x_lab <- paste0(pc_x, " [", pc_vars[pc_x], " %]")
-    y_lab <- paste0(pc_x, " [", pc_vars[pc_y], " %]")
+    x_lab <- paste0(pc_x, " [", pc_vars[pc_x]*100, " %]")
+    y_lab <- paste0(pc_y, " [", pc_vars[pc_y]*100, " %]")
 
     if (!is.null(col_anno) || !is.null(shape_anno)) {
         if (!is(object = m, class2 = "methrix")) {
@@ -374,7 +371,7 @@ plot_coverage <- function(m, type = c("hist", "dens"), pheno = NULL, perGroup = 
         message("The dataset is bigger than the size limit. A random subset of the object will be used that contains ~",
             size.lim, " observations.")
         n_rows <- trunc(size.lim/nrow(m@colData))
-        sel_rows <- sample(seq_along(m@elementMetadata), size = n_rows,
+        sel_rows <- sample(seq_len(nrow(m@elementMetadata)), size = n_rows,
             replace = FALSE)
 
         meth_sub <- methrix::get_matrix(m = m[sel_rows, ], type = "C",
@@ -405,28 +402,28 @@ plot_coverage <- function(m, type = c("hist", "dens"), pheno = NULL, perGroup = 
         if (type == "dens") {
             p <- ggplot2::ggplot(plot.data, aes(value, color = variable)) +
                 ggplot2::geom_density(alpha = 0.5, adjust = 1.5, lwd = 1,
-                  position = "stack") + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
+                  position = "identity") + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
                 ggplot2::scale_fill_manual(values = colors_palette)
 
         } else if (type == "hist") {
-            p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, color = variable)) +
-                ggplot2::geom_histogram(alpha = 0.5, binwidth = 1, color = RColorBrewer::brewer.pal(3,
-                  col_palette)[1], color = "black") + ggplot2::theme_classic() +
-                ggplot2::xlab("Coverage")
+            p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = variable)) + 
+                ggplot2::geom_histogram(alpha = 0.6, binwidth = 1, color = "black") + ggplot2::theme_classic() +
+                ggplot2::xlab("Coverage")+
+                ggplot2::scale_fill_manual(values = colors_palette)
             # print(p)
         }
     } else {
         if (type == "dens") {
             p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, color = variable)) +
                 ggplot2::geom_density(alpha = 0.6, adjust = 1.5, lwd = 1,
-                  position = "stack") + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
+                  position = "identity") + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
                 ggplot2::labs(fill = "Groups") +
                 ggplot2::scale_fill_manual(values = colors_palette)
             # print(p)
         } else if (type == "hist") {
-            p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, color = variable)) +
-                ggplot2::geom_histogram(alpha = 0.6, binwidth = 1, color = "grey90",
-                  lwd = 1) + ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
+            p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = variable)) +
+                ggplot2::geom_histogram(alpha = 0.6, binwidth = 1, color = "black") + 
+                ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
                 ggplot2::labs(fill = "Groups") +
                 ggplot2::scale_fill_manual(values = colors_palette)
             # print(p)

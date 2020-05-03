@@ -11,6 +11,7 @@ output:
     theme: sandstone
     highlight: tango
 params:
+  prefix: NULL
   n_covered_tsv: NULL
   n_covered_by_all_samples_tsv: NULL
   mc_per_chr_stat: NULL
@@ -100,7 +101,7 @@ plotly::ggplotly(p = p)
 
 ### Median
 ```{r}
-p = ggplot(data = m_stat, aes(x = median_meth, y = Sample_Name, color = Chromosome, label = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+p = ggplot(data = m_stat, aes(x = median_cov, y = Sample_Name, color = Chromosome, label = Sample_Name))+geom_point()+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
 
 plotly::ggplotly(p = p)
 ```
@@ -140,7 +141,12 @@ plotly::ggplotly(p = p)
 
 ## Beta value distribution
 ```{r, eval=TRUE}
-dens_files = list.files(pattern = "*_density\\.tsv\\.gz$", path = normalizePath(dirname(path = params$mc_per_sample_stat)), full.names = TRUE)
+
+if (!is.null(params$prefix)){
+dens_files = list.files(pattern = "*_density\\.tsv\\.gz$", path = normalizePath(paste0(dirname(path = params$mc_per_sample_stat), "/", prefix, "/")), full.names = TRUE)} else {
+  dens_files = list.files(pattern = "*_density\\.tsv\\.gz$", path = normalizePath(dirname(path = params$mc_per_sample_stat)), full.names = TRUE)
+}
+
 dens_files = normalizePath(path = dens_files)
 
 if(length(dens_files) > 0){

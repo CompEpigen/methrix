@@ -4,8 +4,13 @@
 \alias{plot_violin}
 \title{Violin Plot for \eqn{\beta}-Values}
 \usage{
-plot_violin(m, ranges = NULL, n_cpgs = 25000, pheno = NULL,
-  col_palette = "RdYlGn")
+plot_violin(
+  m,
+  ranges = NULL,
+  n_cpgs = 25000,
+  pheno = NULL,
+  col_palette = "RdYlGn"
+)
 }
 \arguments{
 \item{m}{Input \code{\link{methrix}} object}

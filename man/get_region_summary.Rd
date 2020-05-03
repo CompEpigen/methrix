@@ -4,8 +4,15 @@
 \alias{get_region_summary}
 \title{Extract and summarize methylation or coverage info by regions of interest}
 \usage{
-get_region_summary(m, regions = NULL, type = "M", how = "mean",
-  overlap_type = "within", na_rm = TRUE, verbose = TRUE)
+get_region_summary(
+  m,
+  regions = NULL,
+  type = "M",
+  how = "mean",
+  overlap_type = "within",
+  na_rm = TRUE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}

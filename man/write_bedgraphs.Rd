@@ -4,8 +4,15 @@
 \alias{write_bedgraphs}
 \title{Writes bedGraphs from methrix object}
 \usage{
-write_bedgraphs(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
-  n_thr = 4, compress = TRUE)
+write_bedgraphs(
+  m,
+  output_dir = NULL,
+  rm_NA = TRUE,
+  force = FALSE,
+  n_thr = 4,
+  compress = TRUE,
+  SeqStyle="UCSC"
+)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
@@ -20,6 +27,8 @@ If \code{NULL} creats a \code{tempdir}}
 \item{n_thr}{Default 4.}
 
 \item{compress}{Whether to compress the output. Default TRUE}
+}
+\item{SeqStyle}{Select SeqlevelsStyle in bedgraph. "UCSC" for "chr1", "NCBI" for "1", etc. Default "UCSC"}
 }
 \value{
 writes bedgraph files to output

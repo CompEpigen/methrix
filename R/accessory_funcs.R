@@ -18,7 +18,7 @@ get_source_idx = function(protocol = NULL) {
     return(list(col_idx = c(chr = 1, start = 2, end = 3, beta = 4,
                             M = 5, U = 6),
                 col_classes = c("character", "numeric", "numeric",
-                                "numeric", "integer", "integer"),
+                                "numeric", "numeric", "numeric"),
                 fix_missing = c("cov := M+U",
                                 "strand := '.'")))
   }
@@ -130,7 +130,8 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
       }
       
       return(list(col_idx = c(chr = chr, start = start, end = end,
-                              strand = strand, beta = beta, cov = cov),
+                              strand = strand, beta = beta, cov = cov, M = n_meth,
+                              U = n_unmeth),
                   fix_missing = NULL))
     }
   }
@@ -156,7 +157,8 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
   
   if ("beta" %in% colnames(bdg_dat)) {
     if (nrow(bdg_dat) < 1000) {
-      max_beta = max(bdg_dat[sample_row_idx, beta], na.rm = TRUE)
+      sample_row_idx = 1:nrow(bdg_dat)
+      max_beta = max(bdg_dat[, beta], na.rm = TRUE)
     } else {
       # Choose 1000 random beta values
       sample_row_idx = sample(x = seq_len(nrow(bdg_dat)), size = 1000,
@@ -496,6 +498,7 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
       }
       colnames(beta_mat)[ncol(beta_mat)] <- colnames(cov_mat)[ncol(cov_mat)] <- rownames(coldata)[i]
     }
+    
     ncpg_final <- data.table::dcast(data = ncpg_final, chr ~ Sample_Name,
                                     value.var = "N")
     return(list(beta_matrix = beta_mat[, -(seq_len(2))], cov_matrix = cov_mat[, -(seq_len(2))],
@@ -506,13 +509,14 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
 
 #--------------------------------------------------------------------------------------------------------------------------
 # Parse genomic regions and convert them to key'd data.table
-cast_ranges <- function(regions) {
+cast_ranges <- function(regions, set.key = TRUE) {
   chr <- . <- NULL
   if (is(regions, "GRanges")) {
     target_regions <- data.table::as.data.table(x = regions)
     target_regions[, `:=`(seqnames, as.character(seqnames))]
     colnames(target_regions)[seq_len(3)] <- c("chr", "start", "end")
-    data.table::setDT(x = target_regions, key = c("chr", "start", "end"))
+    if (set.key){
+    data.table::setDT(x = target_regions, key = c("chr", "start", "end"))}
     target_regions <- target_regions[, .(chr, start, end)]
   } else if (is(regions, "data.frame")) {
     if (all(c("chr", "start", "end") %in% colnames(regions))){
@@ -526,7 +530,8 @@ cast_ranges <- function(regions) {
     target_regions[, `:=`(chr, as.character(chr))]
     target_regions[, `:=`(start, as.numeric(as.character(start)))]
     target_regions[, `:=`(end, as.numeric(as.character(end)))]
-    data.table::setDT(x = target_regions, key = c("chr", "start", "end"))
+    if (set.key){
+    data.table::setDT(x = target_regions, key = c("chr", "start", "end"))}
   } else {
     stop("Invalid input class for regions. Must be a data.table or GRanges object")
   }

@@ -4,8 +4,15 @@
 \alias{plot_pca}
 \title{Plot PCA results}
 \usage{
-plot_pca(pca_res, m = NULL, col_anno = NULL, shape_anno = NULL,
-  pc_x = "PC1", pc_y = "PC2", show_labels = FALSE)
+plot_pca(
+  pca_res,
+  m = NULL,
+  col_anno = NULL,
+  shape_anno = NULL,
+  pc_x = "PC1",
+  pc_y = "PC2",
+  show_labels = FALSE
+)
 }
 \arguments{
 \item{pca_res}{Results from \code{\link{methrix_pca}}}
