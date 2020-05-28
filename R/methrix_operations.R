@@ -351,6 +351,39 @@ methrix2bsseq <- function(m) {
 
 #--------------------------------------------------------------------------------------------------------------------------
 
+#' Convert \code{\link{bsseq}} to \code{methrix} object
+#' @details Takes \code{\link{bsseq}} object and returns a \code{methrix} object
+#' @param b \code{\link{bsseq}} object
+#' @return An object of class \code{methrix}
+#' @examples
+#' \dontrun{
+#' data('methrix_data')
+#' bsseq_data <- methrix2bsseq(m = methrix_data)
+#' bsseq2methrix(b = bsseq_data)
+#' }
+#' @export
+#'
+bsseq2methrix <- function(b, genome="hg19") {
+    
+    if (!is(b, "BSseq")){
+        stop("A valid BSseq object needs to be supplied.")
+    }
+
+    assays(b)[["M"]][assays(b)[["Cov"]]==0] <- NA
+    assays(b)[["Cov"]][assays(b)[["Cov"]]==0] <- NA
+    m <- create_methrix(beta_mat = assays(b)[["M"]]/(assays(b)[["M"]]+assays(b)[["Cov"]]), 
+                        cov_mat = assays(b)[["Cov"]], 
+                        cpg_loci = as.data.frame(b@rowRanges)[,c("seqnames", "start", "strand")], 
+                        genome_name = genome, 
+                        col_data = b@colData, 
+                        is_hdf5 = ifelse(is(assays(b)[["M"]], "DelayedMatrix") & 
+                            is(assays(b)[["Cov"]], "DelayedMatrix"), TRUE, FALSE))
+
+    m
+}
+
+#--------------------------------------------------------------------------------------------------------------------------
+
 #' Remove loci that are uncovered across all samples
 #' @details Takes \code{\link{methrix}} object and removes loci that are uncovered across all samples
 #' @param m \code{\link{methrix}} object
