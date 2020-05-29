@@ -11,7 +11,7 @@ write_bedgraphs(
   force = FALSE,
   n_thr = 4,
   compress = TRUE,
-  SeqStyle="UCSC"
+  SeqStyle = "UCSC"
 )
 }
 \arguments{
@@ -27,8 +27,8 @@ If \code{NULL} creats a \code{tempdir}}
 \item{n_thr}{Default 4.}
 
 \item{compress}{Whether to compress the output. Default TRUE}
-}
-\item{SeqStyle}{Select SeqlevelsStyle in bedgraph. "UCSC" for "chr1", "NCBI" for "1", etc. Default "UCSC"}
+
+\item{SeqStyle}{Default `UCSC` with `chr` prefix.}
 }
 \value{
 writes bedgraph files to output

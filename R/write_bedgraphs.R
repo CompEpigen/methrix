@@ -6,6 +6,7 @@
 #' @param rm_NA remove NAs
 #' @param force forces to create files if they are existing
 #' @param compress Whether to compress the output. Default TRUE
+#' @param SeqStyle Default `UCSC` with `chr` prefix.
 #' @examples
 #' data('methrix_data')
 #' write_bedgraphs(m = methrix_data, output_dir = './temp')
