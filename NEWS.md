@@ -1,3 +1,7 @@
+CHANGES IN VERSION 1.2.06
+-------------------------
+    o Fix BioC warnings.
+
 CHANGES IN VERSION 1.2.05
 -------------------------
     o Methrix plot typo fix. Issue: #20
