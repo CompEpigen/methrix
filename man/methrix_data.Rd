@@ -4,7 +4,9 @@
 \name{methrix_data}
 \alias{methrix_data}
 \title{WGBS for colon cancer, chr21 and chr22}
-\format{An object of class \code{'methrix'}}
+\format{
+An object of class \code{'methrix'}
+}
 \usage{
 data('methrix_data')
 }
