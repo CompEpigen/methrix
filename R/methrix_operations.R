@@ -20,7 +20,6 @@
 #' @export
 get_region_summary = function(m, regions = NULL, type = "M", how = "mean",    overlap_type = "within", na_rm = TRUE, elementMetadata.col = NULL, verbose = TRUE, n_chunks=1, n_cores=1){
 
-
     if (n_cores>n_chunks){
         n_chunks<-n_cores
         message("n_cores should be set to be less than or equal to n_chunks.","\n","n_chunks has been set to be equal to n_cores = ",n_cores)
@@ -41,6 +40,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean",    ov
     r_dat$chr<-NULL
     if(is.null(r_dat$end)) r_dat$end<-r_dat$start+1
     r_dat<-  r_dat %>% as_granges()
+
 
     if(!all(elementMetadata.col %in% colnames(m@elementMetadata))) stop("variables provided to elementMetadata.col not correct")
 
@@ -77,6 +77,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean",    ov
                 m = m[overlap_indices$xid,]
                 get_matrix(m[((i-1)*ceiling(nrow(m)/n_chunks)+1):min(i*ceiling(nrow(m)/n_chunks),nrow(m)),], type = "M", add_loci = TRUE)
             }) %>% bind_rows()
+
         } else if (type == "C") {
             dat = mclapply(mc.cores=n_cores, 1:n_chunks, function(i) {
                 m = m[overlap_indices$xid,]
