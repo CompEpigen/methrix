@@ -197,9 +197,12 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL, ov
 #' @details Takes \code{\link{methrix}} object and filters CpGs based on coverage statistics
 #' @param m \code{\link{methrix}} object
 #' @param cov_thr minimum coverage required to call a loci covered
-#' @param min_samples At-least these many samples should have a loci with coverage >= \code{cov_thr}
+#' @param min_samples At least these many samples should have a loci with coverage >= \code{cov_thr}. If \code{group} is given, then this applies per group.Only need one of \code{prop_samples} or \code{min_samples}.
+#' @param prop_samples At least this % of samples should have a loci with coverage >= \code{cov_thr}. If \code{group} is given, then this applies per group. Only need one of \code{prop_samples} or \code{min_samples}.
 #' @param group a column name from sample annotation that defines groups. In this case, the number of min_samples will be
 #' tested group-wise.
+#' @param n_chunks Number of chunks to split the \code{\link{methrix}} object in case it is very large. Default = 1.
+#' @param n_cores Number of parallel instances. \code{n_cores} should be less than or equal to \code{n_chunks}. If \code{n_chunks} is not specified, then \code{n_chunks} is initialized to be equal to \code{n_cores}. Default = 1.
 #' @importFrom methods is as new
 #' @examples
 #' data('methrix_data')
@@ -207,7 +210,7 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL, ov
 #' coverage_filter(m = methrix_data, cov_thr = 1, min_samples = 3)
 #' @return An object of class \code{\link{methrix}}
 #' @export
-coverage_filter <- function(m, cov_thr = 1, min_samples = 1, group = NULL) {
+coverage_filter <- function(m, cov_thr = 1, min_samples = 1, prop_samples=0, group = NULL, n_chunks=1, n_cores=1) {
 
     start_proc_time <- proc.time()
     V1 <- . <- col2 <- Count2 <- i.to <- NULL
@@ -215,8 +218,12 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, group = NULL) {
         stop("A valid methrix object needs to be supplied.")
     }
 
-    if (!(is.numeric(cov_thr) & is.numeric(min_samples))){
-        stop("cov_thr and min_samples variables are not numeric.")
+    if (!is.numeric(cov_thr)){
+        stop("cov_thr is not numeric.")
+    }
+
+    if (!(is.numeric(min_samples) & is.numeric(prop_samples))){
+        stop("min_samples and prop_samples variables are not numeric.")
     }
 
     if (!is.null(group) && !(group %in% colnames(m@colData))){
@@ -224,44 +231,95 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, group = NULL) {
     }
 
 
-    res <- data.table::as.data.table(which(get_matrix(m = m, type = "C") >=
-        cov_thr, arr.ind = TRUE))
+    if (n_cores>n_chunks){
+        n_chunks<-n_cores
+        message("n_cores should be set to be less than or equal to n_chunks.","\n","n_chunks has been set to be equal to n_cores = ",n_cores)
+    }
+
+
 
     if (is_h5(m)) {
-        if (!is.null(group)){
-            res[.(V2 = unique(res$V2), to = m@colData[unique(res$V2), group]), on = "V2", col2 := i.to]
-            res <- res[, .(Count = (.N)), by = .(V1, col2)]
-            row_idx <- res[res$Count >= min_samples, V1, by = col2]
-            row_idx <- row_idx[, .(Count2 = (.N)), by = V1]
-            row_idx <- row_idx[Count2==length(unique(m@colData[,group])),V1]
-            row_idx[order(row_idx, decreasing = F)]
+
+
+        if(n_chunks==1){
+
+            cov_dat = get_matrix(m = m, type = "C")
+
+            if (!is.null(group)){
+                row_idx<-sapply(unique(m@colData[,group]), function(c){
+                    res<-DelayedMatrixStats::rowSums2(cov_dat[,m@colData[,group]==c]>=cov_thr,na.rm=T)
+                    row_idx<-(res>=max(min_samples,ceiling(prop_samples*sum(m@colData[,group]==c))))
+                })
+                row_idx<-DelayedMatrixStats::rowAlls(row_idx)
+
+            } else {
+                res<-DelayedMatrixStats::rowSums2(cov_dat>=cov_thr,na.rm=T)
+                row_idx<-(res>=max(min_samples,ceiling(prop_samples*ncol(cov_dat))))
+            }
+
         } else {
-            res <- res[, .(Count = (.N)), by = V1]
-            setDT(res, key="V1")
-            row_idx <- res[res$Count >= min_samples, V1]
+
+
+            if (!is.null(group)){
+
+
+                row_idx<-unlist(mclapply(mc.cores=n_cores,1:n_chunks, function(i){
+                    cov_dat = get_matrix(m[((i-1)*ceiling(nrow(m)/n_chunks)+1):min(i*ceiling(nrow(m)/n_chunks),nrow(m)),], type = "C")
+                    row_idx<-sapply(unique(m@colData[,group]), function(c){
+                        res<-DelayedMatrixStats::rowSums2(cov_dat[,m@colData[,group]==c]>=cov_thr,na.rm=T)
+                        row_idx<-(res>=max(min_samples,ceiling(prop_samples*sum(m@colData[,group]==c))))
+                    })
+                    row_idx<-DelayedMatrixStats::rowAlls(row_idx)
+
+
+                }))
+
+            } else {
+                row_idx<-unlist(mclapply(mc.cores=n_cores,1:n_chunks, function(i){
+                    cov_dat = get_matrix(m[((i-1)*ceiling(nrow(m)/n_chunks)+1):min(i*ceiling(nrow(m)/n_chunks),nrow(m)),], type = "C")
+                    res<-DelayedMatrixStats::rowSums2(cov_dat>=cov_thr,na.rm=T)
+                    row_idx<-(res>=max(min_samples,ceiling(prop_samples*ncol(cov_dat))))
+
+
+
+                }))
+
+            }
+
+
+
+
+
+
         }
 
     } else {
+        cov_dat = get_matrix(m = m, type = "C")
+
         if (!is.null(group)){
-            res[.(col = unique(res$col), to = m@colData[unique(res$col), group]), on = "col", col2 := i.to]
-            res <- res[, .(Count = (.N)), by = .(row, col2)]
-            row_idx <- res[res$Count >= min_samples, row, by = col2]
-            row_idx <- row_idx[, .(Count2 = (.N)), by = row]
-            row_idx <- row_idx[Count2==length(unique(res$col)),row]
+            row_idx<-sapply(unique(m@colData[,group]), function(c){
+                res<-matrixStats::rowSums2(cov_dat[,m@colData[,group]==c]>=cov_thr,na.rm=T)
+                row_idx<-(res>=max(min_samples,ceiling(prop_samples*sum(m@colData[,group]==c))))
+            })
+            row_idx<-matrixStats::rowAlls(row_idx)
         } else {
-            res <- res[, .(Count = (.N)), by = row]
-            setDT(res, key="row")
-            row_idx <- res[res$Count >= min_samples, row]
+
+            res<-matrixStats::rowSums2(cov_dat>=cov_thr,na.rm=T)
+            row_idx<-(res>=max(min_samples,ceiling(prop_samples*ncol(cov_dat))))
+
         }
+
     }
 
     gc()
-    message(paste0("-Retained ", format(length(row_idx), big.mark = ","),
-        " of ", format(nrow(m), big.mark = ","), " sites"))
+    message(paste0("-Retained ", format(sum(row_idx), big.mark = ","),
+                   " of ", format(nrow(m), big.mark = ","), " sites"))
     message("-Finished in:  ", data.table::timetaken(start_proc_time))
+
 
     return(m[row_idx, ])
 }
+
 
 #--------------------------------------------------------------------------------------------------------------------------
 
