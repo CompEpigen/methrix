@@ -5,8 +5,11 @@
 #' @param type matrix which needs to be summarized. Coule be `M`, `C`. Default 'M'
 #' @param how mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min. Default 'mean'
 #' @param overlap_type defines the type of the overlap of the CpG sites with the target region. Default value is `within`. For detailed description,
-#' see the \code{foverlaps} function of the \code{\link{data.table}} package.
+#' see the \code{findOverlaps} function of the \code{\link{IRanges}} package.
 #' @param na_rm Remove NA's? Default \code{TRUE}
+#' @param elementMetadata.col columns in \code{\link{methrix}}@elementMetadata which needs to be summarised. Default = NULL.
+#' @param n_chunks Number of chunks to split the \code{\link{methrix}} object in case it is very large. Default = 1.
+#' @param n_cores Number of parallel instances. \code{n_cores} should be less than or equal to \code{n_chunks}. If \code{n_chunks} is not specified, then \code{n_chunks} is initialized to be equal to \code{n_cores}. Default = 1.
 #' @param verbose Default TRUE
 #' @return a coverage or methylation matrix
 #' @examples
@@ -15,93 +18,120 @@
 #' regions = data.table(chr = 'chr21', start = 27867971, end =  27868103),
 #' type = 'M', how = 'mean')
 #' @export
-get_region_summary <- function(m, regions = NULL, type = "M", how = "mean",
-    overlap_type = "within", na_rm = TRUE, verbose = TRUE) {
+get_region_summary = function(m, regions = NULL, type = "M", how = "mean",    overlap_type = "within", na_rm = TRUE, elementMetadata.col = NULL, verbose = TRUE, n_chunks=1, n_cores=1){
 
-    if (!is(m, "methrix")){
-        stop("A valid methrix object needs to be supplied.")
+    library(stringr)
+    library(plyranges)
+    library(dplyr)
+
+    if (n_cores>n_chunks){
+        n_chunks<-n_cores
+        message("n_cores should be set to be less than or equal to n_chunks.","\n","n_chunks has been set to be equal to n_cores = ",n_cores)
     }
 
-    rid <- chr <- yid <- median <- NULL
-    type <- match.arg(arg = type, choices = c("M", "C"))
-    how <- match.arg(arg = how, choices = c("mean", "median", "max", "min",
-        "sum"))
 
-    start_proc_time <- proc.time()
+    type = match.arg(arg = type, choices = c('M', 'C'))
+    how = match.arg(arg = how, choices = c('mean', 'median', 'max', 'min', 'sum', 'sd'))
 
-    target_regions <- cast_ranges(regions, set.key = FALSE)
-    # Add a unique id for every target range (i.e, rows)
-    target_regions[, `:=`(rid, seq_len(nrow(target_regions)))]
-    data.table::setDT(x = target_regions, key = c("chr", "start", "end"))
-    target_regions[, `:=`(yid, paste0("yid_", seq_len(nrow(target_regions))))]
+    start_proc_time = proc.time()
 
+    target_regions = (regions)
+    #Add a unique id for every target range (i.e, rows)
+    target_regions@elementMetadata$rid <- paste0("rid_", 1:length(target_regions))
 
-    r_dat <- data.table::as.data.table(rowData(x = m))
-    r_dat[, `:=`(chr, as.character(chr))]
-    r_dat[, `:=`(end, start + 1)]
-    data.table::setDT(x = r_dat, key = c("chr", "start", "end"))
+    r_dat = as.data.frame(rowData(x = m))
+    r_dat$seqnames<-as.character(r_dat$chr)
+    r_dat$chr<-NULL
+    if(is.null(r_dat$end)) r_dat$end<-r_dat$start+1
+    r_dat<-  r_dat %>% plyranges::as_granges()
 
-    if (verbose) {
-        message("-Checking for overlaps..")
+    if(!all(elementMetadata.col %in% colnames(m@elementMetadata))) stop("variables provided to elementMetadata.col not correct")
+
+    if(verbose){
+        message("-Checking for overlaps..\n")
     }
 
-    overlap_indices <- data.table::foverlaps(x = r_dat, y = target_regions,
-        type = overlap_type, nomatch = NULL, which = TRUE)
+    overlap_indices = as.data.table(findOverlaps(r_dat, target_regions, type = overlap_type))
 
-    if (nrow(overlap_indices) == 0) {
-        warning("No overlaps detected")
-        return(NULL)
+
+
+    colnames(overlap_indices)<-c("xid","yid")
+
+    if(nrow(overlap_indices) == 0){
+        stop("No overlaps detected")
     }
 
-    overlap_indices[, `:=`(yid, paste0("yid_", yid))]
-    n_overlap_cpgs <- overlap_indices[, .N, yid]
-    colnames(n_overlap_cpgs) <- c("yid", "n_overlap_CpGs")
 
+    overlap_indices[,yid := paste0("rid_", yid)]
+    n_overlap_cpgs = overlap_indices[,.N,yid]
+    colnames(n_overlap_cpgs) = c('rid', 'n_overlap_CpGs')
 
-    if (type == "M") {
-        dat <- get_matrix(m = m[overlap_indices$xid, ], type = "M", add_loci = TRUE)
-    } else if (type == "C") {
-        dat <- get_matrix(m = m[overlap_indices$xid, ], type = "C", add_loci = TRUE)
+    #overlap_indices = split(overlap_indices, as.factor(as.character(overlap_indices$yid)))
+
+    if(n_chunks==1){
+        if (type == "M") {
+            dat = get_matrix(m = m[overlap_indices$xid,], type = "M", add_loci = TRUE)
+        } else if (type == "C") {
+            dat = get_matrix(m = m[overlap_indices$xid,], type = "C", add_loci = TRUE)
+        }
+    } else {
+        if (type == "M") {
+            dat = mclapply(mc.cores=n_cores, 1:n_chunks, function(i) {
+                m = m[overlap_indices$xid,]
+                get_matrix(m[((i-1)*ceiling(nrow(m)/n_chunks)+1):min(i*ceiling(nrow(m)/n_chunks),nrow(m)),], type = "M", add_loci = TRUE)
+            }) %>% dplyr::bind_rows()
+        } else if (type == "C") {
+            dat = mclapply(mc.cores=n_cores, 1:n_chunks, function(i) {
+                m = m[overlap_indices$xid,]
+                get_matrix(m[((i-1)*ceiling(nrow(m)/n_chunks)+1):min(i*ceiling(nrow(m)/n_chunks),nrow(m)),], type = "C", add_loci = TRUE)
+            }) %>% dplyr::bind_rows()
+        }
+
     }
 
-    if (nrow(overlap_indices) != nrow(dat)) {
-        warning("Something went wrong")
-        return(NULL)
+
+
+    if(nrow(overlap_indices) != nrow(dat)){
+        stop("Something went wrong")
     }
 
-    dat <- cbind(overlap_indices, dat)
 
-    if (how == "mean") {
-        message("-Summarizing by average")
-        output <- dat[, lapply(.SD, mean, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+
+    dat = cbind(overlap_indices, dat)
+
+    #message("-Summarizing overlaps..\n")
+    if(how == "mean") {
+        message("-Summarizing by average\n")
+        output = dat[, lapply(.SD, mean, na.rm = na_rm), by = yid, .SDcols = c(elementMetadata.col,rownames(colData(m)))]
     } else if (how == "median") {
-        message("-Summarizing by median")
-        output <- dat[, lapply(.SD, median, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+        message("-Summarizing by median\n")
+        output = dat[, lapply(.SD, median, na.rm = na_rm), by = yid, .SDcols = c(elementMetadata.col,rownames(colData(m)))]
     } else if (how == "max") {
-        message("-Summarizing by maximum")
-        output <- dat[, lapply(.SD, max, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+        message("-Summarizing by maximum\n")
+        output = dat[, lapply(.SD, max, na.rm = na_rm), by = yid, .SDcols = c(elementMetadata.col,rownames(colData(m)))]
     } else if (how == "min") {
-        message("-Summarizing by minimum")
-        output <- dat[, lapply(.SD, min, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+        message("-Summarizing by minimum\n")
+        output = dat[, lapply(.SD, min, na.rm = na_rm), by = yid, .SDcols = c(elementMetadata.col,rownames(colData(m)))]
     } else if (how == "sum") {
-        message("-Summarizing by sum")
-        output <- dat[, lapply(.SD, sum, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+        message("-Summarizing by sum\n")
+        output = dat[, lapply(.SD, sum, na.rm = na_rm), by = yid, .SDcols = c(elementMetadata.col,rownames(colData(m)))]
     }
 
-    output <- merge(target_regions, output, by.x = "yid", by.y = "yid",
-        all.x = TRUE)
-    output <- merge(n_overlap_cpgs, output, by = "yid")
-    setDT(output, key=c("rid"))
-    output[, `:=`(yid, NULL)]
-    output[, `:=`(rid, NULL)]
+    output = merge(target_regions, output, by.x = 'rid', by.y = 'yid', all.x = TRUE)
+    output = merge(n_overlap_cpgs, output, by = 'rid')
+    output$rid<-as.numeric(str_replace(output$rid,"rid_",""))
 
+    output<-output[order(output$rid),]
 
-    if (verbose) {
-        message("-Done! Finished in:", data.table::timetaken(start_proc_time))
+    output<-output %>% as.data.frame() %>% rename(chr=seqnames) %>% select(chr,start,end,n_overlap_CpGs,rid,all_of(elementMetadata.col),colnames(m)) %>% as.data.table()
+
+    if(verbose){
+        message("-Done! Finished in:",data.table::timetaken(start_proc_time),"\n")
     }
 
     return(output)
 }
+
 
 #--------------------------------------------------------------------------------------------------------------------------
 #' Order mathrix object by SD
