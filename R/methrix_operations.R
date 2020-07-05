@@ -362,30 +362,29 @@ methrix2bsseq <- function(m) {
 #'
 remove_uncovered <- function(m) {
 
-    V1 <- N <- NULL
     start_proc_time <- proc.time()
     if (!is(m, "methrix")){
         stop("A valid methrix object needs to be supplied.")
     }
 
-    if (is_h5(m)) {
-        row_idx <- data.table::as.data.table(which(is.na(get_matrix(m = m,
-            type = "C")), arr.ind = TRUE))[, .N, V1][N == ncol(m), V1]
-    } else {
-        row_idx <- data.table::as.data.table(which(is.na(get_matrix(m = m,
-            type = "C")), arr.ind = TRUE))[, .N, row][N == ncol(m), row]
-    }
-    message(paste0("-Removed ", format(length(row_idx), big.mark = ","),
-        " [", round(length(row_idx)/nrow(m) * 100, digits = 2), "%] uncovered loci of ",
-        format(nrow(m), big.mark = ","), " sites"))
+
+    row_idx<-rowSums(!is.na(assays(m)[[2]]))==0
+
+    message(paste0("-Removed ", format(sum(row_idx), big.mark = ","),
+                   " [", round(sum(row_idx)/nrow(m) * 100, digits = 2), "%] uncovered loci of ",
+                   format(nrow(m), big.mark = ","), " sites"))
 
     gc()
+
     message("-Finished in:  ", data.table::timetaken(start_proc_time))
-    if (length(row_idx)==0){
+
+    if (sum(row_idx)==0){
         m
     } else {
-    m[-row_idx, ]
-        }
+        m[!row_idx, ]
+    }
+
+
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
