@@ -12,7 +12,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
 Depends: R (>= 3.6), data.table (>= 1.12.4), SummarizedExperiment
-Imports: DelayedArray, HDF5Array, BSgenome, rjson, DelayedMatrixStats, parallel, methods, ggplot2, matrixStats, graphics, stats, utils, stringr, dplyr, plyranges, 
+Imports: DelayedArray, HDF5Array, BSgenome, rjson, DelayedMatrixStats, parallel, methods, ggplot2, matrixStats, graphics, stats, utils
 RoxygenNote: 7.1.0
 Suggests: 
     knitr,

@@ -39,7 +39,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean",    ov
     r_dat$seqnames<-as.character(r_dat$chr)
     r_dat$chr<-NULL
     if(is.null(r_dat$end)) r_dat$end<-r_dat$start+1
-    r_dat<-  r_dat %>% as_granges()
+    r_dat<-  GenomicRanges::makeGRangesFromDataFrame(r_dat, keep.extra.columns = F)
 
 
     if(!all(elementMetadata.col %in% colnames(m@elementMetadata))) stop("variables provided to elementMetadata.col not correct")
@@ -73,16 +73,16 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean",    ov
         }
     } else {
         if (type == "M") {
-            dat = mclapply(mc.cores=n_cores, 1:n_chunks, function(i) {
+            dat = do.call("rbind",mclapply(mc.cores=n_cores, 1:n_chunks, function(i) {
                 m = m[overlap_indices$xid,]
                 get_matrix(m[((i-1)*ceiling(nrow(m)/n_chunks)+1):min(i*ceiling(nrow(m)/n_chunks),nrow(m)),], type = "M", add_loci = TRUE)
-            }) %>% bind_rows()
+            }))
 
         } else if (type == "C") {
-            dat = mclapply(mc.cores=n_cores, 1:n_chunks, function(i) {
+            dat = do.call("rbind",mclapply(mc.cores=n_cores, 1:n_chunks, function(i) {
                 m = m[overlap_indices$xid,]
                 get_matrix(m[((i-1)*ceiling(nrow(m)/n_chunks)+1):min(i*ceiling(nrow(m)/n_chunks),nrow(m)),], type = "C", add_loci = TRUE)
-            }) %>% bind_rows()
+            }))
         }
 
     }
@@ -117,11 +117,13 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean",    ov
 
     output = merge(target_regions, output, by.x = 'rid', by.y = 'yid', all.x = TRUE)
     output = merge(n_overlap_cpgs, output, by = 'rid')
-    output$rid<-as.numeric(str_replace(output$rid,"rid_",""))
+    output$rid<-as.numeric(gsub("rid_","",output$rid))
 
     output<-output[order(output$rid),]
+    setnames(output, "seqnames", "chr")
+    keep=c("chr","start","end","n_overlap_CpGs","rid",elementMetadata.col,colnames(m))
+    output<-output[, ..keep]
 
-    output<-output %>% as.data.frame() %>% rename(chr=seqnames) %>% select(chr,start,end,n_overlap_CpGs,rid,all_of(elementMetadata.col),colnames(m)) %>% as.data.table()
 
     if(verbose){
         message("-Done! Finished in:",data.table::timetaken(start_proc_time),"\n")
