@@ -31,6 +31,9 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean",    ov
 
     start_proc_time = proc.time()
 
+
+    if("data.table" %in% class(regions)) regions<-makeGRangesFromDataFrame(df = regions)
+
     target_regions = (regions)
     #Add a unique id for every target range (i.e, rows)
     target_regions@elementMetadata$rid <- paste0("rid_", 1:length(target_regions))
@@ -39,7 +42,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean",    ov
     r_dat$seqnames<-as.character(r_dat$chr)
     r_dat$chr<-NULL
     if(is.null(r_dat$end)) r_dat$end<-r_dat$start+1
-    r_dat<-  GenomicRanges::makeGRangesFromDataFrame(r_dat, keep.extra.columns = F)
+    r_dat<-  makeGRangesFromDataFrame(r_dat, keep.extra.columns = F)
 
 
     if(!all(elementMetadata.col %in% colnames(m@elementMetadata))) stop("variables provided to elementMetadata.col not correct")
@@ -121,7 +124,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean",    ov
 
     output<-output[order(output$rid),]
     setnames(output, "seqnames", "chr")
-    keep=c("chr","start","end","n_overlap_CpGs","rid",elementMetadata.col,colnames(m))
+    keep<-c("chr","start","end","n_overlap_CpGs","rid",elementMetadata.col,colnames(m))
     output<-output[, ..keep]
 
 
@@ -227,8 +230,8 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL, ov
 #' @details Takes \code{\link{methrix}} object and filters CpGs based on coverage statistics
 #' @param m \code{\link{methrix}} object
 #' @param cov_thr minimum coverage required to call a loci covered
-#' @param min_samples At least these many samples should have a loci with coverage >= \code{cov_thr}. If \code{group} is given, then this applies per group.Only need one of \code{prop_samples} or \code{min_samples}.
-#' @param prop_samples At least this % of samples should have a loci with coverage >= \code{cov_thr}. If \code{group} is given, then this applies per group. Only need one of \code{prop_samples} or \code{min_samples}.
+#' @param min_samples Minimum number of samples that should have a loci with coverage >= \code{cov_thr}. If \code{group} is given, then this applies per group. Only need one of \code{prop_samples} or \code{min_samples}.
+#' @param prop_samples Minimum proportion of samples that should have a loci with coverage >= \code{cov_thr}. If \code{group} is given, then this applies per group. Only need one of \code{prop_samples} or \code{min_samples}.
 #' @param group a column name from sample annotation that defines groups. In this case, the number of min_samples will be
 #' tested group-wise.
 #' @param n_chunks Number of chunks to split the \code{\link{methrix}} object in case it is very large. Default = 1.

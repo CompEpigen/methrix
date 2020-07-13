@@ -4,17 +4,31 @@
 \alias{coverage_filter}
 \title{Filter matrices by coverage}
 \usage{
-coverage_filter(m, cov_thr = 1, min_samples = 1, group = NULL)
+coverage_filter(
+  m,
+  cov_thr = 1,
+  min_samples = 1,
+  prop_samples = 0,
+  group = NULL,
+  n_chunks = 1,
+  n_cores = 1
+)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
 
 \item{cov_thr}{minimum coverage required to call a loci covered}
 
-\item{min_samples}{At-least these many samples should have a loci with coverage >= \code{cov_thr}}
+\item{min_samples}{Minimum number of samples that should have a loci with coverage >= \code{cov_thr}. If \code{group} is given, then this applies per group. Only need one of \code{prop_samples} or \code{min_samples}.}
 
-\item{group}{a column name from sample annotation that defines groups. In this case, the number of min_samples will be 
+\item{prop_samples}{Minimum proportion of samples that should have a loci with coverage >= \code{cov_thr}. If \code{group} is given, then this applies per group. Only need one of \code{prop_samples} or \code{min_samples}.}
+
+\item{group}{a column name from sample annotation that defines groups. In this case, the number of min_samples will be
 tested group-wise.}
+
+\item{n_chunks}{Number of chunks to split the \code{\link{methrix}} object in case it is very large. Default = 1.}
+
+\item{n_cores}{Number of parallel instances. \code{n_cores} should be less than or equal to \code{n_chunks}. If \code{n_chunks} is not specified, then \code{n_chunks} is initialized to be equal to \code{n_cores}. Default = 1.}
 }
 \value{
 An object of class \code{\link{methrix}}

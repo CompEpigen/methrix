@@ -12,8 +12,8 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
 Depends: R (>= 3.6), data.table (>= 1.12.4), SummarizedExperiment
-Imports: DelayedArray, HDF5Array, BSgenome, rjson, DelayedMatrixStats, parallel, methods, ggplot2, matrixStats, graphics, stats, utils
-RoxygenNote: 7.1.0
+Imports: DelayedArray, HDF5Array, BSgenome, rjson, DelayedMatrixStats, parallel, methods, ggplot2, matrixStats, graphics, stats, utils, GenomicRanges, IRanges
+RoxygenNote: 7.1.1
 Suggests: 
     knitr,
     rmarkdown,
@@ -26,9 +26,7 @@ Suggests:
     GenomicScores,
     Biostrings,
     RColorBrewer,
-    GenomicRanges,
     GenomeInfoDb,
-    IRanges,
     testthat (>= 2.1.0)
 VignetteBuilder: knitr
 biocViews: DNAMethylation, Sequencing, Coverage

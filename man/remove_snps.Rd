@@ -10,7 +10,9 @@ remove_snps(
   maf_threshold = 0.01,
   reduce_filtering = FALSE,
   forced = FALSE,
-  keep = FALSE
+  keep = FALSE,
+  n_chunks = 1,
+  n_cores = 1
 )
 }
 \arguments{
@@ -18,7 +20,7 @@ remove_snps(
 
 \item{populations}{Populations to use. Default is all.}
 
-\item{maf_threshold}{The frequency threshold, above which the SNPs will be removed. Accepted thresholds: 0.01 and 0.05. Default is 0.05}
+\item{maf_threshold}{The frequency threshold, above which the SNPs will be removed. Default is 0.01}
 
 \item{reduce_filtering}{If TRUE, the SNPs with a MAF < 0.1 will be evaluated and only the highly variable ones will be removed.
 Default FALSE.}
@@ -26,6 +28,10 @@ Default FALSE.}
 \item{forced}{the reduce_filtering is not recommended with less than 10 samples, but can be forced. Default is FALSE.}
 
 \item{keep}{Do you want to keep the sites that were filtered out? In this case, the function will return with a list of wo methrix objects.}
+
+\item{n_chunks}{Number of chunks to split the \code{\link{methrix}} object in case it is very large. Can only be used if input data is in HDF5 format. Default = 1.}
+
+\item{n_cores}{Number of parallel instances. Can only be used if input data is in HDF5 format. \code{n_cores} should be less than or equal to \code{n_chunks}. If \code{n_chunks} is not specified, then \code{n_chunks} is initialized to be equal to \code{n_cores}. Default = 1.}
 }
 \value{
 methrix object or a list of methrix objects

@@ -70,7 +70,7 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
     }
 
 
-    regions <- gUtils::gr.nochr(GenomicRanges::makeGRangesFromDataFrame(elementMetadata(m), start.field = "start", end.field = "start"))
+    regions <- gr.nochr(GenomicRanges::makeGRangesFromDataFrame(elementMetadata(m), start.field = "start", end.field = "start"))
 
 
     if(n_cores==1) {
