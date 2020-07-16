@@ -11,7 +11,10 @@ get_region_summary(
   how = "mean",
   overlap_type = "within",
   na_rm = TRUE,
-  verbose = TRUE
+  elementMetadata.col = NULL,
+  verbose = TRUE,
+  n_chunks = 1,
+  n_cores = 1
 )
 }
 \arguments{
@@ -24,11 +27,17 @@ get_region_summary(
 \item{how}{mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min. Default 'mean'}
 
 \item{overlap_type}{defines the type of the overlap of the CpG sites with the target region. Default value is `within`. For detailed description,
-see the \code{foverlaps} function of the \code{\link{data.table}} package.}
+see the \code{findOverlaps} function of the \code{\link{IRanges}} package.}
 
 \item{na_rm}{Remove NA's? Default \code{TRUE}}
 
+\item{elementMetadata.col}{columns in \code{\link{methrix}}@elementMetadata which needs to be summarised. Default = NULL.}
+
 \item{verbose}{Default TRUE}
+
+\item{n_chunks}{Number of chunks to split the \code{\link{methrix}} object in case it is very large. Default = 1.}
+
+\item{n_cores}{Number of parallel instances. \code{n_cores} should be less than or equal to \code{n_chunks}. If \code{n_chunks} is not specified, then \code{n_chunks} is initialized to be equal to \code{n_cores}. Default = 1.}
 }
 \value{
 a coverage or methylation matrix

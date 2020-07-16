@@ -19,19 +19,19 @@ C_max <- apply(get_matrix(methrix_data[1:3,], type = "C", add_loci = FALSE), 2, 
 
 test_that("selected regions", {
   expect_equal(as.numeric(get_region_summary(methrix_data,
-                                                regions=gr, type = "M", how = "mean", overlap_type = "any")[1,-(1:4)]), as.numeric(M_mean))
+                                                regions=gr, type = "M", how = "mean", overlap_type = "any")[1,-(1:5)]), as.numeric(M_mean))
   expect_equal(as.numeric(get_region_summary(methrix_data,
-                                                regions=gr, type = "C", how = "mean", overlap_type = "any")[1,-(1:4)]), as.numeric(C_mean))
+                                                regions=gr, type = "C", how = "mean", overlap_type = "any")[1,-(1:5)]), as.numeric(C_mean))
 
   expect_equal(as.numeric(get_region_summary(methrix_data,
-                                                regions=gr, type = "M", how = "min", overlap_type = "any")[1,-(1:4)]), as.numeric(M_min))
+                                                regions=gr, type = "M", how = "min", overlap_type = "any")[1,-(1:5)]), as.numeric(M_min))
   expect_equal(as.numeric(get_region_summary(methrix_data,
-                                                regions=gr, type = "C", how = "min", overlap_type = "any")[1,-(1:4)]), as.numeric(C_min))
+                                                regions=gr, type = "C", how = "min", overlap_type = "any")[1,-(1:5)]), as.numeric(C_min))
 
   expect_equal(as.numeric(get_region_summary(methrix_data,
-                                                regions=gr, type = "M", how = "max", overlap_type = "any")[1,-(1:4)]), as.numeric(M_max))
+                                                regions=gr, type = "M", how = "max", overlap_type = "any")[1,-(1:5)]), as.numeric(M_max))
   expect_equal(as.numeric(get_region_summary(methrix_data,
-                                                regions=gr, type = "C", how = "max", overlap_type = "any")[1,-(1:4)]), as.numeric(C_max))
+                                                regions=gr, type = "C", how = "max", overlap_type = "any")[1,-(1:5)]), as.numeric(C_max))
 })
 
 

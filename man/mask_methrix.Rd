@@ -4,7 +4,7 @@
 \alias{mask_methrix}
 \title{Masks too high or too low coverage}
 \usage{
-mask_methrix(m, low_count = NULL, high_quantile = 0.99)
+mask_methrix(m, low_count = NULL, high_quantile = 0.99, n_cores = 1)
 }
 \arguments{
 \item{m}{\code{\link{methrix}} object}
@@ -13,6 +13,8 @@ mask_methrix(m, low_count = NULL, high_quantile = 0.99)
 
 \item{high_quantile}{The quantile limit of coverage. Quantiles are calculated for each sample and everything that belongs to a
 higher quantile than the defined will be masked. Default = 0.99.}
+
+\item{n_cores}{Number of parallel instances. Can only be used if \code{\link{methrix}} is in HDF5 format. Default = 1.}
 }
 \value{
 An object of class \code{\link{methrix}}
