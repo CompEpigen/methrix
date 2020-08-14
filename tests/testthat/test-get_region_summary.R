@@ -38,9 +38,9 @@ test_that("selected regions", {
 
 test_that("Using within", {
   expect_false(all(as.numeric(get_region_summary(methrix_data,
-                                                regions=gr, type = "M", how = "mean", overlap_type = "within")[1,-(1:4)])==as.numeric(M_mean)))
+                                                regions=gr, type = "M", how = "mean", overlap_type = "within")[1,-(1:5)])==as.numeric(M_mean)))
   expect_false(all(as.numeric(get_region_summary(methrix_data,
-                                                regions=gr, type = "C", how = "mean", overlap_type = "within")[1,-(1:4)])==as.numeric(C_mean)))
+                                                regions=gr, type = "C", how = "mean", overlap_type = "within")[1,-(1:5)])==as.numeric(C_mean)))
 })
 
 test_that("Wrong input", {

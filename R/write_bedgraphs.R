@@ -24,7 +24,7 @@ write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
   mat_gr <- methrix::get_matrix(m = m, type = "M", add_loci = TRUE,in_granges = T)
   
   #change SeqlevelsStyle
-  seqlevelsStyle(mat_gr)<- SeqStyle
+  GenomeInfoDb::seqlevelsStyle(mat_gr)<- SeqStyle
   mat <- as.data.table(mat_gr) 
   mat <- mat[, c("seqnames", "start", "end", "strand", rownames(colData(x = m))), 
              with = FALSE]
