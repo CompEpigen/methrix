@@ -6,7 +6,6 @@ Fast and efficient summarization of generic bedGraph files from Bisufite sequenc
 
 <!-- badges: start -->
 
-[![Travis build status](https://travis-ci.com/CompEpigen/methrix.svg?branch=master)](https://travis-ci.com/CompEpigen/methrix)
 [![Lifecycle: maturing](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
 [![BioC status](http://www.bioconductor.org/shields/build/devel/bioc/methrix.svg)](https://bioconductor.org/checkResults/release/bioc-LATEST/methrix)
 
