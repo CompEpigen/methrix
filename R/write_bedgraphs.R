@@ -21,7 +21,7 @@ write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
         dir.create(path = output_dir, showWarnings = FALSE, recursive = TRUE)
     }
     
-  mat_gr <- methrix::get_matrix(m = m, type = "M", add_loci = TRUE,in_granges = T)
+  mat_gr <- methrix::get_matrix(m = m, type = "M", add_loci = TRUE, in_granges = TRUE)
   
   #change SeqlevelsStyle
   GenomeInfoDb::seqlevelsStyle(mat_gr)<- SeqStyle
@@ -67,7 +67,7 @@ write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
             if (force) {
                 message(paste0("**Writing ", rownames(colData(m))[i]))
                 colnames(mat_i) <- paste0("V", seq_len(ncol(mat_i)))
-                data.table::fwrite(x = header, file = op_bdg, sep = "\t", append=FALSE, quote=F,
+                data.table::fwrite(x = header, file = op_bdg, sep = "\t", append=FALSE, quote=FALSE,
                                    col.names = FALSE, nThread = n_thr, scipen = 7, compress = "auto")
                 data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", append=TRUE,
                   col.names = FALSE, nThread = n_thr, scipen = 7, compress = "auto")
@@ -77,7 +77,7 @@ write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
         } else {
             message(paste0("**Writing ", rownames(colData(m))[i]))
             colnames(mat_i) <- paste0("V", seq_len(ncol(mat_i)))
-            data.table::fwrite(x = header, file = op_bdg, sep = "\t", col.names = FALSE, append=FALSE, quote=F,
+            data.table::fwrite(x = header, file = op_bdg, sep = "\t", col.names = FALSE, append=FALSE, quote=FALSE,
                                nThread = n_thr)
             data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", col.names = FALSE, append=TRUE,
                 nThread = n_thr)

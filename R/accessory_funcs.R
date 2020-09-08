@@ -232,7 +232,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
   
   if (verbose) {
     if (nrow(missing_cpgs) > 0) {
-      message(paste0("--CpGs missing: ", format(nrow(missing_cpgs), big.mark = ",")))
+      message(paste0("--CpGs missing: ", format(nrow(missing_cpgs), big.mark = ",")), "(from known reference CpGs)")
     }
     # message(paste0('Missing ', format(nrow(missing_cpgs), big.mark =
     # ','), ' reference CpGs from: ', basename(bdg)))

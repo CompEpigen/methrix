@@ -1,3 +1,11 @@
+CHANGES IN VERSION 1.2.10
+-------------------------
+    o BSgenome ref build parsing error. Issue: #24
+    o Show which CpGs are missing when loading bedGraphs. Issue: #22
+    o Faster HDF5 processing. PR: #21
+    o include SeqStyle option in Manual write_bedgraphs() function. PE: #20
+    o added the argument for SeqlevelsStyle and trackline in bedgraph. PR: #19
+    
 CHANGES IN VERSION 1.2.06
 -------------------------
     o Fix BioC warnings.

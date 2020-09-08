@@ -1,6 +1,6 @@
 Package: methrix
 Title: Fast and efficient summarization of generic bedGraph files from Bisufite sequencing
-Version: 1.2.06
+Version: 1.2.10
 Authors@R: c(
   person("Anand","Mayakonda", role = c("aut", "cre"), email = "anand_mt@hotmail.com"),
   person("Reka","Toth", role = "aut", email = "r.toth@dkfz.de"),

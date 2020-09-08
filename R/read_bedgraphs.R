@@ -127,7 +127,7 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
     }
 
     if (verbose) {
-        message(paste0("-CpGs raw:      ", format(nrow(genome), big.mark = ",")))
+        message(paste0("-CpGs raw:      ", format(nrow(genome), big.mark = ",")), " (total reference CpGs)")
     }
     genome <- genome[chr %in% as.character(contigs)]
 
@@ -141,7 +141,7 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
     }
 
     if (verbose) {
-        message(paste0("-CpGs filtered: ", format(nrow(genome), big.mark = ",")))
+        message(paste0("-CpGs retained: ", format(nrow(genome), big.mark = ",")), "(reference CpGs from contigs of interest)")
     }
 
     # check it with the strand column
@@ -152,8 +152,8 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
         genome[, `:=`(strand, "-")]
         genome <- data.table::rbindlist(list(genome, genome_plus), use.names = TRUE)
         data.table::setkeyv(genome, cols = c("chr", "start"))
-        message(paste0("-CpGs stranded: ", format(nrow(genome), big.mark = ",")))
-        rm(genome_plus)
+        message(paste0("-CpGs stranded: ", format(nrow(genome), big.mark = ",")), "(reference CpGs from both strands)")
+        rm(genome_plus) 
         gc()
     }
 
