@@ -1,3 +1,8 @@
+CHANGES IN VERSION 1.4.00 (For Bioconductor 3.12 release)
+-------------------------
+    o read_bedgraphs() supports bedgraphs files from "Bismark_cov", "MethylDackel", "MethylcTools", "BisSNP", "BSseeker2_CGmap"
+    o write_bedgraphs() supports output to multiBed and metilene file formats
+
 CHANGES IN VERSION 1.2.10
 -------------------------
     o BSgenome ref build parsing error. Issue: #24
