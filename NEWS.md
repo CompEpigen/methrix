@@ -1,3 +1,7 @@
+CHANGES IN VERSION 1.4.00
+-------------------------
+    o read_bedgraphs supports bedgraphs files from "Bismark_cov", "MethylDackel", "MethylcTools", "BisSNP", "BSseeker2_CGmap"
+
 CHANGES IN VERSION 1.2.10
 -------------------------
     o BSgenome ref build parsing error. Issue: #24
