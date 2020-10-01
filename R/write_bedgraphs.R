@@ -7,14 +7,19 @@
 #' @param force forces to create files if they are existing
 #' @param compress Whether to compress the output. Default TRUE
 #' @param SeqStyle Default `UCSC` with `chr` prefix.
+#' @param multiBed Default NULL. If provided a filename, a single bedGraph file with all samples included is generated.
+#' @param metilene Default FALSE. If TRUE outputs bedgraphs in `metilene` format that can be directly used for DMR calling with `metilene`. This option works only when \code{multiBed = TRUE}.
+#' @param phenoCol Default NULL. `condition` column from colData. Only applicable if \code{metilene = TRUE}
 #' @examples
 #' data('methrix_data')
 #' write_bedgraphs(m = methrix_data, output_dir = './temp')
+#' #Export to metline format for DMR calling with metline
+#' write_bedgraphs(m = methrix_data, output_dir = "./temp", rm_NA = FALSE, metilene = TRUE,multiBed = "metline_ip", phenoCol = "Condition")
 #' @return writes bedgraph files to output
 #' @export
 
 write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE, 
-    n_thr = 4, compress = TRUE, SeqStyle="UCSC") {
+    n_thr = 4, compress = TRUE, SeqStyle="UCSC", multiBed = NULL, metilene = FALSE, phenoCol = NULL) {
     
     
     if (!dir.exists(output_dir)) {
@@ -42,47 +47,85 @@ write_bedgraphs <- function(m, output_dir = NULL, rm_NA = TRUE, force = FALSE,
                  "windowingFunction"="mean")  
   parameters <- paste0(" ", paste(names(parameters), parameters, 
                                   sep = "=", collapse = " "))
-  
-  
-    message("----------------------")
-    message("*Writing bedGraphs:")
-    op_bdgs <- lapply(seq_len(nrow(colData(m))), function(i) {
+
+    
+    if(!is.null(multiBed)){
+      
+      if (compress) {
+        op_bdg <- paste0(output_dir, "/", multiBed, 
+                         ".bedGraph.gz")
+      } else {
+        op_bdg <- paste0(output_dir, "/", multiBed, 
+                         ".bedGraph")
+      }
+      message("----------------------")
+      message("*Writing ", op_bdg, " ")
+      
+      if(metilene){
+        if(is.null(phenoCol)){
+          stop("Please provide a value to phenoCol.")
+        }
+        if(!phenoCol %in% colnames(colData(m))){
+          stop(phenoCol, " is not a valid column name in colData().\n Available column name are: ", paste(colnames(colData(m)), collapse = ", "))
+        }
+        
+        colnames(mat)[1:2] = c("chr", "pos")
+        colnames(mat)[5:ncol(mat)] = paste(as.character(colData(m)[,phenoCol]), rownames(colData(m)), sep = "_")
+        if(rm_NA){
+          mat = mat[complete.cases(mat),]
+        }
+        data.table::fwrite(x = mat[,c(1,2,5:ncol(mat)), with = FALSE], file = op_bdg, sep = "\t", na = ".", scipen = 7, nThread = n_thr, compress = "auto", showProgress = TRUE, quote = FALSE) 
+      }else{
+        if(rm_NA){
+          mat = mat[complete.cases(mat),]
+        }
+        colnames(mat)[1] = paste0("#", colnames(mat)[1])
+        data.table::fwrite(x = mat, file = op_bdg, sep = "\t", na = ".", scipen = 7, nThread = n_thr, compress = "auto", showProgress = TRUE, quote = FALSE)
+      }
+    }else{
+      message("----------------------")
+      message("*Writing bedGraphs:")
+      op_bdgs <- lapply(seq_len(nrow(colData(m))), function(i) {
         mat_i <- mat[, c(seq_len(3), i + 4), with = FALSE]
         if (rm_NA) {
-            mat_i <- mat_i[complete.cases(mat_i), , ]
+          mat_i <- mat_i[complete.cases(mat_i), , ]
         }
         
         if (compress) {
-            op_bdg <- paste0(output_dir, "/", rownames(colData(m))[i], 
-                ".bedGraph.gz")
+          op_bdg <- paste0(output_dir, "/", rownames(colData(m))[i], 
+                           ".bedGraph.gz")
         } else {
-            op_bdg <- paste0(output_dir, "/", rownames(colData(m))[i], 
-                ".bedGraph")
+          op_bdg <- paste0(output_dir, "/", rownames(colData(m))[i], 
+                           ".bedGraph")
         }
         
         #add sample name to trackline
         header <- data.table(paste0('track type=bedGraph name="', rownames(colData(m))[i], '"', parameters))
         
         if (file.exists(op_bdg)) {
-            if (force) {
-                message(paste0("**Writing ", rownames(colData(m))[i]))
-                colnames(mat_i) <- paste0("V", seq_len(ncol(mat_i)))
-                data.table::fwrite(x = header, file = op_bdg, sep = "\t", append=FALSE, quote=FALSE,
-                                   col.names = FALSE, nThread = n_thr, scipen = 7, compress = "auto")
-                data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", append=TRUE,
-                  col.names = FALSE, nThread = n_thr, scipen = 7, compress = "auto")
-            } else {
-                message(paste0("**File ", basename(op_bdg), " already exists. Skipped re-writing"))
-            }
-        } else {
+          if (force) {
             message(paste0("**Writing ", rownames(colData(m))[i]))
             colnames(mat_i) <- paste0("V", seq_len(ncol(mat_i)))
-            data.table::fwrite(x = header, file = op_bdg, sep = "\t", col.names = FALSE, append=FALSE, quote=FALSE,
-                               nThread = n_thr)
-            data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", col.names = FALSE, append=TRUE,
-                nThread = n_thr)
+            data.table::fwrite(x = header, file = op_bdg, sep = "\t", append=FALSE, quote=FALSE,
+                               col.names = FALSE, nThread = n_thr, scipen = 7, compress = "auto")
+            data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", append=TRUE,
+                               col.names = FALSE, nThread = n_thr, scipen = 7, compress = "auto")
+          } else {
+            message(paste0("**File ", basename(op_bdg), " already exists. Skipped re-writing"))
+          }
+        } else {
+          message(paste0("**Writing ", rownames(colData(m))[i]))
+          colnames(mat_i) <- paste0("V", seq_len(ncol(mat_i)))
+          data.table::fwrite(x = header, file = op_bdg, sep = "\t", col.names = FALSE, append=FALSE, quote=FALSE,
+                             nThread = n_thr)
+          data.table::fwrite(x = mat_i, file = op_bdg, sep = "\t", col.names = FALSE, append=TRUE,
+                             nThread = n_thr)
         }
         op_bdg
-    })
+      })
+      
+    }
+    
+    
     message("----------------------")
 }
