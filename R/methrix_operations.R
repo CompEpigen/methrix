@@ -618,7 +618,7 @@ mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99, n_cores=1) {
 
 
         for (i in seq_along(colnames(m))) {
-            message(paste0("-Masked ", n[i], " CpGs due to too low coverage in sample ",
+            message(paste0("-Masked ", n[i], " CpGs due to too high coverage in sample ",
                            colnames(row_idx2)[i], "."))
 
         }
