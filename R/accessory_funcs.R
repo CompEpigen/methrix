@@ -448,9 +448,9 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
                       file_uncovered = file_uncovered, zero_based = zero_based)
         
         DelayedArray::write_block(block = as.matrix(b$bdg[, .(beta)]),
-                                  viewport = grid[[i]], sink = M_sink)
+                                  viewport = grid[[i]], x = M_sink)
         DelayedArray::write_block(block = as.matrix(b$bdg[, .(cov)]),
-                                  viewport = grid[[i]], sink = cov_sink)
+                                  viewport = grid[[i]], x = cov_sink)
         genome_stat_final <- b$genome_stat[, `:=`(Sample_Name,
                                                   rownames(coldata)[i])]
         chr_stat_final <- b$chr_stat[, `:=`(Sample_Name, rownames(coldata)[i])]
@@ -463,9 +463,9 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
                       file_uncovered = file_uncovered, zero_based = zero_based)
         
         DelayedArray::write_block(block = as.matrix(b$bdg[, .(beta)]),
-                                  viewport = grid[[i]], sink = M_sink)
+                                  viewport = grid[[i]], x = M_sink)
         DelayedArray::write_block(block = as.matrix(b$bdg[, .(cov)]),
-                                  viewport = grid[[i]], sink = cov_sink)
+                                  viewport = grid[[i]], x = cov_sink)
         genome_stat_final <- rbind(genome_stat_final, b$genome_stat[,
                                                                     `:=`(Sample_Name, rownames(coldata)[i])])
         chr_stat_final <- rbind(chr_stat_final, b$chr_stat[, `:=`(Sample_Name,
