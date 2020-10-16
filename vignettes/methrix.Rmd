@@ -141,6 +141,8 @@ Get basic summary statistics of the `methrix` object with `methrix_report` funct
 methrix::methrix_report(meth = meth, output_dir = tempdir())
 ```
 
+Click [here](https://compepigen.github.io/methrix_docs/articles/raw_report.html) for an example report.
+
 ## Filtering
 ### Remove uncovered loci
 Usual task in analysis involves removing uncovered CpGs. i.e, those loci which are not covered across all sample (in other words covered only in subset of samples resulting `NA` for rest of the samples ).
