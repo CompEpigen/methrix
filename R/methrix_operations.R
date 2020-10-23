@@ -5,8 +5,11 @@
 #' @param type matrix which needs to be summarized. Coule be `M`, `C`. Default 'M'
 #' @param how mathematical function by which regions should be summarized. Can be one of the following: mean, sum, max, min. Default 'mean'
 #' @param overlap_type defines the type of the overlap of the CpG sites with the target region. Default value is `within`. For detailed description,
-#' see the \code{foverlaps} function of the \code{\link{data.table}} package.
+#' see the \code{findOverlaps} function of the \code{\link{IRanges}} package.
 #' @param na_rm Remove NA's? Default \code{TRUE}
+#' @param elementMetadata.col columns in \code{\link{methrix}}@elementMetadata which needs to be summarised. Default = NULL.
+#' @param n_chunks Number of chunks to split the \code{\link{methrix}} object in case it is very large. Default = 1.
+#' @param n_cores Number of parallel instances. \code{n_cores} should be less than or equal to \code{n_chunks}. If \code{n_chunks} is not specified, then \code{n_chunks} is initialized to be equal to \code{n_cores}. Default = 1.
 #' @param verbose Default TRUE
 #' @return a coverage or methylation matrix
 #' @examples
@@ -15,93 +18,144 @@
 #' regions = data.table(chr = 'chr21', start = 27867971, end =  27868103),
 #' type = 'M', how = 'mean')
 #' @export
-get_region_summary <- function(m, regions = NULL, type = "M", how = "mean",
-    overlap_type = "within", na_rm = TRUE, verbose = TRUE) {
+get_region_summary = function(m, regions = NULL, type = "M", how = "mean", overlap_type = "within", 
+                              na_rm = TRUE, elementMetadata.col = NULL, verbose = TRUE, n_chunks=1, n_cores=1){
 
-    if (!is(m, "methrix")){
-        stop("A valid methrix object needs to be supplied.")
+    yid  <- NULL
+    if (n_cores > n_chunks){
+        n_chunks <- n_cores
+        message("n_cores should be set to be less than or equal to n_chunks.","\n","n_chunks has been set to be equal to n_cores = ", n_cores)
     }
 
-    rid <- chr <- yid <- median <- NULL
-    type <- match.arg(arg = type, choices = c("M", "C"))
-    how <- match.arg(arg = how, choices = c("mean", "median", "max", "min",
-        "sum"))
 
-    start_proc_time <- proc.time()
+    type = match.arg(arg = type, choices = c('M', 'C'))
+    how = match.arg(arg = how, choices = c('mean', 'median', 'max', 'min', 'sum', 'sd'))
 
-    target_regions <- cast_ranges(regions, set.key = FALSE)
-    # Add a unique id for every target range (i.e, rows)
-    target_regions[, `:=`(rid, seq_len(nrow(target_regions)))]
-    data.table::setDT(x = target_regions, key = c("chr", "start", "end"))
-    target_regions[, `:=`(yid, paste0("yid_", seq_len(nrow(target_regions))))]
+    start_proc_time = proc.time()
+
+
+    if("data.table" %in% class(regions)){
+        regions <- GenomicRanges::makeGRangesFromDataFrame(df = regions)
+    }
     
+
+    target_regions = (regions)
+    #Add a unique id for every target range (i.e, rows)
+    target_regions@elementMetadata$rid <- paste0("rid_", 1:length(target_regions))
+
+    r_dat = as.data.frame(rowData(x = m))
+    r_dat$seqnames <- as.character(r_dat$chr)
+    r_dat$chr <- NULL
     
-    r_dat <- data.table::as.data.table(rowData(x = m))
-    r_dat[, `:=`(chr, as.character(chr))]
-    r_dat[, `:=`(end, start + 1)]
-    data.table::setDT(x = r_dat, key = c("chr", "start", "end"))
+    if(is.null(r_dat$end)){
+        r_dat$end <- r_dat$start + 1
+    }
+    
+    r_dat <- GenomicRanges::makeGRangesFromDataFrame(r_dat, keep.extra.columns = FALSE)
 
-    if (verbose) {
-        message("-Checking for overlaps..")
+
+    if(!all(elementMetadata.col %in% colnames(m@elementMetadata))) stop("variables provided to elementMetadata.col not correct")
+
+    if(verbose){
+        message("-Checking for overlaps..\n")
     }
 
-    overlap_indices <- data.table::foverlaps(x = r_dat, y = target_regions,
-        type = overlap_type, nomatch = NULL, which = TRUE)
+    overlap_indices = as.data.table(findOverlaps(r_dat, target_regions, type = overlap_type))
 
-    if (nrow(overlap_indices) == 0) {
-        warning("No overlaps detected")
-        return(NULL)
+
+
+    colnames(overlap_indices) <- c("xid", "yid")
+
+    if(nrow(overlap_indices) == 0){
+        stop("No overlaps detected")
     }
 
-    overlap_indices[, `:=`(yid, paste0("yid_", yid))]
-    n_overlap_cpgs <- overlap_indices[, .N, yid]
-    colnames(n_overlap_cpgs) <- c("yid", "n_overlap_CpGs")
 
+    overlap_indices[,yid := paste0("rid_", yid)]
+    n_overlap_cpgs = overlap_indices[, .N, yid]
+    colnames(n_overlap_cpgs) = c('rid', 'n_overlap_CpGs')
 
-    if (type == "M") {
-        dat <- get_matrix(m = m[overlap_indices$xid, ], type = "M", add_loci = TRUE)
-    } else if (type == "C") {
-        dat <- get_matrix(m = m[overlap_indices$xid, ], type = "C", add_loci = TRUE)
+    #overlap_indices = split(overlap_indices, as.factor(as.character(overlap_indices$yid)))
+
+    if(n_chunks==1){
+        if (type == "M") {
+            dat = get_matrix(m = m[overlap_indices$xid,], type = "M", add_loci = TRUE)
+        } else if (type == "C") {
+            dat = get_matrix(m = m[overlap_indices$xid,], type = "C", add_loci = TRUE)
+        }
+    } else {
+        #To handle the situation where the number of overlapping sites are lower than the n_chunks
+        if(nrow(overlap_indices) < n_chunks){
+            n_chunks <- nrow(overlap_indices)
+            if (n_cores > n_chunks){
+                n_cores <- n_chunks 
+                #message("n_cores should be set to be less than or equal to n_chunks.","\n","n_chunks has been set to be equal to n_cores = ", n_cores)
+            }
+        }
+        
+        if (type == "M") {
+            dat = tryCatch(do.call("rbind",mclapply(mc.cores=n_cores, 
+                                           split(overlap_indices$xid, ceiling(seq_along(overlap_indices$xid)/ceiling(length(overlap_indices$xid)/n_chunks))), 
+                                           function(i) {
+                get_matrix(m[i,], type = "M", add_loci = TRUE)
+            })), 
+            error = function(e){
+                message( e, "\n Try to use less cores. ")
+            })
+        } else if (type == "C") {
+            dat = tryCatch(do.call("rbind",mclapply(mc.cores=n_cores, split(overlap_indices$xid, ceiling(seq_along(overlap_indices$xid)/ceiling(length(overlap_indices$xid)/n_chunks))), function(i) {
+                get_matrix(m[i,], type = "C", add_loci = TRUE)
+            })), 
+            error = function(e){
+                message( e, "\n Try to use less cores. ")
+            })
+        }
+
     }
 
-    if (nrow(overlap_indices) != nrow(dat)) {
-        warning("Something went wrong")
-        return(NULL)
+
+
+    if(nrow(overlap_indices) != nrow(dat)){
+        stop("Something went wrong")
     }
 
-    dat <- cbind(overlap_indices, dat)
+    dat = cbind(overlap_indices, dat)
 
-    if (how == "mean") {
-        message("-Summarizing by average")
-        output <- dat[, lapply(.SD, mean, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+    #message("-Summarizing overlaps..\n")
+    if(how == "mean") {
+        message("-Summarizing by average\n")
+        output = dat[, lapply(.SD, mean, na.rm = na_rm), by = yid, .SDcols = c(elementMetadata.col,rownames(colData(m)))]
     } else if (how == "median") {
-        message("-Summarizing by median")
-        output <- dat[, lapply(.SD, median, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+        message("-Summarizing by median\n")
+        output = dat[, lapply(.SD, median, na.rm = na_rm), by = yid, .SDcols = c(elementMetadata.col,rownames(colData(m)))]
     } else if (how == "max") {
-        message("-Summarizing by maximum")
-        output <- dat[, lapply(.SD, max, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+        message("-Summarizing by maximum\n")
+        output = dat[, lapply(.SD, max, na.rm = na_rm), by = yid, .SDcols = c(elementMetadata.col,rownames(colData(m)))]
     } else if (how == "min") {
-        message("-Summarizing by minimum")
-        output <- dat[, lapply(.SD, min, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+        message("-Summarizing by minimum\n")
+        output = dat[, lapply(.SD, min, na.rm = na_rm), by = yid, .SDcols = c(elementMetadata.col,rownames(colData(m)))]
     } else if (how == "sum") {
-        message("-Summarizing by sum")
-        output <- dat[, lapply(.SD, sum, na.rm = na_rm), by = yid, .SDcols = rownames(colData(m))]
+        message("-Summarizing by sum\n")
+        output = dat[, lapply(.SD, sum, na.rm = na_rm), by = yid, .SDcols = c(elementMetadata.col,rownames(colData(m)))]
     }
 
-    output <- merge(target_regions, output, by.x = "yid", by.y = "yid",
-        all.x = TRUE)
-    output <- merge(n_overlap_cpgs, output, by = "yid")
-    setDT(output, key=c("rid"))
-    output[, `:=`(yid, NULL)]
-    output[, `:=`(rid, NULL)]
+    output = merge(target_regions, output, by.x = 'rid', by.y = 'yid', all.x = TRUE)
+    output = merge(n_overlap_cpgs, output, by = 'rid')
+    output$rid <- as.numeric(gsub("rid_","",output$rid))
+
+    output <- output[order(output$rid),]
+    setnames(output, "seqnames", "chr")
+    keep <- c("chr", "start", "end", "n_overlap_CpGs", "rid", elementMetadata.col, colnames(m))
+    output <- output[, ..keep]
 
 
-    if (verbose) {
-        message("-Done! Finished in:", data.table::timetaken(start_proc_time))
+    if(verbose){
+        message("-Done! Finished in:",data.table::timetaken(start_proc_time),"\n")
     }
 
     return(output)
 }
+
 
 #--------------------------------------------------------------------------------------------------------------------------
 #' Order mathrix object by SD
@@ -197,9 +251,12 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL, ov
 #' @details Takes \code{\link{methrix}} object and filters CpGs based on coverage statistics
 #' @param m \code{\link{methrix}} object
 #' @param cov_thr minimum coverage required to call a loci covered
-#' @param min_samples At-least these many samples should have a loci with coverage >= \code{cov_thr}
-#' @param group a column name from sample annotation that defines groups. In this case, the number of min_samples will be 
-#' tested group-wise. 
+#' @param min_samples Minimum number of samples that should have a loci with coverage >= \code{cov_thr}. If \code{group} is given, then this applies per group. Only need one of \code{prop_samples} or \code{min_samples}.
+#' @param prop_samples Minimum proportion of samples that should have a loci with coverage >= \code{cov_thr}. If \code{group} is given, then this applies per group. Only need one of \code{prop_samples} or \code{min_samples}.
+#' @param group a column name from sample annotation that defines groups. In this case, the number of min_samples will be
+#' tested group-wise.
+#' @param n_chunks Number of chunks to split the \code{\link{methrix}} object in case it is very large. Default = 1.
+#' @param n_cores Number of parallel instances. \code{n_cores} should be less than or equal to \code{n_chunks}. If \code{n_chunks} is not specified, then \code{n_chunks} is initialized to be equal to \code{n_cores}. Default = 1.
 #' @importFrom methods is as new
 #' @examples
 #' data('methrix_data')
@@ -207,7 +264,7 @@ subset_methrix <- function(m, regions = NULL, contigs = NULL, samples = NULL, ov
 #' coverage_filter(m = methrix_data, cov_thr = 1, min_samples = 3)
 #' @return An object of class \code{\link{methrix}}
 #' @export
-coverage_filter <- function(m, cov_thr = 1, min_samples = 1, group = NULL) {
+coverage_filter <- function(m, cov_thr = 1, min_samples = 1, prop_samples=0, group = NULL, n_chunks=1, n_cores=1) {
 
     start_proc_time <- proc.time()
     V1 <- . <- col2 <- Count2 <- i.to <- NULL
@@ -215,53 +272,88 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, group = NULL) {
         stop("A valid methrix object needs to be supplied.")
     }
 
-    if (!(is.numeric(cov_thr) & is.numeric(min_samples))){
-        stop("cov_thr and min_samples variables are not numeric.")
+    if (!is.numeric(cov_thr)){
+        stop("cov_thr is not numeric.")
     }
-    
+
+    if (!(is.numeric(min_samples) & is.numeric(prop_samples))){
+        stop("min_samples and prop_samples variables are not numeric.")
+    }
+
     if (!is.null(group) && !(group %in% colnames(m@colData))){
         stop(paste("The column name ", group, " can't be found in colData. Please provid a valid group column."))
-    } 
-    
+    }
 
-    res <- data.table::as.data.table(which(get_matrix(m = m, type = "C") >=
-        cov_thr, arr.ind = TRUE))
+
+    if (n_cores > n_chunks){
+        n_chunks <- n_cores
+        message("n_cores should be set to be less than or equal to n_chunks.", "\n", "n_chunks has been set to be equal to n_cores = ", n_cores)
+    }
+
+
 
     if (is_h5(m)) {
-        if (!is.null(group)){
-            res[.(V2 = unique(res$V2), to = m@colData[unique(res$V2), group]), on = "V2", col2 := i.to]
-            res <- res[, .(Count = (.N)), by = .(V1, col2)]
-            row_idx <- res[res$Count >= min_samples, V1, by = col2]
-            row_idx <- row_idx[, .(Count2 = (.N)), by = V1]
-            row_idx <- row_idx[Count2==length(unique(m@colData[,group])),V1]
-            row_idx[order(row_idx, decreasing = F)]
+        if (n_chunks == 1) {
+            cov_dat = get_matrix(m = m, type = "C")
+            if (!is.null(group)) {
+                row_idx <- sapply(unique(m@colData[, group]), function(c) {
+                    res <- DelayedMatrixStats::rowSums2(cov_dat[, m@colData[, 
+                                                                            group] == c] >= cov_thr, na.rm = TRUE)
+                    row_idx <- (res >= max(min_samples, ceiling(prop_samples * 
+                                                                    sum(m@colData[, group] == c))))
+                })
+                row_idx <- DelayedMatrixStats::rowAlls(row_idx)
+            } else {
+                res <- DelayedMatrixStats::rowSums2(cov_dat >= cov_thr, na.rm = TRUE)
+                row_idx <- (res >= max(min_samples, ceiling(prop_samples * 
+                                                                ncol(cov_dat))))
+            }
         } else {
-            res <- res[, .(Count = (.N)), by = V1]
-            setDT(res, key="V1")
-            row_idx <- res[res$Count >= min_samples, V1]
+            if (!is.null(group)) {
+                row_idx <- unlist(mclapply(mc.cores = n_cores, 1:n_chunks, 
+                                           function(i) {
+                                               cov_dat = get_matrix(m[((i - 1) * ceiling(nrow(m)/n_chunks) + 1):min(i * ceiling(nrow(m)/n_chunks), nrow(m)), ], 
+                                                                    type = "C")
+                                               row_idx <- sapply(unique(m@colData[, group]), function(c) {
+                                                   res <- DelayedMatrixStats::rowSums2(cov_dat[, m@colData[,group] == c] >= cov_thr, na.rm = TRUE)
+                                                   row_idx <- (res >= max(min_samples, ceiling(prop_samples * sum(m@colData[, group] == c))))
+                                               })
+                                               row_idx <- DelayedMatrixStats::rowAlls(row_idx)
+                                           }))
+            } else {
+                row_idx <- unlist(mclapply(mc.cores = n_cores, 1:n_chunks, 
+                                           function(i) {
+                                               cov_dat = get_matrix(m[((i - 1) * ceiling(nrow(m)/n_chunks) + 1):min(i * ceiling(nrow(m)/n_chunks), nrow(m)), ], 
+                                                                    type = "C")
+                                               res <- DelayedMatrixStats::rowSums2(cov_dat >= cov_thr, na.rm = TRUE)
+                                               row_idx <- (res >= max(min_samples, ceiling(prop_samples * ncol(cov_dat))))
+                                           }))
+            }
         }
-        
     } else {
-        if (!is.null(group)){
-            res[.(col = unique(res$col), to = m@colData[unique(res$col), group]), on = "col", col2 := i.to]
-            res <- res[, .(Count = (.N)), by = .(row, col2)]
-            row_idx <- res[res$Count >= min_samples, row, by = col2]
-            row_idx <- row_idx[, .(Count2 = (.N)), by = row]
-            row_idx <- row_idx[Count2==length(unique(res$col)),row]
+        cov_dat = get_matrix(m = m, type = "C")
+        if (!is.null(group)) {
+            row_idx <- sapply(unique(m@colData[, group]), function(c) {
+                res <- matrixStats::rowSums2(cov_dat[, m@colData[, group] == 
+                                                         c] >= cov_thr, na.rm = TRUE)
+                row_idx <- (res >= max(min_samples, ceiling(prop_samples * sum(m@colData[, group] == c))))
+            })
+            row_idx <- matrixStats::rowAlls(row_idx)
         } else {
-            res <- res[, .(Count = (.N)), by = row]
-            setDT(res, key="row")
-            row_idx <- res[res$Count >= min_samples, row]
+            res <- matrixStats::rowSums2(cov_dat >= cov_thr, na.rm = T)
+            row_idx <- (res >= max(min_samples, ceiling(prop_samples * ncol(cov_dat))))
         }
     }
 
     gc()
-    message(paste0("-Retained ", format(length(row_idx), big.mark = ","),
-        " of ", format(nrow(m), big.mark = ","), " sites"))
+    message(paste0("-Retained ", format(sum(row_idx), big.mark = ","),
+                   " of ", format(nrow(m), big.mark = ","), " sites"))
     message("-Finished in:  ", data.table::timetaken(start_proc_time))
+
 
     return(m[row_idx, ])
 }
+
 
 #--------------------------------------------------------------------------------------------------------------------------
 
@@ -289,10 +381,9 @@ get_matrix <- function(m, type = "M", add_loci = FALSE, in_granges=FALSE) {
 
 
     type <- match.arg(arg = type, choices = c("M", "C"))
-    if (add_loci==FALSE & in_granges==TRUE){
-        warning("Without genomic locations (add_loci= FALSE), it is not possible to convert the results to GRanges, ",
+    if (add_loci == FALSE & in_granges == TRUE) {
+        warning("Without genomic locations (add_loci= FALSE), it is not possible to convert the results to GRanges, ", 
                 "the output will be a data.table object. ")
-
     }
 
     if (type == "M") {
@@ -362,30 +453,29 @@ methrix2bsseq <- function(m) {
 #'
 remove_uncovered <- function(m) {
 
-    V1 <- N <- NULL
     start_proc_time <- proc.time()
     if (!is(m, "methrix")){
         stop("A valid methrix object needs to be supplied.")
     }
 
-    if (is_h5(m)) {
-        row_idx <- data.table::as.data.table(which(is.na(get_matrix(m = m,
-            type = "C")), arr.ind = TRUE))[, .N, V1][N == ncol(m), V1]
-    } else {
-        row_idx <- data.table::as.data.table(which(is.na(get_matrix(m = m,
-            type = "C")), arr.ind = TRUE))[, .N, row][N == ncol(m), row]
-    }
-    message(paste0("-Removed ", format(length(row_idx), big.mark = ","),
-        " [", round(length(row_idx)/nrow(m) * 100, digits = 2), "%] uncovered loci of ",
-        format(nrow(m), big.mark = ","), " sites"))
+
+    row_idx<-rowSums(!is.na(assays(m)[[2]]))==0
+
+    message(paste0("-Removed ", format(sum(row_idx), big.mark = ","),
+                   " [", round(sum(row_idx)/nrow(m) * 100, digits = 2), "%] uncovered loci of ",
+                   format(nrow(m), big.mark = ","), " sites"))
 
     gc()
+
     message("-Finished in:  ", data.table::timetaken(start_proc_time))
-    if (length(row_idx)==0){
+
+    if (sum(row_idx) == 0){
         m
     } else {
-    m[-row_idx, ]
-        }
+        m[!row_idx, ]
+    }
+
+
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
@@ -437,68 +527,103 @@ region_filter <- function(m, regions, type = "within") {
 #' @param low_count The minimal coverage allowed. Everything below, will get masked. Default = NULL, nothing gets masked.
 #' @param high_quantile The quantile limit of coverage. Quantiles are calculated for each sample and everything that belongs to a
 #' higher quantile than the defined will be masked. Default = 0.99.
+#' @param n_cores Number of parallel instances. Can only be used if \code{\link{methrix}} is in HDF5 format. Default = 1.
 #' @return An object of class \code{\link{methrix}}
 #' @examples
 #' data('methrix_data')
 #' mask_methrix(m = methrix_data, low_count = 5, high_quantile = 0.99 )
 #' @export
-
-mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99) {
+mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99, n_cores=1) {
 
     start_proc_time <- proc.time()
     if (!is(m, "methrix")){
         stop("A valid methrix object needs to be supplied.")
     }
 
+    if (!is_h5(m) & n_cores != 1) {
+        stop("Parallel processing not supported for a non-HDF5 methrix object due to probable high memory usage. \nNumber of cores (n_cores) needs to be 1.")
+    }
+
+
     if (!is.null(low_count)) {
 
         if(!is.numeric(low_count)){
             stop("low_count must be a numeric value.")
         }
-        row_idx <- which(get_matrix(m = m, type = "C") < low_count, arr.ind = FALSE)
 
-        message(paste0("-Masked ", format(length(row_idx), big.mark = ","),
-            " CpGs due to low coverage."))
+
+        message("-Masking coverage lower than ", low_count)
+
+        row_idx1 <- (assays(m)[[2]] < low_count)
+        assays(m)[[1]][row_idx1] <- as.double(NA)
+        assays(m)[[2]][row_idx1] <- as.integer(NA)
+
+
         if (is_h5(m)) {
-            assays(m)[[1]][assays(m)[[2]] < low_count] <- NA
-            assays(m)[[2]][assays(m)[[2]] < low_count] <- NA
+            if (n_cores == 1){
+                n <- DelayedMatrixStats::colSums2(row_idx1, na.rm = T)}
+            else {
+                    n <- simplify2array(mclapply(mc.cores = n_cores, 1:ncol(row_idx1), function(i) sum(row_idx1[, i], na.rm = T)))}
         } else {
-            assays(m)[[1]][row_idx] <- NA
-            assays(m)[[2]][row_idx] <- NA
+            n <- colSums(row_idx1, na.rm = T)
+        }
+
+        for (i in seq_along(colnames(m))) {
+            message(paste0("-Masked ", n[i], " CpGs due to too low coverage in sample ",  colnames(row_idx1)[i], "."))
+
         }
 
     }
+
 
     if (!is.null(high_quantile)) {
         if (high_quantile >= 1 | high_quantile <= 0) {
             stop("High quantile should be between 0 and 1. ")
         }
+
+        message("\n\n-Masking coverage higher than ", high_quantile*100," percentile")
+
+
+        
         if (is_h5(m)) {
-            no_dimnames <- assays(m, withDimnames = FALSE)$cov
-            dimnames(no_dimnames) <- NULL
-            quantiles <- DelayedMatrixStats::colQuantiles(no_dimnames,
-                probs = high_quantile, na.rm = TRUE)
-            rm(no_dimnames)
+            
+            if (n_cores == 1){
+                quantiles <- DelayedMatrixStats::colQuantiles(assays(m)[[2]], probs = high_quantile, na.rm = TRUE, drop = F)}
+            else {
+                quantiles <- simplify2array(mclapply(mc.cores = n_cores, 1:ncol(assays(m)[[2]]), 
+                                                     function(i) quantile(assays(m)[[2]][, i], probs = high_quantile, na.rm = TRUE)))}
             quantiles <- as.vector(quantiles)
             names(quantiles) <- rownames(m@colData)
         } else {
-            quantiles <- matrixStats::colQuantiles(assays(m)[[2]], probs = high_quantile,
-                na.rm = TRUE)
+            quantiles <- matrixStats::colQuantiles(assays(m)[[2]], probs = high_quantile, na.rm = TRUE)
             quantiles <- as.vector(quantiles)
             names(quantiles) <- rownames(m@colData)
         }
+        
 
-        for (quant in seq_along(quantiles)) {
-            row_idx <- which(assays(m)[[2]][, which(rownames(m@colData) ==
-                names(quantiles[quant]))] > quantiles[quant], arr.ind = FALSE)
-
-            assays(m)[[1]][row_idx, which(rownames(m@colData) == names(quantiles[quant]))] <- as.double(NA)
-            assays(m)[[2]][row_idx, which(rownames(m@colData) == names(quantiles[quant]))] <- as.integer(NA)
+        row_idx2 <- t(t((assays(m)[[2]])) > quantiles)
+        assays(m)[[1]][row_idx2] <- as.double(NA)
+        assays(m)[[2]][row_idx2] <- as.integer(NA)
 
 
-            message(paste0("-Masked ", length(row_idx), " CpGs due to too high coverage in sample ",
-                names(quantiles[quant]), "."))
+        if (is_h5(m)) {
+            if (n_cores == 1){
+                n <- DelayedMatrixStats::colSums2(row_idx2, na.rm = T)}
+            else {
+                n <- simplify2array(mclapply(mc.cores = n_cores, 1:ncol(row_idx2), 
+                                             function(i) sum(row_idx2[, i], na.rm = T)))}
+        } else {
+            n <- colSums(row_idx2, na.rm = T)
         }
+
+
+        for (i in seq_along(colnames(m))) {
+            message(paste0("-Masked ", n[i], " CpGs due to too high coverage in sample ",
+                           colnames(row_idx2)[i], "."))
+
+        }
+
+
     }
     message("-Finished in:  ", data.table::timetaken(start_proc_time))
     return(m)
@@ -523,7 +648,7 @@ combine_methrix <- function(m1, m2, by = c("row", "col")) {
     by <- match.arg(arg = by, choices = c("row", "col"), several.ok = FALSE)
 
     if (by == "row") {
-        if (nrow(colData(m1))!=nrow(colData(m2))  || !(all(rownames(m1@colData) == rownames(m2@colData)))) {
+        if (nrow(colData(m1))!= nrow(colData(m2))  || !(all(rownames(m1@colData) == rownames(m2@colData)))) {
             stop("You have different samples in your dataset. You need the same samples in your datasets. ")
         } else {
             m <- rbind(m1, m2)
@@ -582,7 +707,7 @@ get_stats <- function(m, per_chr = TRUE) {
             ),
             by = chr]
         })
-        
+
         meth_stat <- lapply(1:ncol(m), function(i){
             get_matrix(m = m[,i], type = "M", add_loci = TRUE)[, c(1, 4), with = FALSE][, .(
                 mean_meth = lapply(.SD,
@@ -593,10 +718,10 @@ get_stats <- function(m, per_chr = TRUE) {
             ),
             by = chr]
         })
-        
+
         names(meth_stat) <-  colnames(m)
         names(cov_stat) <- colnames(m)
-        
+
         cov_stat <- data.table::rbindlist(l = cov_stat, use.names = TRUE,
                                           idcol = "Sample_Name")
         meth_stat <- data.table::rbindlist(l = meth_stat, use.names = TRUE,
@@ -611,7 +736,7 @@ get_stats <- function(m, per_chr = TRUE) {
                 median_cov = DelayedMatrixStats::colMedians(get_matrix(m = m, "C"), na.rm = TRUE),
                 sd_cov = DelayedMatrixStats::colSds(get_matrix(m = m, "C"), na.rm = TRUE)
             )
-            
+
             meth_stat <- data.table::data.table(Sample_Name = colnames(m),
                 mean_meth = DelayedMatrixStats::colMeans2(get_matrix(m = m, "M"), na.rm = TRUE),
                 median_meth = DelayedMatrixStats::colMedians(get_matrix(m = m, "M"), na.rm = TRUE),
@@ -624,7 +749,7 @@ get_stats <- function(m, per_chr = TRUE) {
                 median_cov = matrixStats::colMedians(get_matrix(m = m, "C"), na.rm = TRUE),
                 sd_cov = matrixStats::colSds(get_matrix(m = m, "C"), na.rm = TRUE)
             )
-            
+
             meth_stat <- data.table::data.table(Sample_Name = colnames(m),
                 mean_meth = matrixStats::colMeans2(get_matrix(m = m, "M"), na.rm = TRUE),
                 median_meth = matrixStats::colMedians(get_matrix(m = m, "M"), na.rm = TRUE),
@@ -632,7 +757,7 @@ get_stats <- function(m, per_chr = TRUE) {
             )
         }
 
-        
+
         stats <- merge(meth_stat, cov_stat, by = c("Sample_Name"))
     }
 

@@ -38,9 +38,17 @@ extract_CPGs = function(ref_genome = NULL) {
     }
     requireNamespace(ref_genome, quietly = TRUE)
 
-
     ref_genome = BSgenome::getBSgenome(genome = ref_genome)
-    ref_build = attributes(x = ref_genome)$provider_version
+    
+    if("provider_version" %in% names(attributes(x = ref_genome)) ){
+        ref_build = attributes(x = ref_genome)$provider_version    
+    }else if("metadata" %in% names(attributes(x = ref_genome))){
+        ref_build = attributes(x = ref_genome)$metadata$genome
+    }else{
+        warning("Reference build could not be parsed from BSgenome. Setting it to NA")
+        ref_build = NA
+    }
+    
     chrom_sizes = data.table::data.table(contig = names(seqlengths(x = ref_genome)),
         length = seqlengths(x = ref_genome))
     chrs = names(ref_genome)

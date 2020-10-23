@@ -3,53 +3,59 @@ is_h5 = function(m) {
   return(m@metadata$is_h5)
 }
 
-
 get_source_idx = function(protocol = NULL) {
+
+  protocol <- match.arg(
+    arg = protocol,
+    choices = c("Bismark_cov", "MethylDackel", "MethylcTools", "BisSNP", "BSseeker2_CGmap")
+  )
+
   if (protocol == "MethylcTools") {
-    return(list(col_idx = c(chr = 1, start = 2, strand = 3, context = 4,
-                            cnp_rate = 5, M = 6, U = 7),
-                col_classes = c("character", "numeric",
-                                "character", "character", "numeric", "integer",
-                                "integer"),
-                fix_missing = c("end := start+1", "cov := M+U",
-                                "beta := M/cov")))
+    return(list(col_idx = list(character = 1, numeric = 2, numeric = c(6, 7)),
+                col_names = c("chr", "start", "M", "U"),
+                fix_missing = c("cov := M+U", "beta := M/cov"), select = TRUE))
+  } else if(protocol ==  "BisSNP"){
+    return(list(col_idx = list(character = 1, numeric = 2, numeric = 4, numeric = 5),
+                col_names = c("chr", "start", "beta", "cov"),
+                fix_missing = c("M := as.integer(cov * beta)",
+                                "U := cov - M"), select = TRUE))
+  }else if(protocol ==  "BSseeker2"){
+    return(list(col_idx = list(character = 1, numeric = 3, character = 4, numeric = 6, numeric = 8),
+                col_names = c("chr", "start", "context", "beta", "cov"),
+                fix_missing = c("context %in% 'CG'"), select = TRUE))
   } else {
     # Bismark and methyldackel have same output format
-    return(list(col_idx = c(chr = 1, start = 2, end = 3, beta = 4,
-                            M = 5, U = 6),
-                col_classes = c("character", "numeric", "numeric",
-                                "numeric", "numeric", "numeric"),
-                fix_missing = c("cov := M+U",
-                                "strand := '.'")))
+    return(list(col_idx = list(character = 1, numeric = 2, numeric = 4, numeric = 5, numeric = 6),
+                col_names = c("chr", "start", "beta", "M", "U"),
+                fix_missing = c("cov := M+U"), select= TRUE))
   }
 }
 
 #--------------------------------------------------------------------------------------------------------------------------
 
-# Parse custom indices and return missing info
 parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
                             beta = NULL, n_meth = NULL, n_unmeth = NULL,
                             cov = NULL, beta_fract = FALSE,
                             verbose = TRUE) {
-  
+
   # mandatory chr and start field
   if (is.null(chr) | is.null(start)) {
     stop("missing chromosome/start indices\nUse pipeline argument if the files are from Bismark, MethyDeckal, or MethylcTools",
          call. = FALSE)
   }
-  
+
   # See if any indices are duplicated
   if (length(which(duplicated(c(chr, start, end, strand, beta, n_meth,
                                 n_unmeth, cov)))) > 0) {
     stop("Duplicated indices.", call. = FALSE)
   }
-  
+
   # Check maximum betavalues (Can be 1 or 100)
   fix_missing = vector()
   if (is.null(strand)) {
     fix_missing = "strand := '*'"
   }
-  
+
   # If beta and cov are missing
   if (all(is.null(beta), is.null(cov))) {
     if (is.null(n_meth) | is.null(n_unmeth)) {
@@ -59,13 +65,13 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
       if (verbose) {
         message("--Missing beta and coverage info. Estimating them from M and U values")
       }
-      
+
       return(list(col_idx = c(chr = chr, start = start, end = end,
                               strand = strand, beta = beta, M = n_meth,
                               U = n_unmeth,
                               cov = cov),
                   fix_missing = c(fix_missing, "cov := M+U",
-                                  "beta := M/(M+U)")))
+                                  "beta := M/(M+U)"), select = FALSE))
     }
   } else if (is.null(beta) & !is.null(cov)) {
     # If anyone of them is present (case-1: coverage available, estimate
@@ -78,7 +84,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
       return(list(col_idx = c(chr = chr, start = start, end = end,
                               strand = strand, beta = beta, M = n_meth,
                               U = n_unmeth,  cov = cov),
-                  fix_missing = c(fix_missing, "beta := M/(M+U")))
+                  fix_missing = c(fix_missing, "beta := M/(M+U"), select = FALSE))
     } else if (!is.null(n_meth)) {
       # M available
       message("--Estimating beta values from M and coverage")
@@ -86,7 +92,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
                               strand = strand, beta = beta, M = n_meth,
                               U = n_unmeth, cov = cov),
                   fix_missing = c(fix_missing, "beta := M/cov",
-                                  "U := cov - M")))
+                                  "U := cov - M"), select = FALSE))
     } else if (!is.null(n_unmeth)) {
       # U available
       message("--Estimating beta values from U and coverage")
@@ -94,7 +100,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
                               strand = strand, beta = beta,M = n_meth,
                               U = n_unmeth, cov = cov),
                   fix_missing = c(fix_missing, paste0("beta := 1- (U/cov)"),
-                                  "M := cov - U")))
+                                  "M := cov - U"), select = FALSE))
     }
   } else if (!is.null(beta) & is.null(cov)) {
     # If anyone of them is present (case-2: beta available, estimate
@@ -106,11 +112,11 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
       if (verbose) {
         message("--Estimating coverage from M and U")
       }
-      
+
       return(list(col_idx = c(chr = chr, start = start, end = end,
                               strand = strand, beta = beta, M = n_meth,
                               U = n_unmeth, cov = cov),
-                  fix_missing = c(fix_missing, "cov := M+U")))
+                  fix_missing = c(fix_missing, "cov := M+U"), select = FALSE))
     }
   } else if (!is.null(beta) & !is.null(cov)) {
     # If both present (case-3: beta and coverage available, but missing M
@@ -119,20 +125,20 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
       if (verbose) {
         message("--Estimating M and U from coverage and beta values")
       }
-      
+
       return(list(col_idx = c(chr = chr, start = start, end = end,
                               strand = strand, beta = beta, cov = cov),
                   fix_missing = c("M := as.integer(cov * beta)",
-                                  "U := cov - M")))
+                                  "U := cov - M"), select = FALSE))
     } else {
       if (verbose) {
         message("--All fields are present. Nice.")
       }
-      
+
       return(list(col_idx = c(chr = chr, start = start, end = end,
                               strand = strand, beta = beta, cov = cov, M = n_meth,
                               U = n_unmeth),
-                  fix_missing = NULL))
+                  fix_missing = NULL, select = FALSE))
     }
   }
 }
@@ -149,11 +155,21 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
   
   chr <- M <- U <- . <- NULL
   message(paste0("-Processing:    ", basename(bdg)))
-  bdg_dat = suppressWarnings(data.table::fread(file = bdg, sep = "\t",
-                                               colClasses = col_list$col_classes,
-                                               verbose = FALSE,
-                                               showProgress = FALSE))
-  colnames(bdg_dat)[col_list$col_idx] = names(col_list$col_idx)
+  if(col_list$select){
+    bdg_dat = suppressWarnings(data.table::fread(file = bdg, sep = "\t", verbose = FALSE, showProgress = FALSE, select = col_list$col_idx,
+                                col.names = col_list$col_names, key = c("chr", "start")))
+  }else{
+    bdg_dat = suppressWarnings(data.table::fread(file = bdg, sep = "\t",
+                                                 colClasses = col_list$col_classes,
+                                                 verbose = FALSE,
+                                                 showProgress = FALSE))
+    
+    colnames(bdg_dat)[col_list$col_idx] = names(col_list$col_idx)
+    bdg_dat[, `:=`(chr, as.character(chr))]
+    bdg_dat[, `:=`(start, as.integer(start))]
+  }
+  
+  
   
   if ("beta" %in% colnames(bdg_dat)) {
     if (nrow(bdg_dat) < 1000) {
@@ -182,8 +198,6 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
     }
   }
   
-  bdg_dat[, `:=`(chr, as.character(chr))]
-  bdg_dat[, `:=`(start, as.integer(start))]
   
   if (zero_based) {
     # Bring bedgraphs to 1-based cordinate
@@ -232,7 +246,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
   
   if (verbose) {
     if (nrow(missing_cpgs) > 0) {
-      message(paste0("--CpGs missing: ", format(nrow(missing_cpgs), big.mark = ",")))
+      message(paste0("--CpGs missing: ", format(nrow(missing_cpgs), big.mark = ",")), " (from known reference CpGs)")
     }
     # message(paste0('Missing ', format(nrow(missing_cpgs), big.mark =
     # ','), ' reference CpGs from: ', basename(bdg)))
@@ -279,7 +293,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
                       .(chr, start)]
     bdg_dat[, `:=`(cov, M + U)]
     bdg_dat[, `:=`(beta, M/cov)]
-    bdg_dat[, `:=`(strand, "*")]
+    bdg_dat[, `:=`(strand, "+")]
   }
   
   # data.table::set(bdg_dat, which(is.nan(bdg_dat[,beta])), 'beta', NA)
@@ -498,6 +512,7 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
       }
       colnames(beta_mat)[ncol(beta_mat)] <- colnames(cov_mat)[ncol(cov_mat)] <- rownames(coldata)[i]
     }
+
     
     ncpg_final <- data.table::dcast(data = ncpg_final, chr ~ Sample_Name,
                                     value.var = "N")

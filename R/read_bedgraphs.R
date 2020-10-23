@@ -2,7 +2,7 @@
 #' @details Reads BedGraph files and generates methylation and coverage matrices.
 #' Optionally arrays can be serialized as on-disk HDFS5 arrays.
 #' @param files bedgraph files.
-#' @param pipeline Default NULL. Can be 'Bismark' or 'MethylDeckal' or 'MethylcTools'.
+#' @param pipeline Default NULL. Currently supports "Bismark_cov", "MethylDackel", "MethylcTools", "BisSNP", "BSseeker2_CGmap"
 #' If not known use idx arguments for manual column assignments.
 #' @param zero_based Are bedgraph regions zero based ? Default TRUE
 #' @param stranded Default FALSE
@@ -87,8 +87,7 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
             n_unmeth = U_idx, verbose = verbose)
         col_idx$col_classes <- NULL
     } else {
-        pipeline <- match.arg(arg = pipeline, choices = c("Bismark_cov",
-            "MethylDackel", "MethylcTools"))
+        pipeline <- match.arg(arg = pipeline, choices = c("Bismark_cov", "MethylDackel", "MethylcTools", "BisSNP", "BSseeker2_CGmap"))
         if (verbose) {
             message(paste0("-Preset:        ", pipeline))
         }
@@ -103,7 +102,7 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
     }
 
     if (is.null(contigs)) {
-        # Work with only main contrigs (either with chr prefix - UCSC style, or
+        # Work with only main contigs (either with chr prefix - UCSC style, or
         # ensemble style)
         contigs <- c(paste0("chr", c(seq_len(22), "X", "Y", "M")), seq_len(22),
             "X", "Y", "MT")
@@ -127,7 +126,7 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
     }
 
     if (verbose) {
-        message(paste0("-CpGs raw:      ", format(nrow(genome), big.mark = ",")))
+        message(paste0("-CpGs raw:      ", format(nrow(genome), big.mark = ",")), " (total reference CpGs)")
     }
     genome <- genome[chr %in% as.character(contigs)]
 
@@ -141,7 +140,7 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
     }
 
     if (verbose) {
-        message(paste0("-CpGs filtered: ", format(nrow(genome), big.mark = ",")))
+        message(paste0("-CpGs retained: ", format(nrow(genome), big.mark = ",")), "(reference CpGs from contigs of interest)")
     }
 
     # check it with the strand column
@@ -152,8 +151,8 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
         genome[, `:=`(strand, "-")]
         genome <- data.table::rbindlist(list(genome, genome_plus), use.names = TRUE)
         data.table::setkeyv(genome, cols = c("chr", "start"))
-        message(paste0("-CpGs stranded: ", format(nrow(genome), big.mark = ",")))
-        rm(genome_plus)
+        message(paste0("-CpGs stranded: ", format(nrow(genome), big.mark = ",")), "(reference CpGs from both strands)")
+        rm(genome_plus) 
         gc()
     }
 

@@ -207,7 +207,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
         output_file <- "methrix_reports.html"
     }
     
-    rmarkdown::render(input = md, output_file = "methrix_reports.html",
+    rmarkdown::render(input = md, output_file = output_file,
         output_dir = output_dir, clean = TRUE, params = list(prefix = prefix, n_covered_tsv = of3,
             n_covered_by_all_samples_tsv = of4, mc_per_chr_stat = of1,
             mc_per_sample_stat = of2, chr_lens = of5))

@@ -1,3 +1,17 @@
+CHANGES IN VERSION 1.4.00 (For Bioconductor 3.12 release)
+-------------------------
+    o read_bedgraphs() supports bedgraphs files from "Bismark_cov", "MethylDackel", "MethylcTools", "BisSNP", "BSseeker2_CGmap"
+    o write_bedgraphs() supports output to multiBed and metilene file formats
+    o write_bigwigs() exports methrix object as bigWigs
+
+CHANGES IN VERSION 1.2.10
+-------------------------
+    o BSgenome ref build parsing error. Issue: #24
+    o Show which CpGs are missing when loading bedGraphs. Issue: #22
+    o Faster HDF5 processing. PR: #21
+    o include SeqStyle option in Manual write_bedgraphs() function. PE: #20
+    o added the argument for SeqlevelsStyle and trackline in bedgraph. PR: #19
+    
 CHANGES IN VERSION 1.2.06
 -------------------------
     o Fix BioC warnings.

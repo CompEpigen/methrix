@@ -35,7 +35,7 @@ read_bedgraphs(
 \arguments{
 \item{files}{bedgraph files.}
 
-\item{pipeline}{Default NULL. Can be 'Bismark' or 'MethylDeckal' or 'MethylcTools'.
+\item{pipeline}{Default NULL. Currently supports "Bismark_cov", "MethylDackel", "MethylcTools", "BisSNP", "BSseeker2_CGmap"
 If not known use idx arguments for manual column assignments.}
 
 \item{zero_based}{Are bedgraph regions zero based ? Default TRUE}

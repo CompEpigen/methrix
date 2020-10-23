@@ -11,7 +11,10 @@ write_bedgraphs(
   force = FALSE,
   n_thr = 4,
   compress = TRUE,
-  SeqStyle = "UCSC"
+  SeqStyle = "UCSC",
+  multiBed = NULL,
+  metilene = FALSE,
+  phenoCol = NULL
 )
 }
 \arguments{
@@ -29,6 +32,12 @@ If \code{NULL} creats a \code{tempdir}}
 \item{compress}{Whether to compress the output. Default TRUE}
 
 \item{SeqStyle}{Default `UCSC` with `chr` prefix.}
+
+\item{multiBed}{Default NULL. If provided a filename, a single bedGraph file with all samples included is generated.}
+
+\item{metilene}{Default FALSE. If TRUE outputs bedgraphs in `metilene` format that can be directly used for DMR calling with `metilene`. This option works only when \code{multiBed = TRUE}.}
+
+\item{phenoCol}{Default NULL. `condition` column from colData. Only applicable if \code{metilene = TRUE}}
 }
 \value{
 writes bedgraph files to output
@@ -39,4 +48,6 @@ Writes bedGraphs from methrix object
 \examples{
 data('methrix_data')
 write_bedgraphs(m = methrix_data, output_dir = './temp')
+#Export to metline format for DMR calling with metline
+write_bedgraphs(m = methrix_data, output_dir = "./temp", rm_NA = FALSE, metilene = TRUE,multiBed = "metline_ip", phenoCol = "Condition")
 }
