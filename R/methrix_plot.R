@@ -219,18 +219,14 @@ methrix_pca <- function(m, var = "top", top_var = 1000, ranges = NULL,
     # Draw cumulative variance explained by PCs
     
     if (do_plot) {
-        par(bty = "n", mgp = c(2.5, 0.5, 0), mar = c(3, 4, 2, 2) + 0.1,
-            tcl = -0.25, las = 1)
-        plot(pc_vars, type = "h", col = "red", xlab = "", ylab = "variance Explained",
-            ylim = c(0, 1), yaxs = "i")
-        mtext(side = 1, "Principal component", line = 2)
-        cum_var <- cumsum(meth_pca$sdev^2)/sum(meth_pca$sdev^2) * meth_pca$sdev[1]^2/sum(meth_pca$sdev^2)
-        lines(cumsum(cum_var), type = "s")
-        axis(side = 4, at = pretty(c(0, 1)), labels = pretty(c(0, 1)))
-        legend("topright", col = c("red", "black"), lty = 1, c("Per PC", "Cumulative"), bty = "n")
-        #lines(x = c(length(meth_pca$sdev), n_pc, n_pc), y = c(cum_var[n_pc], cum_var[n_pc], 0), lty = 3)
-        title(main = paste0("Variance explained by ", n_pc, " PC: ", round(sum(c(meth_pca$sdev^2/sum(meth_pca$sdev^2))[seq_len(n_pc)]),
-            digits = 2)), adj = 0)
+        par(mar = c(3, 4, 1, 4))
+        b = barplot(height = pc_vars, names.arg = NA, col = "#2c3e50", ylim = c(0, 1), las = 2, axes = FALSE, ylab = "Variance Explained")
+        points(x = b, y = cumsum(pc_vars), type = 'l', lty = 2, lwd = 1.2, xpd = TRUE, col = "#c0392b")
+        points(x = b, y = cumsum(pc_vars), type = 'p', pch = 19, xpd = TRUE, col = "#c0392b")
+        mtext(text = paste0("PC", 1:length(pc_vars)), side = 1, at = b, las = 2, line = 0.5, cex = 0.8)
+        axis(side = 2, at = seq(0, 1, 0.1), line = 0, las = 2, cex.axis = 0.8)
+        axis(side = 4, at = seq(0, 1, 0.1), line = 0, las = 2, cex.axis = 0.8)
+        legend(x = "topleft", legend = "Cumulative", col = "#c0392b", pch = 19, lwd = 1, cex = 0.75, bty = "n")
     }
     #-----------------------------------------------------------------------------------------------------------------------
 
