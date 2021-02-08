@@ -1,0 +1,22 @@
+citHeader("methrix can be cited as:")
+
+citEntry(
+   entry="article",
+   title = "Methrix: an R/Bioconductor package for systematic aggregation and analysis of bisulfite sequencing data",
+   author = personList(as.person("Anand Mayakonda"),
+                       as.person("Maximilian Schonung"),
+                       as.person("Joschka Hey"),
+                       as.person("Rajbir Nath Batra1"),
+                       as.person("Clarissa Feuerstein-Akgoz"),
+                       as.person("Kristin Kohler"),
+                       as.person("Daniel B. Lipka"),
+                       as.person("Rocio Sotillo"),
+                       as.person("Christoph Plass"),
+                       as.person("Pavlo Lutsik"),
+                       as.person("Reka Toth"),
+                       ),
+   journal = "Bioinformatics",
+   year = 2020,
+   doi = "https://doi.org/10.1093/bioinformatics/btaa1048",
+   textVersion = "Anand Mayakonda, Maximilian Schonung, Joschka Hey1, Rajbir Nath Batra, Clarissa Feuerstein-Akgoz1, Kristin Kohler, Daniel B. Lipka, Rocio Sotillo, Christoph Plass, Pavlo Lutsik and Reka Toth. 2020. Methrix: an R/Bioconductor package for systematic aggregation and analysis of bisulfite sequencing data. Bioinformatics. https://doi.org/10.1093/bioinformatics/btaa1048"
+)
