@@ -1,7 +1,6 @@
 #' Extracts all CpGs from a genome
 #' @param ref_genome BSgenome object or name of the installed BSgenome package. Example: BSgenome.Hsapiens.UCSC.hg19
 #' @importFrom BSgenome installed.genomes getBSgenome seqnames
-#' @importFrom rjson fromJSON
 #' @export
 #' @return a list of data.table containing number of CpG's and contig lengths
 #' @examples
