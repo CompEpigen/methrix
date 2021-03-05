@@ -1,3 +1,7 @@
+CHANGES IN VERSION 1.4.07
+-------------------------
+o Fix bug when exporting bsseq objects from methrix objects created using Methyldackel pipeline. Issue: #26
+
 CHANGES IN VERSION 1.4.05
 -------------------------
     o rotate x axis labels by 45 degrees in report

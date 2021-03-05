@@ -23,8 +23,13 @@ get_source_idx = function(protocol = NULL) {
     return(list(col_idx = list(character = 1, numeric = 3, character = 4, numeric = 6, numeric = 8),
                 col_names = c("chr", "start", "context", "beta", "cov"),
                 fix_missing = c("context %in% 'CG'"), select = TRUE))
+  }else if(protocol ==  "Methyldackel"){
+    #Methyldackel has beta values in 4th column. Re-calculate it anyways because of https://github.com/CompEpigen/methrix/issues/26
+    return(list(col_idx = list(character = 1, numeric = 2, numeric = 5, numeric = 6),
+                col_names = c("chr", "start", "M", "U"),
+                fix_missing = c("cov := M+U", "beta := M/cov"), select= TRUE))
   } else {
-    # Bismark and methyldackel have same output format
+    # Bismark 
     return(list(col_idx = list(character = 1, numeric = 2, numeric = 4, numeric = 5, numeric = 6),
                 col_names = c("chr", "start", "beta", "M", "U"),
                 fix_missing = c("cov := M+U"), select= TRUE))
