@@ -22,7 +22,7 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
 
     start_proc_time <- proc.time()
 
-    genome <- m@metadata$genome
+    genome <- metadata(m)$genome
     chr <- m2 <- NULL
 
 
@@ -142,7 +142,7 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
         snp_rows <- c(snp_rows, snp_test)
     }
 
-    removed_snps <- data.table::as.data.table(m@elementMetadata)[snp_rows,    ]
+    removed_snps <- data.table::as.data.table(rowData(m))[snp_rows,    ]
 
     message("Number of SNPs removed:")
     print(removed_snps[, .N, by = chr])

@@ -22,7 +22,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     if (!recal_stats) {
         warning("If input methrix is a subsetted version of original methrix object, set recal_stats to TRUE",
             immediate. = TRUE)
-        if (is.null(meth@metadata$descriptive_stats)) {
+        if (is.null(metadata(meth)$descriptive_stats)) {
             stop("No previous statistics is available. Set recal_stats to TRUE.")
         }
     }
@@ -56,7 +56,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
             per_chr_stat <- get_stats(m = meth, per_chr = TRUE)
             gc()
         } else {
-            per_chr_stat <- meth@metadata$descriptive_stats$chr_stat
+            per_chr_stat <- metadata(meth)$descriptive_stats$chr_stat
             colnames(per_chr_stat)[which(colnames(per_chr_stat) == "chr")] <- "Chromosome"
         }
         data.table::fwrite(x = per_chr_stat, file = of1, sep = "\t")
@@ -76,7 +76,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
             genome_stat <- get_stats(m = meth, per_chr = FALSE)
             gc()
         } else {
-            genome_stat <- meth@metadata$descriptive_stats$genome_stat
+            genome_stat <- metadata(meth)$descriptive_stats$genome_stat
         }
         data.table::fwrite(x = genome_stat, file = of2, sep = "\t")
     }
@@ -88,7 +88,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     } else {
         of3 <- suppressWarnings(normalizePath(file.path(output_dir, "n_covered_per_chr.tsv")))
     }
-    contig_nCpGs <- meth@metadata$ref_CpG
+    contig_nCpGs <- metadata(meth)$ref_CpG
     colnames(contig_nCpGs) <- c("chr", "total_CpGs")
     if (file.exists(of3)) {
         message("File already present. Skipping step 3..")
@@ -108,7 +108,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
             #non_cov_tbl[, `:=`(n_covered, total_CpGs - n_non_covered)]
             #non_cov_tbl[, `:=`(n_non_covered, NULL)]
         } else {
-            non_cov_tbl <- data.table::melt(meth@metadata$descriptive_stats$n_cpgs_covered,
+            non_cov_tbl <- data.table::melt(metadata(meth)$descriptive_stats$n_cpgs_covered,
                 id.vars = "chr")
             colnames(non_cov_tbl) <- c("chr", "Sample_Name", "n_covered")
             non_cov_tbl <- merge(non_cov_tbl, contig_nCpGs, by = "chr",
@@ -147,7 +147,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
         mf_chr_summary <- mf_chr_summary[na_vec == FALSE]
         mf_chr_summary[, `:=`(na_vec, NULL)]
         colnames(mf_chr_summary) <- c("chr", "n_CpG")
-        mf_chr_summary <- merge(meth@metadata$ref_CpG, mf_chr_summary)
+        mf_chr_summary <- merge(metadata(meth)$ref_CpG, mf_chr_summary)
         colnames(mf_chr_summary)[2] <- c("total_CpGs")
         mf_chr_summary[, `:=`(fract_CpG, n_CpG/total_CpGs)]
         data.table::fwrite(x = mf_chr_summary, file = of4, sep = "\t")
@@ -196,7 +196,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
         of5 <- suppressWarnings(normalizePath(file.path(output_dir, "contig_lens.tsv")))
     }
     
-    data.table::fwrite(x = meth@metadata$chrom_sizes, file = of5, sep = "\t")
+    data.table::fwrite(x = metadata(meth)$chrom_sizes, file = of5, sep = "\t")
 
     message(paste0("Knitting report"))
     md <- system.file("report", "summarize_methrix.Rmd", package = "methrix")
