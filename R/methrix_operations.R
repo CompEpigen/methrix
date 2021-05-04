@@ -7,7 +7,7 @@
 #' @param overlap_type defines the type of the overlap of the CpG sites with the target region. Default value is `within`. For detailed description,
 #' see the \code{findOverlaps} function of the \code{\link{IRanges}} package.
 #' @param na_rm Remove NA's? Default \code{TRUE}
-#' @param elementMetadata.col columns in \code{\link{methrix}}@elementMetadata which needs to be summarised. Default = NULL.
+#' @param elementMetadata.col columns in \code{rowData(\link{methrix})} which needs to be summarised. Default = NULL.
 #' @param n_chunks Number of chunks to split the \code{\link{methrix}} object in case it is very large. Default = 1.
 #' @param n_cores Number of parallel instances. \code{n_cores} should be less than or equal to \code{n_chunks}. If \code{n_chunks} is not specified, then \code{n_chunks} is initialized to be equal to \code{n_cores}. Default = 1.
 #' @param verbose Default TRUE
@@ -41,7 +41,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", overl
 
     target_regions = (regions)
     #Add a unique id for every target range (i.e, rows)
-    target_regions@elementMetadata$rid <- paste0("rid_", 1:length(target_regions))
+    mcols(target_regions)$rid <- paste0("rid_", 1:length(target_regions))
 
     r_dat = as.data.frame(rowData(x = m))
     r_dat$seqnames <- as.character(r_dat$chr)
@@ -54,7 +54,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", overl
     r_dat <- GenomicRanges::makeGRangesFromDataFrame(r_dat, keep.extra.columns = FALSE)
 
 
-    if(!all(elementMetadata.col %in% colnames(m@elementMetadata))) stop("variables provided to elementMetadata.col not correct")
+    if(!all(elementMetadata.col %in% colnames(rowData(m)))) stop("variables provided to elementMetadata.col not correct")
 
     if(verbose){
         message("-Checking for overlaps..\n")
@@ -280,7 +280,7 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, prop_samples=0, gro
         stop("min_samples and prop_samples variables are not numeric.")
     }
 
-    if (!is.null(group) && !(group %in% colnames(m@colData))){
+    if (!is.null(group) && !(group %in% colnames(colData(m)))){
         stop(paste("The column name ", group, " can't be found in colData. Please provid a valid group column."))
     }
 
@@ -296,11 +296,11 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, prop_samples=0, gro
         if (n_chunks == 1) {
             cov_dat = get_matrix(m = m, type = "C")
             if (!is.null(group)) {
-                row_idx <- sapply(unique(m@colData[, group]), function(c) {
-                    res <- DelayedMatrixStats::rowSums2(cov_dat[, m@colData[, 
+                row_idx <- sapply(unique(colData(m)[, group]), function(c) {
+                    res <- DelayedMatrixStats::rowSums2(cov_dat[, colData(m)[, 
                                                                             group] == c] >= cov_thr, na.rm = TRUE)
                     row_idx <- (res >= max(min_samples, ceiling(prop_samples * 
-                                                                    sum(m@colData[, group] == c))))
+                                                                    sum(colData(m)[, group] == c))))
                 })
                 row_idx <- DelayedMatrixStats::rowAlls(row_idx)
             } else {
@@ -314,9 +314,9 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, prop_samples=0, gro
                                            function(i) {
                                                cov_dat = get_matrix(m[((i - 1) * ceiling(nrow(m)/n_chunks) + 1):min(i * ceiling(nrow(m)/n_chunks), nrow(m)), ], 
                                                                     type = "C")
-                                               row_idx <- sapply(unique(m@colData[, group]), function(c) {
-                                                   res <- DelayedMatrixStats::rowSums2(cov_dat[, m@colData[,group] == c] >= cov_thr, na.rm = TRUE)
-                                                   row_idx <- (res >= max(min_samples, ceiling(prop_samples * sum(m@colData[, group] == c))))
+                                               row_idx <- sapply(unique(colData(m)[, group]), function(c) {
+                                                   res <- DelayedMatrixStats::rowSums2(cov_dat[, colData(m)[,group] == c] >= cov_thr, na.rm = TRUE)
+                                                   row_idx <- (res >= max(min_samples, ceiling(prop_samples * sum(colData(m)[, group] == c))))
                                                })
                                                row_idx <- DelayedMatrixStats::rowAlls(row_idx)
                                            }))
@@ -333,10 +333,10 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, prop_samples=0, gro
     } else {
         cov_dat = get_matrix(m = m, type = "C")
         if (!is.null(group)) {
-            row_idx <- sapply(unique(m@colData[, group]), function(c) {
-                res <- matrixStats::rowSums2(cov_dat[, m@colData[, group] == 
+            row_idx <- sapply(unique(colData(m)[, group]), function(c) {
+                res <- matrixStats::rowSums2(cov_dat[, colData(m)[, group] == 
                                                          c] >= cov_thr, na.rm = TRUE)
-                row_idx <- (res >= max(min_samples, ceiling(prop_samples * sum(m@colData[, group] == c))))
+                row_idx <- (res >= max(min_samples, ceiling(prop_samples * sum(colData(m)[, group] == c))))
             })
             row_idx <- matrixStats::rowAlls(row_idx)
         } else {
@@ -436,7 +436,7 @@ methrix2bsseq <- function(m) {
 
     b <- bsseq::BSseq(M = M_clean, Cov = get_matrix(m, type = "C"), pData = colData(x = m),
         pos = rowData(x = m)[, "start"], chr = rowData(x = m)[, "chr"],
-        sampleNames = rownames(m@colData))
+        sampleNames = rownames(colData(m)))
     b
 }
 
@@ -593,11 +593,11 @@ mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99, n_cores=1) {
                 quantiles <- simplify2array(mclapply(mc.cores = n_cores, 1:ncol(assays(m)[[2]]), 
                                                      function(i) quantile(assays(m)[[2]][, i], probs = high_quantile, na.rm = TRUE)))}
             quantiles <- as.vector(quantiles)
-            names(quantiles) <- rownames(m@colData)
+            names(quantiles) <- rownames(colData(m))
         } else {
             quantiles <- matrixStats::colQuantiles(assays(m)[[2]], probs = high_quantile, na.rm = TRUE)
             quantiles <- as.vector(quantiles)
-            names(quantiles) <- rownames(m@colData)
+            names(quantiles) <- rownames(colData(m))
         }
         
 
@@ -648,19 +648,19 @@ combine_methrix <- function(m1, m2, by = c("row", "col")) {
     by <- match.arg(arg = by, choices = c("row", "col"), several.ok = FALSE)
 
     if (by == "row") {
-        if (nrow(colData(m1))!= nrow(colData(m2))  || !(all(rownames(m1@colData) == rownames(m2@colData)))) {
+        if (nrow(colData(m1))!= nrow(colData(m2))  || !(all(rownames(colData(m1)) == rownames(colData(m2))))) {
             stop("You have different samples in your dataset. You need the same samples in your datasets. ")
         } else {
             m <- rbind(m1, m2)
         }
-        if (any(duplicated((as.data.table(m@elementMetadata))))) {
+        if (any(duplicated((as.data.table(rowData(m)))))) {
             stop("There are overlapping regions in your datasets. This function only takes distinct objects. ")
         }
     }
     if (by == "col") {
-        if (any(rownames(m1@colData) %in% rownames(m2@colData))) {
+        if (any(rownames(colData(m1)) %in% rownames(colData(m2)))) {
             stop("You have the same samples in your datasets. You need different samples for this merging.  ")
-        } else if (!identical(m1@elementMetadata, m2@elementMetadata)) {
+        } else if (!identical(rowData(m1), rowData(m2))) {
             stop("You have to have the same regions in your datasets. ")
         } else {
             m <- cbind(m1, m2)
@@ -728,7 +728,7 @@ get_stats <- function(m, per_chr = TRUE) {
                                            idcol = "Sample_Name")
         stats <- merge(meth_stat, cov_stat, by = c("chr", "Sample_Name"))
         colnames(stats)[1] <- "Chromosome"
-        stats$Chromosome <- factor(x = stats$Chromosome, levels = m@metadata$chrom_sizes$contig)
+        stats$Chromosome <- factor(x = stats$Chromosome, levels = metadata(m)$chrom_sizes$contig)
     } else {
         if (is_h5(m)) {
             cov_stat <- data.table::data.table(Sample_Name = colnames(m),
@@ -842,7 +842,7 @@ convert_HDF5_methrix <- function(m = NULL) {
 
     assays(m)[[1]] <- as.matrix(assays(m)[[1]])
     assays(m)[[2]] <- as.matrix(assays(m)[[2]])
-    m@metadata$is_h5 <- FALSE
+    metadata(m)$is_h5 <- FALSE
     return(m)
 }
 
@@ -866,8 +866,8 @@ convert_methrix <- function(m = NULL) {
     }
 
     m <- create_methrix(beta_mat = assays(m)[[1]], cov_mat = assays(m)[[2]],
-        cpg_loci = m@elementMetadata, is_hdf5 = TRUE, genome_name = m@metadata$genome,
-        col_data = m@colData, chrom_sizes = m@metadata$chrom_sizes, ref_cpg_dt = m@metadata$ref_CpG,
-        desc = m@metadata$descriptive_stats)
+        cpg_loci = rowData(m), is_hdf5 = TRUE, genome_name = metadata(m)$genome,
+        col_data = colData(m), chrom_sizes = metadata(m)$chrom_sizes, ref_cpg_dt = metadata(m)$ref_CpG,
+        desc = metadata(m)$descriptive_stats)
     return(m)
 }

@@ -1,6 +1,6 @@
 # Tiny function to check if object is h5
 is_h5 = function(m) {
-  return(m@metadata$is_h5)
+  return(metadata(m)$is_h5)
 }
 
 get_source_idx = function(protocol = NULL) {

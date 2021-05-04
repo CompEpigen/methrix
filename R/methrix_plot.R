@@ -32,7 +32,7 @@ prepare_plot_data <- function(m, ranges = NULL, n_cpgs = 25000, pheno = NULL){
 
     if (!is.null(pheno)) {
         if (pheno %in% colnames(colData(m))) {
-            colnames(meth_sub) <- as.character(m@colData[, pheno])
+            colnames(meth_sub) <- as.character(colData(m)[, pheno])
         } else {
             stop("Please provide a valid phenotype annotation column.")
         }
@@ -366,8 +366,8 @@ plot_coverage <- function(m, type = c("hist", "dens"), pheno = NULL, perGroup = 
     if (nrow(m) > size.lim) {
         message("The dataset is bigger than the size limit. A random subset of the object will be used that contains ~",
             size.lim, " observations.")
-        n_rows <- trunc(size.lim/nrow(m@colData))
-        sel_rows <- sample(seq_len(nrow(m@elementMetadata)), size = n_rows,
+        n_rows <- trunc(size.lim/nrow(colData(m)))
+        sel_rows <- sample(seq_len(nrow(rowData(m))), size = n_rows,
             replace = FALSE)
 
         meth_sub <- methrix::get_matrix(m = m[sel_rows, ], type = "C",
@@ -384,7 +384,7 @@ plot_coverage <- function(m, type = c("hist", "dens"), pheno = NULL, perGroup = 
         if (pheno %in% colnames(colData(m)) == 0) {
             stop("Phenotype annotation cannot be found in colData(m).")
         }
-        colnames(meth_sub) <- m@colData[, pheno]
+        colnames(meth_sub) <- colData(m)[, pheno]
     }
 
     meth_sub <- as.data.frame(meth_sub)

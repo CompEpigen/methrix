@@ -31,7 +31,7 @@ see the \code{findOverlaps} function of the \code{\link{IRanges}} package.}
 
 \item{na_rm}{Remove NA's? Default \code{TRUE}}
 
-\item{elementMetadata.col}{columns in \code{\link{methrix}}@elementMetadata which needs to be summarised. Default = NULL.}
+\item{elementMetadata.col}{columns in \code{rowData(\link{methrix})} which needs to be summarised. Default = NULL.}
 
 \item{verbose}{Default TRUE}
 
