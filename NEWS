@@ -1,3 +1,7 @@
+CHANGES IN VERSION 1.6.0
+-------------------------
+o No new changes
+
 CHANGES IN VERSION 1.4.07
 -------------------------
 o Fix bug when exporting bsseq objects from methrix objects created using Methyldackel pipeline. Issue: #26
