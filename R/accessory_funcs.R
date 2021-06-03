@@ -612,3 +612,14 @@ get_y_lims <- function(vec) {
   
   list(y_lims = y_lims, y_at = y_at)
 }
+
+                                                                   
+#--------------------------------------------------------------------------------------------------------------------------
+# function to replace names when working with oxBS and BS data
+replace_names = function(m, value) {
+  colData(m)$rownames = value
+  colnames(assays(m)$beta) = value
+  colnames(assays(m)$cov) = value
+  colData(m)$Sample_Name = value
+  return(m)
+} 
