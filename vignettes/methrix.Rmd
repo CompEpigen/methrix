@@ -38,7 +38,7 @@ This vignette describes basic usage of the package intended to process several l
 
 ### Installation
 
-```{r}
+```{r, eval=FALSE}
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 

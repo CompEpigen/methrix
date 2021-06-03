@@ -22,7 +22,7 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
 
     start_proc_time <- proc.time()
 
-    genome <- m@metadata$genome
+    genome <- metadata(m)$genome
     chr <- m2 <- NULL
 
 
@@ -62,6 +62,7 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
     } else {
         stop("Only hg19 and hg38 genomes are currently supported..\n")
     }
+
     if (is.null(populations)) {
         populations <- GenomicScores::populations(mafdb)
     } else if (!all(populations %in% GenomicScores::populations(mafdb))) {
@@ -70,14 +71,14 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
     }
 
 
-    regions <- gr.nochr(GenomicRanges::makeGRangesFromDataFrame(elementMetadata(m), start.field = "start", end.field = "start"))
-
+    regions <- GenomicRanges::makeGRangesFromDataFrame(elementMetadata(m), start.field = "start", end.field = "start")
+    seqlevelsStyle(regions) <- "NCBI"
 
     if(n_cores==1) {
-        snp_rows<-which((rowSums(as.matrix(score(mafdb, regions, pop = populations))>= maf_threshold,na.rm=T)>0) |
+        snp_rows <- which((rowSums(as.matrix(score(mafdb, regions, pop = populations))>= maf_threshold,na.rm=T)>0) |
                             (rowSums(as.matrix(score(mafdb,  IRanges::shift(regions, 1), pop = populations))>= maf_threshold,na.rm=T)>0))
     } else {
-        snp_rows<-which(unlist(mclapply(mc.cores=n_cores,1:n_chunks, function(i){
+        snp_rows <- which(unlist(mclapply(mc.cores=n_cores,1:n_chunks, function(i){
             sub_dat = regions[((i-1)*ceiling(length(regions)/n_chunks)+1):min(i*ceiling(length(regions)/n_chunks),length(regions))]
             (rowSums(as.matrix(score(mafdb, sub_dat, pop = populations))>= maf_threshold,na.rm=T)>0) |
                 (rowSums(as.matrix(score(mafdb,  IRanges::shift(sub_dat, 1), pop = populations))>= maf_threshold,na.rm=T)>0)
@@ -142,7 +143,7 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
         snp_rows <- c(snp_rows, snp_test)
     }
 
-    removed_snps <- data.table::as.data.table(m@elementMetadata)[snp_rows,    ]
+    removed_snps <- data.table::as.data.table(rowData(m))[snp_rows,    ]
 
     message("Number of SNPs removed:")
     print(removed_snps[, .N, by = chr])

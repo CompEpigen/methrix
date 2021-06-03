@@ -17,8 +17,8 @@ write_bigwigs = function(m, output_dir = getwd(), samp_names = NULL){
   
   mat_gr <- methrix::get_matrix(m = m, type = "M", add_loci = TRUE, in_granges = TRUE)
   
-  seql = m@metadata$chrom_sizes$length
-  names(seql) = m@metadata$chrom_sizes$contig
+  seql = metadata(m)$chrom_sizes$length
+  names(seql) = metadata(m)$chrom_sizes$contig
   
   all_samps = names(mcols(mat_gr))  
   

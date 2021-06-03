@@ -101,24 +101,28 @@ read_bedgraphs <- function(files = NULL, pipeline = NULL, zero_based = TRUE,
         }
     }
 
-    if (is.null(contigs)) {
-        # Work with only main contigs (either with chr prefix - UCSC style, or
-        # ensemble style)
-        contigs <- c(paste0("chr", c(seq_len(22), "X", "Y", "M")), seq_len(22),
-            "X", "Y", "MT")
-    }
+
 
     # Extract CpG's
     conig_lens <- NA
     if (is(ref_cpgs, "list") & all(names(ref_cpgs) == c("cpgs", "contig_lens",
         "release_name"))) {
+        if (is.null(contigs)) {
+            contigs <- ref_cpgs$contig_lens$contig
+        }
         conig_lens <- ref_cpgs$contig_lens[contig %in% contigs]
         genome <- data.table::copy(x = ref_cpgs$cpgs)
     } else if (any(is(ref_cpgs[1], "character"), is(ref_cpgs[1], "BSgenome"))) {
         genome <- extract_CPGs(ref_genome = ref_cpgs)
+        if (is.null(contigs)) {
+            contigs <- genome$contig_lens$contig
+        }
         conig_lens <- genome$contig_lens
         genome <- genome$cpgs
     } else if (is(ref_cpgs[1], "data.frame")) {
+        if (is.null(contigs)) {
+            contigs <- unique(genome$chr)
+        }
         genome <- data.table::copy(x = ref_cpgs)
         data.table::setkey(x = genome, chr, start)
     } else {

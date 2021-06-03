@@ -18,7 +18,7 @@ setMethod(f = "show", signature = "methrix", definition = function(object) {
     cat(paste0("   n_CpGs: ", format(nrow(object), big.mark = ","), "\n"))
     cat(paste0("n_samples: ", ncol(object), "\n"))
     cat(paste0("    is_h5: ", is_h5(object), "\n"))
-    cat(paste0("Reference: ", object@metadata$genome, "\n"))
+    cat(paste0("Reference: ", metadata(object)$genome, "\n"))
 })
 
 # Create methrix obj

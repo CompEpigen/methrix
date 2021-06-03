@@ -44,13 +44,13 @@ contig_lens = data.table::fread(input = params$chr_lens)
 chr_order = contig_lens$contig[contig_lens$contig %in% unique(n_covered[,chr])]
 n_covered[, chr := factor(as.character(chr), levels = chr_order)]
 
-p = ggplot(data = n_covered, aes(x = chr, y = n_covered, label = Sample_Name))+geom_boxplot()+geom_jitter(size = 0.6)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+p = ggplot(data = n_covered, aes(x = chr, y = n_covered, label = Sample_Name))+geom_boxplot()+geom_jitter(size = 0.6)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 plotly::ggplotly(p = p)
 ```
 
 ### Fraction
 ```{r}
-p = ggplot(data = n_covered, aes(x = chr, y = fraction, label = Sample_Name))+geom_boxplot()+geom_jitter(size = 0.6)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank())
+p = ggplot(data = n_covered, aes(x = chr, y = fraction, label = Sample_Name))+geom_boxplot()+geom_jitter(size = 0.6)+theme_minimal()+theme(axis.title.x = element_blank(), axis.title.y = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 plotly::ggplotly(p = p)
 ```
 Number of reference CpGs covered by each sample in each chromosome

@@ -1,7 +1,6 @@
 #' Extracts all CpGs from a genome
 #' @param ref_genome BSgenome object or name of the installed BSgenome package. Example: BSgenome.Hsapiens.UCSC.hg19
 #' @importFrom BSgenome installed.genomes getBSgenome seqnames
-#' @importFrom rjson fromJSON
 #' @export
 #' @return a list of data.table containing number of CpG's and contig lengths
 #' @examples
@@ -49,9 +48,9 @@ extract_CPGs = function(ref_genome = NULL) {
         ref_build = NA
     }
     
-    chrom_sizes = data.table::data.table(contig = names(seqlengths(x = ref_genome)),
-        length = seqlengths(x = ref_genome))
-    chrs = names(ref_genome)
+    chrom_sizes = data.table::data.table(contig = standardChromosomes(ref_genome),
+        length = seqlengths(x = ref_genome)[names(seqlengths(x = ref_genome)) %in% standardChromosomes(ref_genome)])
+    chrs = standardChromosomes(ref_genome)
 
     message("-Extracting CpGs")
 

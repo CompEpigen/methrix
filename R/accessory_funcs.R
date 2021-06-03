@@ -1,6 +1,6 @@
 # Tiny function to check if object is h5
 is_h5 = function(m) {
-  return(m@metadata$is_h5)
+  return(metadata(m)$is_h5)
 }
 
 get_source_idx = function(protocol = NULL) {
@@ -23,8 +23,13 @@ get_source_idx = function(protocol = NULL) {
     return(list(col_idx = list(character = 1, numeric = 3, character = 4, numeric = 6, numeric = 8),
                 col_names = c("chr", "start", "context", "beta", "cov"),
                 fix_missing = c("context %in% 'CG'"), select = TRUE))
+  }else if(protocol ==  "Methyldackel"){
+    #Methyldackel has beta values in 4th column. Re-calculate it anyways because of https://github.com/CompEpigen/methrix/issues/26
+    return(list(col_idx = list(character = 1, numeric = 2, numeric = 5, numeric = 6),
+                col_names = c("chr", "start", "M", "U"),
+                fix_missing = c("cov := M+U", "beta := M/cov"), select= TRUE))
   } else {
-    # Bismark and methyldackel have same output format
+    # Bismark 
     return(list(col_idx = list(character = 1, numeric = 2, numeric = 4, numeric = 5, numeric = 6),
                 col_names = c("chr", "start", "beta", "M", "U"),
                 fix_missing = c("cov := M+U"), select= TRUE))
@@ -448,9 +453,9 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
                       file_uncovered = file_uncovered, zero_based = zero_based)
         
         DelayedArray::write_block(block = as.matrix(b$bdg[, .(beta)]),
-                                  viewport = grid[[i]], x = M_sink)
+                                  viewport = grid[[i]], sink = M_sink)
         DelayedArray::write_block(block = as.matrix(b$bdg[, .(cov)]),
-                                  viewport = grid[[i]], x = cov_sink)
+                                  viewport = grid[[i]], sink = cov_sink)
         genome_stat_final <- b$genome_stat[, `:=`(Sample_Name,
                                                   rownames(coldata)[i])]
         chr_stat_final <- b$chr_stat[, `:=`(Sample_Name, rownames(coldata)[i])]
@@ -463,9 +468,9 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
                       file_uncovered = file_uncovered, zero_based = zero_based)
         
         DelayedArray::write_block(block = as.matrix(b$bdg[, .(beta)]),
-                                  viewport = grid[[i]], x = M_sink)
+                                  viewport = grid[[i]], sink = M_sink)
         DelayedArray::write_block(block = as.matrix(b$bdg[, .(cov)]),
-                                  viewport = grid[[i]], x = cov_sink)
+                                  viewport = grid[[i]], sink = cov_sink)
         genome_stat_final <- rbind(genome_stat_final, b$genome_stat[,
                                                                     `:=`(Sample_Name, rownames(coldata)[i])])
         chr_stat_final <- rbind(chr_stat_final, b$chr_stat[, `:=`(Sample_Name,

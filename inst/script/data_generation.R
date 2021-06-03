@@ -102,7 +102,7 @@ usethis::use_data(methrix_data, overwrite = TRUE)
 
 meth <- get_matrix(methrix_data, type="M")
 cov <- get_matrix(methrix_data, type="C")
-gr <- methrix_data@elementMetadata
+gr <- rowData(methrix_data)
 
 
 #create M and U values
