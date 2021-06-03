@@ -937,15 +937,17 @@ calculate_proportions<- function (m){
   
   #prepare methrix dataset for mC, hmC and C data
   m_MLML2R <- m[,c(id_BS,id_BS,id_BS,id_BS)]
-  m_MLML2R@colData$Sequencing_type <- NULL
-  m_MLML2R@colData$Mark <-c(rep("mC",length(id_BS)),rep("hmC",length(id_BS)),rep("C",length(id_BS)),rep("mChmC",length(id_BS))) 
+  colData(m_MLML2R)$Sequencing_type <- NULL
+  colData(m_MLML2R)$Mark <-c(rep("mC",length(id_BS)),rep("hmC",length(id_BS)),rep("C",length(id_BS)),rep("mChmC",length(id_BS))) 
   mChmC<- as.matrix(results_exact$mC)+as.matrix(results_exact$hmC)
-  m_MLML2R@ assays@ data@ listData$ beta <- cbind(results_exact$mC,results_exact$hmC,results_exact$C,mChmC)
-  m_MLML2R@ assays@ data@ listData$ cov <-  cbind(min_cov,min_cov,min_cov,min_cov)
-  
+  assays(m_MLML2R)$beta <- cbind(results_exact$mC,results_exact$hmC,results_exact$C,mChmC)
+  min_cov_mat <- cbind(min_cov,min_cov,min_cov,min_cov)
+  colnames(min_cov_mat) <- colnames(assays(m_MLML2R)$cov)
+  assays(m_MLML2R)$cov  <-  min_cov_mat  
+                                      
   #change names in methrix object
-  names <- gsub("bs", "",m_MLML2R@colData@ listData$ Sample_Name)
-  m_MLML2R <-replace_names(m_MLML2R,paste0(names, m_MLML2R@colData$Mark))
+  names <- gsub("bs", "", colData(m_MLML2R)$Sample_Name)
+  m_MLML2R <-replace_names(m_MLML2R,paste0(names, colData(m_MLML2R)$Mark))
   
   return(m_MLML2R)
   
