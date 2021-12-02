@@ -1,3 +1,11 @@
+CHANGES IN VERSION 1.8.01
+-------------------------
+o Fix error when bedgraph contains duplicated loci.
+
+CHANGES IN VERSION 1.8.0
+-------------------------
+o No new changes
+
 CHANGES IN VERSION 1.6.0
 -------------------------
 o No new changes

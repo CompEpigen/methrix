@@ -237,6 +237,11 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
   }
   
   data.table::setkey(x = bdg_dat, "chr", "start")
+  dup_rows = nrow(bdg_dat[duplicated(bdg_dat, by = c("chr", "start"))])
+  if(nrow(dup_rows) > 0){
+    message(paste0("-- Removed duplicated CpGs: ", format(dup_rows, big.mark = ",")))
+    bdg_dat = bdg_dat[!duplicated(bdg_dat, by = c("chr", "start"))]
+  }
   data.table::setkey(x = genome, "chr", "start")
   
   missing_cpgs = genome[!bdg_dat[, list(chr, start)], on = c("chr", "start")]
