@@ -10,18 +10,18 @@
 #' @export
 
 write_bigwigs = function(m, output_dir = getwd(), samp_names = NULL){
-  
+
   if (!dir.exists(output_dir)) {
     dir.create(path = output_dir, showWarnings = FALSE, recursive = TRUE)
   }
-  
+
   mat_gr <- methrix::get_matrix(m = m, type = "M", add_loci = TRUE, in_granges = TRUE)
-  
-  seql = metadata(m)$chrom_sizes$length
-  names(seql) = metadata(m)$chrom_sizes$contig
-  
-  all_samps = names(mcols(mat_gr))  
-  
+
+  seql = S4Vectors::metadata(m)$chrom_sizes$length
+  names(seql) = S4Vectors::metadata(m)$chrom_sizes$contig
+
+  all_samps = names(mcols(mat_gr))
+
   if(is.null(samp_names)){
     samp_names = all_samps
   }else{
@@ -30,7 +30,7 @@ write_bigwigs = function(m, output_dir = getwd(), samp_names = NULL){
       stop("Incorrect sample names!")
     }
   }
-  
+
   message("----------------------")
   for(samp in samp_names){
     op_bw = paste0(output_dir, "/", samp, ".bw")
@@ -38,7 +38,7 @@ write_bigwigs = function(m, output_dir = getwd(), samp_names = NULL){
     samp_gr = mat_gr[,samp]
     names(mcols(samp_gr)) = "score"
     samp_gr = samp_gr[!is.na(samp_gr$score)]
-    seqlengths(samp_gr) = seql[names(seqlengths(samp_gr))]
+    GenomeInfoDb::seqlengths(samp_gr) = seql[names(GenomeInfoDb::seqlengths(samp_gr))]
     rtracklayer::export(samp_gr, con = paste0(output_dir, "/", samp, ".bw"), format="bigWig")
   }
   message("----------------------")

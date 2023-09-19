@@ -14,7 +14,8 @@ write_bedgraphs(
   SeqStyle = "UCSC",
   multiBed = NULL,
   metilene = FALSE,
-  phenoCol = NULL
+  phenoCol = NULL,
+  add_coverage = FALSE
 )
 }
 \arguments{
@@ -38,6 +39,7 @@ If \code{NULL} creats a \code{tempdir}}
 \item{metilene}{Default FALSE. If TRUE outputs bedgraphs in `metilene` format that can be directly used for DMR calling with `metilene`. This option works only when \code{multiBed = TRUE}.}
 
 \item{phenoCol}{Default NULL. `condition` column from colData. Only applicable if \code{metilene = TRUE}}
+\item{add_coverage}{Should the output file contain information on coverage? Default FALSE}
 }
 \value{
 writes bedgraph files to output
@@ -49,5 +51,6 @@ Writes bedGraphs from methrix object
 data('methrix_data')
 write_bedgraphs(m = methrix_data, output_dir = './temp')
 #Export to metline format for DMR calling with metline
-write_bedgraphs(m = methrix_data, output_dir = "./temp", rm_NA = FALSE, metilene = TRUE,multiBed = "metline_ip", phenoCol = "Condition")
+write_bedgraphs(m = methrix_data, output_dir = "./temp", rm_NA = FALSE,
+metilene = TRUE,multiBed = "metline_ip", phenoCol = "Condition")
 }

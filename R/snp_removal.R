@@ -22,7 +22,7 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
 
     start_proc_time <- proc.time()
 
-    genome <- metadata(m)$genome
+    genome <- S4Vectors::metadata(m)$genome
     chr <- m2 <- NULL
 
 
@@ -72,7 +72,7 @@ remove_snps <- function(m, populations = NULL, maf_threshold = 0.01, reduce_filt
 
 
     regions <- GenomicRanges::makeGRangesFromDataFrame(elementMetadata(m), start.field = "start", end.field = "start")
-    seqlevelsStyle(regions) <- "NCBI"
+    GenomeInfoDb::seqlevelsStyle(regions) <- "NCBI"
 
     if(n_cores==1) {
         snp_rows <- which((rowSums(as.matrix(score(mafdb, regions, pop = populations))>= maf_threshold,na.rm=T)>0) |

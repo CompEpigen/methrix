@@ -6,7 +6,7 @@
 #' @param recal_stats Whether summary statistics should be recalculated? If you are using subsetted methrix object set this to TRUE.
 #' @param plot_beta_dist Default TRUE. Can be time consuming.
 #' @param beta_nCpG Number of CpGs rto use for estimating beta value distribution. Default 10000
-#' @param prefix If provided, the name of the report and the intermediate files will start with the prefix. 
+#' @param prefix If provided, the name of the report and the intermediate files will start with the prefix.
 #' @param n_thr Default 4. Only used if \code{plot_beta_dist} is TRUE
 #' @return an interactive html report
 #' @examples
@@ -22,7 +22,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     if (!recal_stats) {
         warning("If input methrix is a subsetted version of original methrix object, set recal_stats to TRUE",
             immediate. = TRUE)
-        if (is.null(metadata(meth)$descriptive_stats)) {
+        if (is.null(S4Vectors::metadata(meth)$descriptive_stats)) {
             stop("No previous statistics is available. Set recal_stats to TRUE.")
         }
     }
@@ -30,7 +30,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
         if (!is.character(prefix))
             stop("The provided prefix is not valid, please provide a string.")
     }
-    
+
     start_proc_time <- proc.time()
 
     if (is.null(output_dir)) {
@@ -48,7 +48,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     } else {
         of1 <- suppressWarnings(normalizePath(file.path(output_dir, "MC_per_chr.tsv")))
     }
-    
+
     if (file.exists(of1)) {
         message("File already present. Skipping step 1..")
     } else {
@@ -56,7 +56,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
             per_chr_stat <- get_stats(m = meth, per_chr = TRUE)
             gc()
         } else {
-            per_chr_stat <- metadata(meth)$descriptive_stats$chr_stat
+            per_chr_stat <- S4Vectors::metadata(meth)$descriptive_stats$chr_stat
             colnames(per_chr_stat)[which(colnames(per_chr_stat) == "chr")] <- "Chromosome"
         }
         data.table::fwrite(x = per_chr_stat, file = of1, sep = "\t")
@@ -76,7 +76,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
             genome_stat <- get_stats(m = meth, per_chr = FALSE)
             gc()
         } else {
-            genome_stat <- metadata(meth)$descriptive_stats$genome_stat
+            genome_stat <- S4Vectors::metadata(meth)$descriptive_stats$genome_stat
         }
         data.table::fwrite(x = genome_stat, file = of2, sep = "\t")
     }
@@ -88,7 +88,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     } else {
         of3 <- suppressWarnings(normalizePath(file.path(output_dir, "n_covered_per_chr.tsv")))
     }
-    contig_nCpGs <- metadata(meth)$ref_CpG
+    contig_nCpGs <- S4Vectors::metadata(meth)$ref_CpG
     colnames(contig_nCpGs) <- c("chr", "total_CpGs")
     if (file.exists(of3)) {
         message("File already present. Skipping step 3..")
@@ -108,7 +108,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
             #non_cov_tbl[, `:=`(n_covered, total_CpGs - n_non_covered)]
             #non_cov_tbl[, `:=`(n_non_covered, NULL)]
         } else {
-            non_cov_tbl <- data.table::melt(metadata(meth)$descriptive_stats$n_cpgs_covered,
+            non_cov_tbl <- data.table::melt(S4Vectors::metadata(meth)$descriptive_stats$n_cpgs_covered,
                 id.vars = "chr")
             colnames(non_cov_tbl) <- c("chr", "Sample_Name", "n_covered")
             non_cov_tbl <- merge(non_cov_tbl, contig_nCpGs, by = "chr",
@@ -147,7 +147,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
         mf_chr_summary <- mf_chr_summary[na_vec == FALSE]
         mf_chr_summary[, `:=`(na_vec, NULL)]
         colnames(mf_chr_summary) <- c("chr", "n_CpG")
-        mf_chr_summary <- merge(metadata(meth)$ref_CpG, mf_chr_summary)
+        mf_chr_summary <- merge(S4Vectors::metadata(meth)$ref_CpG, mf_chr_summary)
         colnames(mf_chr_summary)[2] <- c("total_CpGs")
         mf_chr_summary[, `:=`(fract_CpG, n_CpG/total_CpGs)]
         data.table::fwrite(x = mf_chr_summary, file = of4, sep = "\t")
@@ -169,7 +169,7 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
                 length(which(na_vec == FALSE))), replace = FALSE)
 
             lapply(X = seq_len(nrow(colData(meth))), FUN = function(i) {
-                
+
                 i_dens <- density(get_matrix(meth, type = "M")[row_idx,
                                                                i], na.rm = TRUE)
                 if (!is.null(prefix)){
@@ -195,8 +195,8 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     } else {
         of5 <- suppressWarnings(normalizePath(file.path(output_dir, "contig_lens.tsv")))
     }
-    
-    data.table::fwrite(x = metadata(meth)$chrom_sizes, file = of5, sep = "\t")
+
+    data.table::fwrite(x = S4Vectors::metadata(meth)$chrom_sizes, file = of5, sep = "\t")
 
     message(paste0("Knitting report"))
     md <- system.file("report", "summarize_methrix.Rmd", package = "methrix")
@@ -206,12 +206,12 @@ methrix_report <- function(meth, output_dir = NULL, recal_stats = FALSE,
     } else {
         output_file <- "methrix_reports.html"
     }
-    
+
     rmarkdown::render(input = md, output_file = output_file,
         output_dir = output_dir, clean = TRUE, params = list(prefix = prefix, n_covered_tsv = of3,
             n_covered_by_all_samples_tsv = of4, mc_per_chr_stat = of1,
             mc_per_sample_stat = of2, chr_lens = of5))
-    
+
     browseURL(url = paste0(output_dir, "/", output_file))
 
     message(data.table::timetaken(started.at = start_proc_time))

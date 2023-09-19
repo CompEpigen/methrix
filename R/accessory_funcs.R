@@ -29,7 +29,7 @@ get_source_idx = function(protocol = NULL) {
                 col_names = c("chr", "start", "M", "U"),
                 fix_missing = c("cov := M+U", "beta := M/cov"), select= TRUE))
   } else {
-    # Bismark 
+    # Bismark
     return(list(col_idx = list(character = 1, numeric = 2, numeric = 4, numeric = 5, numeric = 6),
                 col_names = c("chr", "start", "beta", "M", "U"),
                 fix_missing = c("cov := M+U"), select= TRUE))
@@ -157,7 +157,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
                     strand_collapse = FALSE, fill_cpgs = TRUE,
                     contigs = contigs, synced_coordinates = synced_coordinates,
                     file_uncovered = NULL, zero_based = TRUE) {
-  
+
   chr <- M <- U <- . <- NULL
   message(paste0("-Processing:    ", basename(bdg)))
   if(col_list$select){
@@ -168,14 +168,14 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
                                                  colClasses = col_list$col_classes,
                                                  verbose = FALSE,
                                                  showProgress = FALSE))
-    
+
     colnames(bdg_dat)[col_list$col_idx] = names(col_list$col_idx)
     bdg_dat[, `:=`(chr, as.character(chr))]
     bdg_dat[, `:=`(start, as.integer(start))]
   }
-  
-  
-  
+
+
+
   if ("beta" %in% colnames(bdg_dat)) {
     if (nrow(bdg_dat) < 1000) {
       sample_row_idx = 1:nrow(bdg_dat)
@@ -196,19 +196,19 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
     }
     gc(verbose = FALSE)
   }
-  
+
   if (!is.null(col_list$fix_missing)) {
     for (cmd in col_list$fix_missing) {
       bdg_dat[, eval(parse(text = cmd))]
     }
   }
-  
-  
+
+
   if (zero_based) {
     # Bring bedgraphs to 1-based cordinate
     bdg_dat[, `:=`(start, start + 1)]
   }
-  
+
   # Check for contig prefixes and add them if necessary
   if (nrow(bdg_dat) < 1000) {
     sample_row_idx = sample(x = seq_len(nrow(bdg_dat)),
@@ -227,25 +227,25 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
       stop("Prefix mismatch between provided CpGs and bedgraphs")
     }
   }
-  
+
   if (!is.null(contigs)) {
     bdg_dat = bdg_dat[chr %in% as.character(contigs)]
   }
-  
+
   if (synced_coordinates) {
     bdg_dat = bdg_dat[strand == "-", `:=`(start, start + 1L)]
   }
-  
+
   data.table::setkey(x = bdg_dat, "chr", "start")
   dup_rows = nrow(bdg_dat[duplicated(bdg_dat, by = c("chr", "start"))])
-  if(nrow(dup_rows) > 0){
+  if(dup_rows > 0){
     message(paste0("-- Removed duplicated CpGs: ", format(dup_rows, big.mark = ",")))
     bdg_dat = bdg_dat[!duplicated(bdg_dat, by = c("chr", "start"))]
   }
   data.table::setkey(x = genome, "chr", "start")
-  
+
   missing_cpgs = genome[!bdg_dat[, list(chr, start)], on = c("chr", "start")]
-  
+
   # Write missing CpGs to an op_dir
   if (!is.null(file_uncovered) && nrow(missing_cpgs) > 0) {
     fwrite(x = missing_cpgs, file = paste0(file_uncovered,
@@ -253,7 +253,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
                                                 "", basename(bdg)), "_uncovered.bed"),
            sep = "\t", row.names = FALSE)
   }
-  
+
   if (verbose) {
     if (nrow(missing_cpgs) > 0) {
       message(paste0("--CpGs missing: ", format(nrow(missing_cpgs), big.mark = ",")), " (from known reference CpGs)")
@@ -271,7 +271,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
   # crucial to make sure everything is in order
   is_identical = all.equal(target = bdg_dat[, .(chr, start)],
                            current = genome[, .(chr, start)], ignore.row.order = FALSE)
-  
+
   if (is(is_identical, "character")) {
     non_ref_cpgs = bdg_dat[!genome[, list(chr, start)], on = c("chr",
                                                                "start")]
@@ -289,7 +289,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
   # Re-assign strand info from genome (since some bedgraphs have no
   # strand info, yet cover CpGs from both strands. i,e MethylDackel)
   bdg_dat[, `:=`(strand, genome$strand)]
-  
+
   if (strand_collapse) {
     # If strand information needs to collapsed, bring start position of
     # crick strand to previous base (on watson base) and estimate new M, U
@@ -297,7 +297,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
     if (!all(c("M", "U") %in% names(bdg_dat))) {
       stop("strand_collapse works only when M and U are available!")
     }
-    
+
     bdg_dat[, `:=`(start, ifelse(strand == "-", yes = start - 1, no = start))]
     bdg_dat = bdg_dat[, .(M = sum(M, na.rm = TRUE), U = sum(U, na.rm = TRUE)),
                       .(chr, start)]
@@ -305,14 +305,14 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
     bdg_dat[, `:=`(beta, M/cov)]
     bdg_dat[, `:=`(strand, "+")]
   }
-  
+
   # data.table::set(bdg_dat, which(is.nan(bdg_dat[,beta])), 'beta', NA)
   # If coverage is 0, convert corresponding beta as well as coverage
   # values to NA
   data.table::set(bdg_dat, which(bdg_dat[, cov] == 0), c("cov", "beta"),
                   NA)
   bdg_dat = bdg_dat[, .(chr, start, beta, cov, strand)]
-  
+
   bdg_genome_stat = bdg_dat[!is.na(beta), .(mean_meth = mean(beta),
                                             median_meth = median(beta),
                                             mean_cov = mean(cov),
@@ -322,7 +322,7 @@ read_bdg = function(bdg, col_list = NULL, genome = NULL, verbose = TRUE,
                                          mean_cov = mean(cov),
                                          median_cov = median(cov)), .(chr)]
   bdg_ncpg_stat = bdg_dat[!is.na(beta), .N, .(chr)]
-  
+
   return(list(bdg = bdg_dat, genome_stat = bdg_genome_stat,
               chr_stat = bdg_chr_stat,
               ncpg = bdg_ncpg_stat))
@@ -338,13 +338,13 @@ vect_code_batch <- function(files, col_idx, batch_size, col_data = NULL,
   . <- NULL
   batches <- split(files, ceiling(seq_along(files)/batch_size))
   batches_samp_names <- split(rownames(col_data), ceiling(seq_along(rownames(col_data))/batch_size))
-  
+
   beta_mat_final <- data.table::data.table()
   cov_mat_final <- data.table::data.table()
   genome_stat_final <- data.table::data.table()
   chr_stat_final <- data.table::data.table()
   ncpg_final <- data.table::data.table()
-  
+
   for (i in seq_along(batches)) {
     # browser()
     message(paste0("-Batch:         ", i, "/", length(batches)))
@@ -364,14 +364,14 @@ vect_code_batch <- function(files, col_idx, batch_size, col_data = NULL,
                                  file_uncovered = file_uncovered, zero_based = zero_based)
     }
     names(bdgs) <- samp_names
-    
+
     if (i == 1) {
       cov_mat_final <- data.frame(lapply(bdgs, function(x) x$bdg[,
                                                                  .(cov)]), stringsAsFactors = FALSE)
       beta_mat_final <- data.frame(lapply(bdgs, function(x) x$bdg[,
                                                                   .(beta)]), stringsAsFactors = FALSE)
       colnames(cov_mat_final) <- colnames(beta_mat_final) <- samp_names
-      
+
       genome_stat_final <- data.table::rbindlist(lapply(bdgs, function(x) x$genome_stat),
                                                  use.names = TRUE, fill = TRUE, idcol = "Sample_Name")
       chr_stat_final <- data.table::rbindlist(lapply(bdgs, function(x) x$chr_stat),
@@ -386,7 +386,7 @@ vect_code_batch <- function(files, col_idx, batch_size, col_data = NULL,
       colnames(cov_mat) <- colnames(beta_mat) <- samp_names
       cov_mat_final <- cbind(cov_mat_final, cov_mat)
       beta_mat_final <- cbind(beta_mat_final, beta_mat)
-      
+
       genome_stat_final <- rbind(genome_stat_final, data.table::rbindlist(lapply(bdgs,
                                                                                  function(x) x$genome_stat), use.names = TRUE, fill = TRUE,
                                                                           idcol = "Sample_Name"))
@@ -395,7 +395,7 @@ vect_code_batch <- function(files, col_idx, batch_size, col_data = NULL,
                                                                     idcol = "Sample_Name"))
       ncpg_final <- rbind(ncpg_final, data.table::rbindlist(lapply(bdgs,
                                                                    function(x) x$ncpg), use.names = TRUE, fill = TRUE, idcol = "Sample_Name"))
-      
+
       rm(cov_mat)
       rm(beta_mat)
       gc()
@@ -404,7 +404,7 @@ vect_code_batch <- function(files, col_idx, batch_size, col_data = NULL,
   gc()
   ncpg_final <- data.table::dcast(data = ncpg_final, chr ~ Sample_Name,
                                   value.var = "N")
-  
+
   return(list(beta_matrix = data.table::setDT(beta_mat_final), cov_matrix = data.table::setDT(cov_mat_final),
               genome_stat = genome_stat_final, chr_stat = chr_stat_final, ncpg = ncpg_final))
 }
@@ -417,14 +417,14 @@ vect_code_batch <- function(files, col_idx, batch_size, col_data = NULL,
 non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL,
                           h5temp = NULL, h5 = FALSE, strand_collapse = FALSE, contigs = contigs,
                           synced_coordinates, file_uncovered = NULL, zero_based = TRUE) {
-  
+
   Sample_Name <- . <- chr <- NULL
   if (strand_collapse) {
     dimension <- as.integer(nrow(genome)/2)
   } else {
     dimension <- as.integer(nrow(genome))
   }
-  
+
   if (h5) {
     if (is.null(h5temp)) {
       h5temp <- tempdir()
@@ -433,11 +433,11 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
     while (any(c(paste0("M_sink_", sink_counter, ".h5"), paste0("cov_sink_",
                                                                 sink_counter, ".h5")) %in% dir(h5temp))) {
       sink_counter <- sink_counter + 1
-      
+
     }
     grid <- DelayedArray::RegularArrayGrid(refdim = c(dimension, length(files)),
                                            spacings = c(dimension, 1L))
-    
+
     M_sink <- HDF5Array::HDF5RealizationSink(dim = c(dimension, length(files)),
                                              dimnames = NULL, type = "double",
                                              filepath = file.path(h5temp, paste0("M_sink_", sink_counter, ".h5")), name = "M", level = 6)
@@ -449,14 +449,14 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
     beta_mat <- data.table::data.table()
     cov_mat <- data.table::data.table()
   }
-  
+
   if (h5) {
     for (i in seq_along(files)) {
       if (i == 1) {
         b <- read_bdg(bdg = files[i], col_list = col_idx, genome = genome,
                       strand_collapse = strand_collapse, contigs = contigs, synced_coordinates = synced_coordinates,
                       file_uncovered = file_uncovered, zero_based = zero_based)
-        
+
         DelayedArray::write_block(block = as.matrix(b$bdg[, .(beta)]),
                                   viewport = grid[[i]], sink = M_sink)
         DelayedArray::write_block(block = as.matrix(b$bdg[, .(cov)]),
@@ -471,7 +471,7 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
         b <- read_bdg(bdg = files[i], col_list = col_idx, genome = genome,
                       strand_collapse = strand_collapse, contigs = contigs, synced_coordinates = synced_coordinates,
                       file_uncovered = file_uncovered, zero_based = zero_based)
-        
+
         DelayedArray::write_block(block = as.matrix(b$bdg[, .(beta)]),
                                   viewport = grid[[i]], sink = M_sink)
         DelayedArray::write_block(block = as.matrix(b$bdg[, .(cov)]),
@@ -498,7 +498,7 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
                       strand_collapse = strand_collapse, contigs = contigs,
                       synced_coordinates = synced_coordinates, file_uncovered = file_uncovered,
                       zero_based = zero_based)
-        
+
         beta_mat <- b$bdg[, .(chr, start, beta)]
         cov_mat <- b$bdg[, .(chr, start, cov)]
         genome_stat_final <- b$genome_stat[, `:=`(Sample_Name,
@@ -510,7 +510,7 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
                       strand_collapse = strand_collapse, contigs = contigs,
                       synced_coordinates = synced_coordinates, file_uncovered = file_uncovered,
                       zero_based = zero_based)
-        
+
         beta_mat <- cbind(beta_mat, b$bdg[, .(beta)])
         cov_mat <- cbind(cov_mat, b$bdg[, .(cov)])
         genome_stat_final <- rbind(genome_stat_final, b$genome_stat[,
@@ -523,7 +523,7 @@ non_vect_code <- function(files, col_idx, coldata, verbose = TRUE, genome = NULL
       colnames(beta_mat)[ncol(beta_mat)] <- colnames(cov_mat)[ncol(cov_mat)] <- rownames(coldata)[i]
     }
 
-    
+
     ncpg_final <- data.table::dcast(data = ncpg_final, chr ~ Sample_Name,
                                     value.var = "N")
     return(list(beta_matrix = beta_mat[, -(seq_len(2))], cov_matrix = cov_mat[, -(seq_len(2))],
@@ -560,7 +560,7 @@ cast_ranges <- function(regions, set.key = TRUE) {
   } else {
     stop("Invalid input class for regions. Must be a data.table or GRanges object")
   }
-  
+
   target_regions
 }
 
@@ -569,7 +569,7 @@ cast_ranges <- function(regions, set.key = TRUE) {
 giveme_this <- function(mat, stat = "mean", na_rm = TRUE, ish5 = FALSE) {
   stat <- match.arg(arg = stat, choices = c("mean", "median", "min",
                                             "max", "sum"))
-  
+
   if (ish5) {
     if (stat == "mean") {
       res <- DelayedMatrixStats::colMeans2(mat, na.rm = na_rm)
@@ -595,7 +595,7 @@ giveme_this <- function(mat, stat = "mean", na_rm = TRUE, ish5 = FALSE) {
       res <- matrixStats::colSums2(mat, na.rm = na_rm)
     }
   }
-  
+
   res
 }
 
@@ -603,10 +603,10 @@ giveme_this <- function(mat, stat = "mean", na_rm = TRUE, ish5 = FALSE) {
 #--------------------------------------------------------------------------------------------------------------------------
 # Tiny script to get axis and limits
 get_y_lims <- function(vec) {
-  
+
   y_lims <- range(vec)
   y_at <- pretty(y_lims)
-  
+
   if (y_at[1] > min(vec, na.rm = TRUE)) {
     y_at[1] <- min(vec, na.rm = TRUE)
   }
@@ -614,6 +614,6 @@ get_y_lims <- function(vec) {
     y_at[length(y_at)] <- max(vec, na.rm = TRUE)
   }
   y_lims <- range(y_at, na.rm = TRUE)
-  
+
   list(y_lims = y_lims, y_at = y_at)
 }

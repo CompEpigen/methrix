@@ -13,7 +13,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
 Depends: R (>= 3.6), data.table (>= 1.12.4), SummarizedExperiment
-Imports: rtracklayer, DelayedArray, HDF5Array, BSgenome, DelayedMatrixStats, parallel, methods, ggplot2, matrixStats, graphics, stats, utils, GenomicRanges, IRanges
+Imports: rtracklayer, DelayedArray, HDF5Array, BSgenome, DelayedMatrixStats, parallel, methods, ggplot2, S4Vectors, matrixStats, graphics, stats, utils, GenomicRanges, IRanges
 RoxygenNote: 7.1.1
 Suggests: 
     knitr,
@@ -24,6 +24,7 @@ Suggests:
     BSgenome.Mmusculus.UCSC.mm9,
     MafDb.1Kgenomes.phase3.GRCh38,
     MafDb.1Kgenomes.phase3.hs37d5,
+    BSgenome.Hsapiens.UCSC.hg19,
     GenomicScores,
     Biostrings,
     RColorBrewer,

@@ -217,12 +217,12 @@ methrix_pca <- function(m, var = "top", top_var = 1000, ranges = NULL,
 
     #-----------------------------------------------------------------------------------------------------------------------
     # Draw cumulative variance explained by PCs
-    
+
     if (do_plot) {
         par(mar = c(3, 4, 1, 4))
-        b = barplot(height = pc_vars, names.arg = NA, col = "#2c3e50", ylim = c(0, 1), las = 2, axes = FALSE, ylab = "Variance Explained")
-        points(x = b, y = cumsum(pc_vars), type = 'l', lty = 2, lwd = 1.2, xpd = TRUE, col = "#c0392b")
-        points(x = b, y = cumsum(pc_vars), type = 'p', pch = 19, xpd = TRUE, col = "#c0392b")
+        b = graphics::barplot(height = pc_vars, names.arg = NA, col = "#2c3e50", ylim = c(0, 1), las = 2, axes = FALSE, ylab = "Variance Explained")
+        graphics::points(x = b, y = cumsum(pc_vars), type = 'l', lty = 2, lwd = 1.2, xpd = TRUE, col = "#c0392b")
+        graphics::points(x = b, y = cumsum(pc_vars), type = 'p', pch = 19, xpd = TRUE, col = "#c0392b")
         mtext(text = paste0("PC", 1:length(pc_vars)), side = 1, at = b, las = 2, line = 0.5, cex = 0.8)
         axis(side = 2, at = seq(0, 1, 0.1), line = 0, las = 2, cex.axis = 0.8)
         axis(side = 4, at = seq(0, 1, 0.1), line = 0, las = 2, cex.axis = 0.8)
@@ -402,7 +402,7 @@ plot_coverage <- function(m, type = c("hist", "dens"), pheno = NULL, perGroup = 
                 ggplot2::scale_fill_manual(values = colors_palette)
 
         } else if (type == "hist") {
-            p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = variable)) + 
+            p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = variable)) +
                 ggplot2::geom_histogram(alpha = 0.6, binwidth = 1, color = "black") + ggplot2::theme_classic() +
                 ggplot2::xlab("Coverage")+
                 ggplot2::scale_fill_manual(values = colors_palette)
@@ -418,7 +418,7 @@ plot_coverage <- function(m, type = c("hist", "dens"), pheno = NULL, perGroup = 
             # print(p)
         } else if (type == "hist") {
             p <- ggplot2::ggplot(plot.data, ggplot2::aes(value, fill = variable)) +
-                ggplot2::geom_histogram(alpha = 0.6, binwidth = 1, color = "black") + 
+                ggplot2::geom_histogram(alpha = 0.6, binwidth = 1, color = "black") +
                 ggplot2::theme_classic() + ggplot2::xlab("Coverage") +
                 ggplot2::labs(fill = "Groups") +
                 ggplot2::scale_fill_manual(values = colors_palette)

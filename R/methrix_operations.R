@@ -18,7 +18,7 @@
 #' regions = data.table(chr = 'chr21', start = 27867971, end =  27868103),
 #' type = 'M', how = 'mean')
 #' @export
-get_region_summary = function(m, regions = NULL, type = "M", how = "mean", overlap_type = "within", 
+get_region_summary = function(m, regions = NULL, type = "M", how = "mean", overlap_type = "within",
                               na_rm = TRUE, elementMetadata.col = NULL, verbose = TRUE, n_chunks=1, n_cores=1){
 
     yid  <- NULL
@@ -37,7 +37,7 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", overl
     if("data.table" %in% class(regions)){
         regions <- GenomicRanges::makeGRangesFromDataFrame(df = regions)
     }
-    
+
 
     target_regions = (regions)
     #Add a unique id for every target range (i.e, rows)
@@ -46,11 +46,11 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", overl
     r_dat = as.data.frame(rowData(x = m))
     r_dat$seqnames <- as.character(r_dat$chr)
     r_dat$chr <- NULL
-    
+
     if(is.null(r_dat$end)){
         r_dat$end <- r_dat$start + 1
     }
-    
+
     r_dat <- GenomicRanges::makeGRangesFromDataFrame(r_dat, keep.extra.columns = FALSE)
 
 
@@ -88,24 +88,24 @@ get_region_summary = function(m, regions = NULL, type = "M", how = "mean", overl
         if(nrow(overlap_indices) < n_chunks){
             n_chunks <- nrow(overlap_indices)
             if (n_cores > n_chunks){
-                n_cores <- n_chunks 
+                n_cores <- n_chunks
                 #message("n_cores should be set to be less than or equal to n_chunks.","\n","n_chunks has been set to be equal to n_cores = ", n_cores)
             }
         }
-        
+
         if (type == "M") {
-            dat = tryCatch(do.call("rbind",mclapply(mc.cores=n_cores, 
-                                           split(overlap_indices$xid, ceiling(seq_along(overlap_indices$xid)/ceiling(length(overlap_indices$xid)/n_chunks))), 
+            dat = tryCatch(do.call("rbind",mclapply(mc.cores=n_cores,
+                                           split(overlap_indices$xid, ceiling(seq_along(overlap_indices$xid)/ceiling(length(overlap_indices$xid)/n_chunks))),
                                            function(i) {
                 get_matrix(m[i,], type = "M", add_loci = TRUE)
-            })), 
+            })),
             error = function(e){
                 message( e, "\n Try to use less cores. ")
             })
         } else if (type == "C") {
             dat = tryCatch(do.call("rbind",mclapply(mc.cores=n_cores, split(overlap_indices$xid, ceiling(seq_along(overlap_indices$xid)/ceiling(length(overlap_indices$xid)/n_chunks))), function(i) {
                 get_matrix(m[i,], type = "C", add_loci = TRUE)
-            })), 
+            })),
             error = function(e){
                 message( e, "\n Try to use less cores. ")
             })
@@ -297,22 +297,22 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, prop_samples=0, gro
             cov_dat = get_matrix(m = m, type = "C")
             if (!is.null(group)) {
                 row_idx <- sapply(unique(colData(m)[, group]), function(c) {
-                    res <- DelayedMatrixStats::rowSums2(cov_dat[, colData(m)[, 
+                    res <- DelayedMatrixStats::rowSums2(cov_dat[, colData(m)[,
                                                                             group] == c] >= cov_thr, na.rm = TRUE)
-                    row_idx <- (res >= max(min_samples, ceiling(prop_samples * 
+                    row_idx <- (res >= max(min_samples, ceiling(prop_samples *
                                                                     sum(colData(m)[, group] == c))))
                 })
                 row_idx <- DelayedMatrixStats::rowAlls(row_idx)
             } else {
                 res <- DelayedMatrixStats::rowSums2(cov_dat >= cov_thr, na.rm = TRUE)
-                row_idx <- (res >= max(min_samples, ceiling(prop_samples * 
+                row_idx <- (res >= max(min_samples, ceiling(prop_samples *
                                                                 ncol(cov_dat))))
             }
         } else {
             if (!is.null(group)) {
-                row_idx <- unlist(mclapply(mc.cores = n_cores, 1:n_chunks, 
+                row_idx <- unlist(mclapply(mc.cores = n_cores, 1:n_chunks,
                                            function(i) {
-                                               cov_dat = get_matrix(m[((i - 1) * ceiling(nrow(m)/n_chunks) + 1):min(i * ceiling(nrow(m)/n_chunks), nrow(m)), ], 
+                                               cov_dat = get_matrix(m[((i - 1) * ceiling(nrow(m)/n_chunks) + 1):min(i * ceiling(nrow(m)/n_chunks), nrow(m)), ],
                                                                     type = "C")
                                                row_idx <- sapply(unique(colData(m)[, group]), function(c) {
                                                    res <- DelayedMatrixStats::rowSums2(cov_dat[, colData(m)[,group] == c] >= cov_thr, na.rm = TRUE)
@@ -321,9 +321,9 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, prop_samples=0, gro
                                                row_idx <- DelayedMatrixStats::rowAlls(row_idx)
                                            }))
             } else {
-                row_idx <- unlist(mclapply(mc.cores = n_cores, 1:n_chunks, 
+                row_idx <- unlist(mclapply(mc.cores = n_cores, 1:n_chunks,
                                            function(i) {
-                                               cov_dat = get_matrix(m[((i - 1) * ceiling(nrow(m)/n_chunks) + 1):min(i * ceiling(nrow(m)/n_chunks), nrow(m)), ], 
+                                               cov_dat = get_matrix(m[((i - 1) * ceiling(nrow(m)/n_chunks) + 1):min(i * ceiling(nrow(m)/n_chunks), nrow(m)), ],
                                                                     type = "C")
                                                res <- DelayedMatrixStats::rowSums2(cov_dat >= cov_thr, na.rm = TRUE)
                                                row_idx <- (res >= max(min_samples, ceiling(prop_samples * ncol(cov_dat))))
@@ -334,7 +334,7 @@ coverage_filter <- function(m, cov_thr = 1, min_samples = 1, prop_samples=0, gro
         cov_dat = get_matrix(m = m, type = "C")
         if (!is.null(group)) {
             row_idx <- sapply(unique(colData(m)[, group]), function(c) {
-                res <- matrixStats::rowSums2(cov_dat[, colData(m)[, group] == 
+                res <- matrixStats::rowSums2(cov_dat[, colData(m)[, group] ==
                                                          c] >= cov_thr, na.rm = TRUE)
                 row_idx <- (res >= max(min_samples, ceiling(prop_samples * sum(colData(m)[, group] == c))))
             })
@@ -382,7 +382,7 @@ get_matrix <- function(m, type = "M", add_loci = FALSE, in_granges=FALSE) {
 
     type <- match.arg(arg = type, choices = c("M", "C"))
     if (add_loci == FALSE & in_granges == TRUE) {
-        warning("Without genomic locations (add_loci= FALSE), it is not possible to convert the results to GRanges, ", 
+        warning("Without genomic locations (add_loci= FALSE), it is not possible to convert the results to GRanges, ",
                 "the output will be a data.table object. ")
     }
 
@@ -584,13 +584,13 @@ mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99, n_cores=1) {
         message("\n\n-Masking coverage higher than ", high_quantile*100," percentile")
 
 
-        
+
         if (is_h5(m)) {
-            
+
             if (n_cores == 1){
                 quantiles <- DelayedMatrixStats::colQuantiles(assays(m)[[2]], probs = high_quantile, na.rm = TRUE, drop = F)}
             else {
-                quantiles <- simplify2array(mclapply(mc.cores = n_cores, 1:ncol(assays(m)[[2]]), 
+                quantiles <- simplify2array(mclapply(mc.cores = n_cores, 1:ncol(assays(m)[[2]]),
                                                      function(i) quantile(assays(m)[[2]][, i], probs = high_quantile, na.rm = TRUE)))}
             quantiles <- as.vector(quantiles)
             names(quantiles) <- rownames(colData(m))
@@ -599,7 +599,7 @@ mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99, n_cores=1) {
             quantiles <- as.vector(quantiles)
             names(quantiles) <- rownames(colData(m))
         }
-        
+
 
         row_idx2 <- t(t((assays(m)[[2]])) > quantiles)
         assays(m)[[1]][row_idx2] <- as.double(NA)
@@ -610,7 +610,7 @@ mask_methrix <- function(m, low_count = NULL, high_quantile = 0.99, n_cores=1) {
             if (n_cores == 1){
                 n <- DelayedMatrixStats::colSums2(row_idx2, na.rm = T)}
             else {
-                n <- simplify2array(mclapply(mc.cores = n_cores, 1:ncol(row_idx2), 
+                n <- simplify2array(mclapply(mc.cores = n_cores, 1:ncol(row_idx2),
                                              function(i) sum(row_idx2[, i], na.rm = T)))}
         } else {
             n <- colSums(row_idx2, na.rm = T)
@@ -728,7 +728,7 @@ get_stats <- function(m, per_chr = TRUE) {
                                            idcol = "Sample_Name")
         stats <- merge(meth_stat, cov_stat, by = c("chr", "Sample_Name"))
         colnames(stats)[1] <- "Chromosome"
-        stats$Chromosome <- factor(x = stats$Chromosome, levels = metadata(m)$chrom_sizes$contig)
+        stats$Chromosome <- factor(x = stats$Chromosome, levels = S4Vectors::metadata(m)$chrom_sizes$contig)
     } else {
         if (is_h5(m)) {
             cov_stat <- data.table::data.table(Sample_Name = colnames(m),
@@ -842,7 +842,7 @@ convert_HDF5_methrix <- function(m = NULL) {
 
     assays(m)[[1]] <- as.matrix(assays(m)[[1]])
     assays(m)[[2]] <- as.matrix(assays(m)[[2]])
-    metadata(m)$is_h5 <- FALSE
+    S4Vectors::metadata(m)$is_h5 <- FALSE
     return(m)
 }
 
@@ -866,8 +866,8 @@ convert_methrix <- function(m = NULL) {
     }
 
     m <- create_methrix(beta_mat = assays(m)[[1]], cov_mat = assays(m)[[2]],
-        cpg_loci = rowData(m), is_hdf5 = TRUE, genome_name = metadata(m)$genome,
-        col_data = colData(m), chrom_sizes = metadata(m)$chrom_sizes, ref_cpg_dt = metadata(m)$ref_CpG,
-        desc = metadata(m)$descriptive_stats)
+        cpg_loci = rowData(m), is_hdf5 = TRUE, genome_name = S4Vectors::metadata(m)$genome,
+        col_data = colData(m), chrom_sizes = S4Vectors::metadata(m)$chrom_sizes, ref_cpg_dt = S4Vectors::metadata(m)$ref_CpG,
+        desc = S4Vectors::metadata(m)$descriptive_stats)
     return(m)
 }
