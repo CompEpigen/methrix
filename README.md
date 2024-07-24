@@ -78,7 +78,7 @@ The example data of the methrix package is used.
 
 ```r
 #Example bedgraph files
-> bdg_files = list.files(path = system.file('extdata', package = 'methrix'), pattern = "*bdg\\.gz$", full.names = TRUE)
+> bdg_files = list.files(path = system.file('extdata', package = 'methrix'), pattern = "*bedGraph\\.gz$", full.names = TRUE)
 
 > meth = methrix::read_bedgraphs(files = bdg_files, ref_cpgs = hg19_cpgs, chr_idx = 1, start_idx = 2, M_idx = 3, U_idx = 4,
   stranded = TRUE, collapse_strands = TRUE)
