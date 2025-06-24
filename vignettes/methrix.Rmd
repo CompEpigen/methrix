@@ -234,6 +234,26 @@ methrix::subset_methrix(m = methrix_data, samples = "C1")
 methrix_data[,1]
 ```
 
+### Subsetting to Array Probes
+
+The `methrix2epic()` function allows you to subset a methrix object to include only CpG sites that correspond to Illumina 450K or EPIC array probes. This enables direct comparison between WGBS and array-based methylation data.
+
+```{r methrix2epic, eval=FALSE}
+# Subset to EPIC array probes
+epic_data <- methrix2epic(m = methrix_data, array_type = "EPIC")
+
+# Subset to 450K array probes  
+k450_data <- methrix2epic(m = methrix_data, array_type = "450K")
+
+# Return as ExpressionSet for compatibility with other Bioconductor packages
+epic_eset <- methrix2epic(m = methrix_data, array_type = "EPIC", return_eset = TRUE)
+
+# Check subset summary
+summarize_array_subset(epic_data)
+```
+
+The function automatically detects the genome build from your methrix object and loads the appropriate array annotations. The resulting object contains probe IDs as rownames and includes array metadata for downstream analysis.
+
 ## Summary statsitcis 
 ### Basic summaries
 ```{r}
