@@ -1,0 +1,15 @@
+# Makevars for methrix ModKit integration
+
+# Try direct approach for Rhtslib
+PKG_CFLAGS = -O3 -Wall -std=c99 -Wno-pedantic
+
+# Get Rhtslib paths - alternative approach
+RHTSLIB_CPPFLAGS = $(shell "${R_HOME}/bin/Rscript" -e "cat(Rhtslib::pkgconfig('PKG_CPPFLAGS'))")
+RHTSLIB_LIBS = $(shell "${R_HOME}/bin/Rscript" -e "cat(Rhtslib::pkgconfig('PKG_LIBS'))")
+
+PKG_CPPFLAGS = $(RHTSLIB_CPPFLAGS) -I.
+PKG_LIBS = $(RHTSLIB_LIBS)
+
+# Specify source files explicitly
+SOURCES = modkit_r_interface.c modkit_merge_core.c init.c
+OBJECTS = $(SOURCES:.c=.o)
