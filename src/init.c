@@ -3,12 +3,16 @@
 #include <R_ext/Rdynload.h>
 #include <stdlib.h>
 
-// External function declaration
-extern SEXP read_modkit_c(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+// External function declarations
+extern SEXP read_modkit_c(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP read_modkit_v2_c(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP add_context_c(SEXP, SEXP, SEXP, SEXP, SEXP);
 
 // Define the C methods that can be called from R
 static const R_CallMethodDef CallEntries[] = {
-  {"read_modkit_c", (DL_FUNC) &read_modkit_c, 9},
+  {"read_modkit_c", (DL_FUNC) &read_modkit_c, 10},
+  {"read_modkit_v2_c", (DL_FUNC) &read_modkit_v2_c, 9},
+  {"add_context_c", (DL_FUNC) &add_context_c, 5},
   {NULL, NULL, 0}
 };
 
