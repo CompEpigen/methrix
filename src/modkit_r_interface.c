@@ -10,14 +10,14 @@ static modkit_r_result_t *g_result = NULL;
 static int g_current_site = 0;
 
 // Main R interface function
-SEXP read_modkit_c(SEXP files, SEXP target_mod, SEXP bin_size, 
+SEXP read_modkit_c(SEXP files, SEXP target_mod, SEXP bin_size,
                    SEXP n_cores, SEXP quality_filter, SEXP min_coverage,
-                   SEXP combine_strands, SEXP ref_fasta, SEXP verbose) {
+                   SEXP combine_strands, SEXP ref_fasta, SEXP use_fixed_bins, SEXP verbose) {
   
   // Parse R arguments into config structure
   config_t config = parse_r_config(files, target_mod, bin_size, n_cores,
                                    quality_filter, min_coverage, combine_strands,
-                                   ref_fasta, verbose);
+                                   ref_fasta, use_fixed_bins, verbose);
   
   // Initialize reference if provided
   if (config.ref_fasta) {
@@ -27,18 +27,41 @@ SEXP read_modkit_c(SEXP files, SEXP target_mod, SEXP bin_size,
     }
   }
   
-  // Auto-discover chromosomes (keep existing implementation)
-  if (discover_chromosomes(&config) != 0) {
-    cleanup_reference();
-    cleanup_config(&config);
-    error("Failed to discover chromosomes from input files");
-  }
-  
-  // Generate genomic bins (keep existing implementation)  
-  if (generate_bins(&config) != 0) {
-    cleanup_reference();
-    cleanup_config(&config);
-    error("Failed to generate genomic bins");
+  // Choose binning approach based on use_fixed_bins parameter
+  if (config.use_fixed_bins) {
+    // First, discover chromosomes from bedMethyl files using tabix
+    if (extract_chromosomes_from_bedmethyl_files(&config) != 0) {
+      cleanup_reference();
+      cleanup_config(&config);
+      error("Failed to discover chromosomes from bedMethyl files");
+    }
+
+    // Extract chromosome lengths from FASTA index (only for discovered chromosomes)
+    if (extract_chromosome_lengths_from_fai(&config) != 0) {
+      cleanup_reference();
+      cleanup_config(&config);
+      error("Failed to extract chromosome lengths from FASTA index");
+    }
+
+    // Generate fixed genomic bins (only for chromosomes with both data and lengths)
+    if (generate_fixed_genomic_bins(&config) != 0) {
+      cleanup_reference();
+      cleanup_config(&config);
+      error("Failed to generate fixed genomic bins");
+    }
+  } else {
+    // Use original data-driven approach
+    if (discover_chromosomes(&config) != 0) {
+      cleanup_reference();
+      cleanup_config(&config);
+      error("Failed to discover chromosomes from input files");
+    }
+
+    if (generate_bins(&config) != 0) {
+      cleanup_reference();
+      cleanup_config(&config);
+      error("Failed to generate genomic bins");
+    }
   }
   
   // Estimate total sites for memory allocation
@@ -53,8 +76,13 @@ SEXP read_modkit_c(SEXP files, SEXP target_mod, SEXP bin_size,
   }
   g_current_site = 0;
   
-  // Process all bins (modified to accumulate in memory)
-  int process_result = process_all_bins_to_memory(&config);
+  // Process all bins (choose method based on binning approach)
+  int process_result;
+  if (config.use_fixed_bins) {
+    process_result = process_all_bins_with_union(&config);
+  } else {
+    process_result = process_all_bins_to_memory(&config);
+  }
   
   if (process_result != 0) {
     cleanup_modkit_result(g_result);
@@ -76,9 +104,9 @@ SEXP read_modkit_c(SEXP files, SEXP target_mod, SEXP bin_size,
 }
 
 // Parse R arguments into config structure
-config_t parse_r_config(SEXP files, SEXP target_mod, SEXP bin_size, 
+config_t parse_r_config(SEXP files, SEXP target_mod, SEXP bin_size,
                         SEXP n_cores, SEXP quality_filter, SEXP min_coverage,
-                        SEXP combine_strands, SEXP ref_fasta, SEXP verbose) {
+                        SEXP combine_strands, SEXP ref_fasta, SEXP use_fixed_bins, SEXP verbose) {
   
   config_t config = {0};
   
@@ -98,8 +126,9 @@ config_t parse_r_config(SEXP files, SEXP target_mod, SEXP bin_size,
   config.quality_filter = asReal(quality_filter);
   config.min_coverage = asInteger(min_coverage);
   config.combine_strands = asLogical(combine_strands);
+  config.use_fixed_bins = asLogical(use_fixed_bins);
   config.verbose = asLogical(verbose);
-  
+
   // Handle optional reference FASTA
   if (!isNull(ref_fasta) && length(ref_fasta) > 0) {
     const char *ref_path = CHAR(STRING_ELT(ref_fasta, 0));
@@ -407,7 +436,13 @@ int process_single_bin_to_memory(genomic_bin_t *bin, char **input_files, int n_f
   int active_streams = 0;
   for (int i = 0; i < n_files; i++) {
     memset(&streams[i], 0, sizeof(file_stream_t));
-    if (init_file_stream_for_bin(&streams[i], input_files[i], i, bin, config) == 0) {
+    int init_result = init_file_stream_for_bin(&streams[i], input_files[i], i, bin, config);
+    // DEBUG: Stream initialization debug commented out
+    // if (config->verbose) {
+    //   Rprintf("  File %d (%s): init_result=%d, has_record=%d\n",
+    //           i, input_files[i], init_result, streams[i].has_current_record);
+    // }
+    if (init_result == 0) {
       if (streams[i].has_current_record) {
         active_streams++;
       }
@@ -421,17 +456,28 @@ int process_single_bin_to_memory(genomic_bin_t *bin, char **input_files, int n_f
   
   // Process data in this bin using streaming merge
   while (any_stream_has_data(streams, n_files)) {
-    coord_t min_coord = find_minimum_coordinate(streams, n_files);
-    collect_coordinate_data(streams, n_files, &min_coord, config);
-    
+    coord_t min_coord;
+
+    if (config->combine_strands &&
+        (config->target_mod == 'm' || config->target_mod == 'h' ||
+         config->target_mod == 'c' || config->target_mod == 'g')) {
+      // Use strand merging logic
+      min_coord = find_minimum_coordinate_with_merging(streams, n_files, config);
+      collect_coordinate_data_with_merging(streams, n_files, &min_coord, config);
+    } else {
+      // Use original logic (no strand merging)
+      min_coord = find_minimum_coordinate(streams, n_files);
+      collect_coordinate_data(streams, n_files, &min_coord, config);
+    }
+
     // Check if we need more space BEFORE accumulating
     if (g_current_site >= g_result->n_sites) {
       reallocate_result_if_needed();
     }
-    
+
     // Modified: accumulate instead of writing to file
     accumulate_coordinate_row(&min_coord, streams, n_files, config);
-    
+
     reset_output_data(streams, n_files);
   }
   
@@ -503,8 +549,54 @@ void reallocate_result_if_needed() {
     g_result->ref_bases = new_ref_bases;
     g_result->contexts = new_contexts;
   }
-  
+
   Rprintf("Reallocated result arrays to %d sites\n", new_size);
+}
+
+// NEW: Process all bins using coordinate union approach
+int process_all_bins_with_union(config_t *config) {
+  // Extract sample names from file paths
+  for (int i = 0; i < config->n_files; i++) {
+    const char *basename = strrchr(config->input_files[i], '/');
+    basename = basename ? basename + 1 : config->input_files[i];
+
+    char *sample_name = (char*)R_alloc(256, sizeof(char));
+    strncpy(sample_name, basename, 255);
+    sample_name[255] = '\0';
+
+    // Remove file extensions
+    char *dot = strchr(sample_name, '.');
+    if (dot) *dot = '\0';
+
+    g_result->sample_names[i] = sample_name;
+  }
+
+  // Process bins using complete coordinate union approach
+  if (config->verbose) {
+    Rprintf("Processing %d bins with complete coordinate union...\n", config->n_bins);
+    if (config->include_context) {
+      Rprintf("Reference FASTA provided - extracting sequence context...\n");
+    }
+  }
+
+  for (int bin_idx = 0; bin_idx < config->n_bins; bin_idx++) {
+    int result = process_bin_with_complete_union(&config->bins[bin_idx],
+                                                config->input_files,
+                                                config->n_files, config);
+
+    if (result != 0) {
+      return result;
+    }
+
+    if (config->verbose && (bin_idx + 1) % 10 == 0) {
+      Rprintf("Processed %d/%d bins\n", bin_idx + 1, config->n_bins);
+    }
+
+    // Check for user interruption
+    R_CheckUserInterrupt();
+  }
+
+  return 0;
 }
 
 // Cleanup function
@@ -516,4 +608,59 @@ void cleanup_modkit_result(modkit_r_result_t *result) {
     result->n_samples = 0;
     result->include_context = 0;
   }
+}
+
+// NEW: Process a bin using complete coordinate union approach
+int process_bin_with_complete_union(genomic_bin_t *bin, char **input_files, int n_files, config_t *config) {
+  // Show chunk processing information
+  Rprintf("Processing %s:%d-%d\n", bin->chr, bin->start, bin->end);
+
+  // Step 1: Collect all coordinates from all files in this bin
+  coordinate_set_t coord_set = collect_all_coordinates_in_bin(input_files, n_files, bin, config);
+
+  if (coord_set.n_coords == 0) {
+    cleanup_coordinate_set(&coord_set);
+    return 0; // No data in this bin
+  }
+
+  // Step 2: For each coordinate, query each file for data
+  for (int coord_idx = 0; coord_idx < coord_set.n_coords; coord_idx++) {
+    coord_t *target_coord = &coord_set.coords[coord_idx];
+
+    // Check if we need more space BEFORE accumulating
+    if (g_current_site >= g_result->n_sites) {
+      reallocate_result_if_needed();
+    }
+
+    // Initialize file streams for this coordinate
+    file_stream_t *streams = (file_stream_t*)R_alloc(n_files, sizeof(file_stream_t));
+    for (int i = 0; i < n_files; i++) {
+      memset(&streams[i], 0, sizeof(file_stream_t));
+      streams[i].has_output_data = 0;
+    }
+
+    // Query each file for this specific coordinate
+    for (int file_idx = 0; file_idx < n_files; file_idx++) {
+      streams[file_idx].has_output_data = query_file_for_coordinate(
+        input_files[file_idx], target_coord, &streams[file_idx], config);
+    }
+
+    // Accumulate this coordinate's data
+    accumulate_coordinate_row(target_coord, streams, n_files, config);
+
+    // DEBUG: Union processing debug commented out
+    // if (config->verbose && target_coord->start == 10003) {
+    //   Rprintf("Union processing %s:%d:%c\n", target_coord->chr, target_coord->start, target_coord->strand);
+    //   for (int i = 0; i < n_files; i++) {
+    //     if (streams[i].has_output_data) {
+    //       Rprintf("  File %d: cov=%d beta=%.3f\n", i, streams[i].output_cov, streams[i].output_beta);
+    //     } else {
+    //       Rprintf("  File %d: No data (will be NaN)\n", i);
+    //     }
+    //   }
+    // }
+  }
+
+  cleanup_coordinate_set(&coord_set);
+  return 0;
 }

@@ -15,6 +15,7 @@
 #'   and sequence context (CG/CHG/CHH) information.
 #' @param h5 Store matrices as HDF5Arrays? Default FALSE.
 #' @param h5_dir Directory for HDF5 storage. Default NULL.
+#' @param h5temp Temporary directory for HDF5 files during processing. Default NULL (uses tempdir()).
 #' @param coldata Optional DataFrame with sample metadata. If NULL, created from filenames.
 #' @param verbose Print progress messages? Default TRUE.
 #'
@@ -24,6 +25,11 @@
 #' - Hash-based aggregation instead of k-way merge (10x faster)
 #' - Chunked processing for bounded memory usage
 #' - Leverages sorted tabix files for efficient coordinate discovery
+#' - Efficient HDF5 support with immediate memory release
+#'
+#' When h5=TRUE, matrices are immediately written to HDF5 format after C processing
+#' completes, significantly reducing peak memory usage. Statistics are calculated
+#' using block processing for memory efficiency.
 #'
 #' @examples
 #' \dontrun{
@@ -33,6 +39,10 @@
 #' # With context extraction
 #' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes",
 #'                        ref_fasta = "hg38.fa", target_mod = "m")
+#'
+#' # Large dataset with HDF5 backend (memory efficient)
+#' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes",
+#'                        h5 = TRUE, h5_dir = "./h5_data")
 #'
 #' # With custom interval size for memory control
 #' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes", interval_size = 5000000)
@@ -49,6 +59,7 @@ read_modkit_v2 <- function(files,
                           ref_fasta = NULL,
                           h5 = FALSE,
                           h5_dir = NULL,
+                          h5temp = NULL,
                           coldata = NULL,
                           verbose = TRUE) {
 
@@ -168,7 +179,7 @@ read_modkit_v2 <- function(files,
 
   # Convert C results to methrix object
   methrix_obj <- convert_c_result_to_methrix_v2(c_result, coldata, target_mod,
-                                                h5, h5_dir, ref_fasta, verbose)
+                                                h5, h5_dir, h5temp, ref_fasta, verbose)
 
   if (verbose) {
     total_time <- Sys.time() - start_time
@@ -180,7 +191,7 @@ read_modkit_v2 <- function(files,
 
 # Helper function to convert C result to methrix
 convert_c_result_to_methrix_v2 <- function(c_result, coldata, target_mod,
-                                          h5, h5_dir, ref_fasta, verbose) {
+                                          h5, h5_dir, h5temp, ref_fasta, verbose) {
 
   # Extract matrices
   beta_matrix <- c_result$beta_matrix
@@ -190,28 +201,67 @@ convert_c_result_to_methrix_v2 <- function(c_result, coldata, target_mod,
   colnames(beta_matrix) <- rownames(coldata)
   colnames(cov_matrix) <- rownames(coldata)
 
-  # Convert to HDF5 if requested
+  # Extract coordinate and context data BEFORE HDF5 conversion
+  # (we need to keep this lightweight data, but can free the large matrices)
+  chr_data <- c_result$chr
+  start_data <- c_result$start
+  strand_data <- c_result$strand
+  ref_base_data <- c_result$ref_base
+  context_data <- c_result$context
+
+  # Convert to HDF5 if requested - do this IMMEDIATELY to free memory
   if (h5) {
     if (verbose) message("Converting to HDF5 format...")
-    beta_matrix <- as(beta_matrix, "HDF5Array")
-    cov_matrix <- as(cov_matrix, "HDF5Array")
+
+    # Set temporary directory
+    if (is.null(h5temp)) {
+      h5temp <- tempdir()
+    }
+
+    # Create unique filenames to avoid conflicts
+    sink_counter <- 1
+    while (any(c(paste0("beta_modkit_v2_", sink_counter, ".h5"),
+                 paste0("cov_modkit_v2_", sink_counter, ".h5")) %in% dir(h5temp))) {
+      sink_counter <- sink_counter + 1
+    }
+
+    # Write matrices to HDF5 immediately (frees RAM)
+    beta_matrix <- HDF5Array::writeHDF5Array(
+      beta_matrix,
+      filepath = file.path(h5temp, paste0("beta_modkit_v2_", sink_counter, ".h5")),
+      name = "beta",
+      level = 6  # compression level
+    )
+
+    cov_matrix <- HDF5Array::writeHDF5Array(
+      cov_matrix,
+      filepath = file.path(h5temp, paste0("cov_modkit_v2_", sink_counter, ".h5")),
+      name = "cov",
+      level = 6
+    )
+
+    # Free memory from C result (we already extracted what we need)
+    rm(list = c("c_result"))
+    gc()
+
+    if (verbose) message("HDF5 conversion complete, memory released")
   }
 
   # Create row data with context information if available
-  if (!is.null(c_result$ref_base) && !is.null(c_result$context)) {
+  if (!is.null(ref_base_data) && !is.null(context_data)) {
     rowData <- DataFrame(
-      chr = c_result$chr,
-      start = c_result$start,
-      strand = c_result$strand,
-      ref_base = c_result$ref_base,
-      context = c_result$context
+      chr = chr_data,
+      start = start_data,
+      strand = strand_data,
+      ref_base = ref_base_data,
+      context = context_data
     )
     if (verbose) message("Added reference base and context information to rowData")
   } else {
     rowData <- DataFrame(
-      chr = c_result$chr,
-      start = c_result$start,
-      strand = c_result$strand
+      chr = chr_data,
+      start = start_data,
+      strand = strand_data
     )
   }
 
@@ -228,8 +278,8 @@ convert_c_result_to_methrix_v2 <- function(c_result, coldata, target_mod,
     total_sites = nrow(beta_matrix),
     processing_engine = "modkit_merge_v2_c",
     reference_fasta = ref_fasta,
-    context_extracted = !is.null(c_result$ref_base),
-    context_types = if (!is.null(c_result$context)) names(table(c_result$context)) else NULL,
+    context_extracted = !is.null(ref_base_data),
+    context_types = if (!is.null(context_data)) names(table(context_data)) else NULL,
     created_date = Sys.Date()
   )
 
@@ -240,22 +290,54 @@ convert_c_result_to_methrix_v2 <- function(c_result, coldata, target_mod,
     Sample_Name = colnames(beta_matrix)
   )
 
-  for (i in seq_len(ncol(beta_matrix))) {
-    sample_beta <- beta_matrix[, i]
-    sample_cov <- cov_matrix[, i]
+  # Use block processing for HDF5 arrays (memory efficient)
+  if (h5) {
+    for (i in seq_len(ncol(beta_matrix))) {
+      # DelayedArray operations work on blocks automatically
+      sample_beta <- beta_matrix[, i]
+      sample_cov <- cov_matrix[, i]
 
-    valid_idx <- !is.na(sample_beta) & !is.na(sample_cov) & sample_cov > 0
+      # Use DelayedMatrixStats for efficient block-wise computation
+      valid_mask <- !is.na(sample_beta) & !is.na(sample_cov) & sample_cov > 0
 
-    if (sum(valid_idx) > 0) {
-      genome_stats$mean_meth[i] <- mean(sample_beta[valid_idx], na.rm = TRUE)
-      genome_stats$median_meth[i] <- median(sample_beta[valid_idx], na.rm = TRUE)
-      genome_stats$mean_cov[i] <- mean(sample_cov[valid_idx], na.rm = TRUE)
-      genome_stats$median_cov[i] <- median(sample_cov[valid_idx], na.rm = TRUE)
-    } else {
-      genome_stats$mean_meth[i] <- NA_real_
-      genome_stats$median_meth[i] <- NA_real_
-      genome_stats$mean_cov[i] <- NA_real_
-      genome_stats$median_cov[i] <- NA_real_
+      if (sum(valid_mask) > 0) {
+        beta_valid <- sample_beta[valid_mask]
+        cov_valid <- sample_cov[valid_mask]
+
+        genome_stats$mean_meth[i] <- DelayedMatrixStats::rowMeans2(
+          as.matrix(beta_valid), na.rm = TRUE)
+        genome_stats$median_meth[i] <- DelayedMatrixStats::rowMedians(
+          as.matrix(beta_valid), na.rm = TRUE)
+        genome_stats$mean_cov[i] <- DelayedMatrixStats::rowMeans2(
+          as.matrix(cov_valid), na.rm = TRUE)
+        genome_stats$median_cov[i] <- DelayedMatrixStats::rowMedians(
+          as.matrix(cov_valid), na.rm = TRUE)
+      } else {
+        genome_stats$mean_meth[i] <- NA_real_
+        genome_stats$median_meth[i] <- NA_real_
+        genome_stats$mean_cov[i] <- NA_real_
+        genome_stats$median_cov[i] <- NA_real_
+      }
+    }
+  } else {
+    # In-memory calculation (original fast path)
+    for (i in seq_len(ncol(beta_matrix))) {
+      sample_beta <- beta_matrix[, i]
+      sample_cov <- cov_matrix[, i]
+
+      valid_idx <- !is.na(sample_beta) & !is.na(sample_cov) & sample_cov > 0
+
+      if (sum(valid_idx) > 0) {
+        genome_stats$mean_meth[i] <- mean(sample_beta[valid_idx], na.rm = TRUE)
+        genome_stats$median_meth[i] <- median(sample_beta[valid_idx], na.rm = TRUE)
+        genome_stats$mean_cov[i] <- mean(sample_cov[valid_idx], na.rm = TRUE)
+        genome_stats$median_cov[i] <- median(sample_cov[valid_idx], na.rm = TRUE)
+      } else {
+        genome_stats$mean_meth[i] <- NA_real_
+        genome_stats$median_meth[i] <- NA_real_
+        genome_stats$mean_cov[i] <- NA_real_
+        genome_stats$median_cov[i] <- NA_real_
+      }
     }
   }
 

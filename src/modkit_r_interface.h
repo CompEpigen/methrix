@@ -44,22 +44,23 @@ typedef struct {
 } modkit_r_result_t;
 
 // Function prototypes
-SEXP read_modkit_c(SEXP files, SEXP target_mod, SEXP bin_size, 
+SEXP read_modkit_c(SEXP files, SEXP target_mod, SEXP bin_size,
                    SEXP n_cores, SEXP quality_filter, SEXP min_coverage,
-                   SEXP combine_strands, SEXP ref_fasta, SEXP verbose);
+                   SEXP combine_strands, SEXP ref_fasta, SEXP use_fixed_bins, SEXP verbose);
 
 // Helper functions
 modkit_r_result_t* init_modkit_result(int n_sites, int n_samples);
 void cleanup_modkit_result(modkit_r_result_t *result);
 SEXP convert_modkit_result_to_r(modkit_r_result_t *result);
-config_t parse_r_config(SEXP files, SEXP target_mod, SEXP bin_size, 
+config_t parse_r_config(SEXP files, SEXP target_mod, SEXP bin_size,
                         SEXP n_cores, SEXP quality_filter, SEXP min_coverage,
-                        SEXP combine_strands, SEXP ref_fasta, SEXP verbose);
+                        SEXP combine_strands, SEXP ref_fasta, SEXP use_fixed_bins, SEXP verbose);
 
 // NEW: Context extraction function prototypes
 void accumulate_coordinate_row(const coord_t *coord, file_stream_t *streams, int n_files,
                                config_t *config);
 int process_all_bins_to_memory(config_t *config);
+int process_all_bins_with_union(config_t *config);
 int process_single_bin_to_memory(genomic_bin_t *bin, char **input_files, int n_files,
                                  config_t *config);
 void reallocate_result_if_needed(void);

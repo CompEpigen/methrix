@@ -7,12 +7,18 @@
 extern SEXP read_modkit_c(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP read_modkit_v2_c(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP add_context_c(SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP read_modkit_v2_init_chunks_c(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP read_modkit_v2_process_chunk_c(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP read_modkit_v2_cleanup_c(SEXP, SEXP);
 
 // Define the C methods that can be called from R
 static const R_CallMethodDef CallEntries[] = {
   {"read_modkit_c", (DL_FUNC) &read_modkit_c, 10},
   {"read_modkit_v2_c", (DL_FUNC) &read_modkit_v2_c, 9},
   {"add_context_c", (DL_FUNC) &add_context_c, 5},
+  {"read_modkit_v2_init_chunks_c", (DL_FUNC) &read_modkit_v2_init_chunks_c, 9},
+  {"read_modkit_v2_process_chunk_c", (DL_FUNC) &read_modkit_v2_process_chunk_c, 9},
+  {"read_modkit_v2_cleanup_c", (DL_FUNC) &read_modkit_v2_cleanup_c, 2},
   {NULL, NULL, 0}
 };
 

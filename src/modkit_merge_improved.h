@@ -59,6 +59,19 @@ typedef struct {
   int has_data;
 } chromosome_t;
 
+// NEW: Chromosome length structure for fixed binning
+typedef struct {
+  char name[MAX_CHR_LEN];
+  int64_t length;               // True chromosome length from .fai
+} chromosome_length_t;
+
+// NEW: Coordinate set for union operations
+typedef struct {
+  coord_t *coords;
+  int n_coords;
+  int capacity;
+} coordinate_set_t;
+
 // Genomic bin for processing
 typedef struct {
   char chr[MAX_CHR_LEN];
@@ -82,7 +95,22 @@ typedef struct {
   int has_output_data;
   double output_beta;
   int32_t output_cov;
+
+  // NEW: For strand aggregation
+  int has_pending_record;
+  modkit_record_t pending_record;
 } file_stream_t;
+
+// NEW: Structure for aggregating strand data
+typedef struct {
+  int32_t total_meth_calls;     // Sum of nmod from both strands
+  int32_t total_canonical_calls; // Sum of ncanonical from both strands
+  int32_t total_coverage;       // Sum of nvalid_cov from both strands
+  double combined_beta;         // Calculated combined beta value
+  int has_plus_strand;          // Flag: has plus strand data
+  int has_minus_strand;         // Flag: has minus strand data
+  int record_count;             // Number of records aggregated
+} strand_aggregate_t;
 
 // Reference sequence cache for performance
 typedef struct {
@@ -117,6 +145,11 @@ typedef struct {
   int n_chromosomes;
   genomic_bin_t *bins;
   int n_bins;
+
+  // NEW: Fixed binning support
+  int use_fixed_bins;           // Flag for fixed vs data-driven bins
+  chromosome_length_t *chr_lengths;  // True chromosome lengths
+  int n_chr_lengths;            // Number of chromosomes with known lengths
 } config_t;
 
 // Global reference handle and cache
@@ -139,11 +172,34 @@ void cleanup_streams(file_stream_t *streams, int n_files);
 
 // Coordinate processing
 coord_t find_minimum_coordinate(file_stream_t *streams, int n_files);
+coord_t find_minimum_coordinate_with_merging(file_stream_t *streams, int n_files, config_t *config);
 int coordinate_compare(const coord_t *a, const coord_t *b);
 int coordinates_equal(const coord_t *a, const coord_t *b);
 int any_stream_has_data(file_stream_t *streams, int n_files);
 void collect_coordinate_data(file_stream_t *streams, int n_files, const coord_t *target_coord, config_t *config);
 void reset_output_data(file_stream_t *streams, int n_files);
+
+// NEW: Strand merging functions
+coord_t normalize_cpg_coordinate(const modkit_record_t *record, config_t *config);
+int cpg_coordinates_equal(const coord_t *a, const coord_t *b);
+void init_strand_aggregate(strand_aggregate_t *agg);
+void add_record_to_aggregate(strand_aggregate_t *agg, const modkit_record_t *record);
+void finalize_strand_aggregate(strand_aggregate_t *agg);
+void collect_coordinate_data_with_merging(file_stream_t *streams, int n_files, const coord_t *target_coord, config_t *config);
+
+// NEW: Fixed binning functions
+int extract_chromosomes_from_bedmethyl_files(config_t *config);
+int extract_chromosome_lengths_from_fai(config_t *config);
+int generate_fixed_genomic_bins(config_t *config);
+coordinate_set_t collect_all_coordinates_in_bin(char **input_files, int n_files, genomic_bin_t *bin, config_t *config);
+int process_bin_with_complete_union(genomic_bin_t *bin, char **input_files, int n_files, config_t *config);
+
+void init_coordinate_set(coordinate_set_t *coord_set, int initial_capacity);
+void add_coordinate_to_set(coordinate_set_t *coord_set, const coord_t *coord);
+void sort_coordinate_set(coordinate_set_t *coord_set);
+void cleanup_coordinate_set(coordinate_set_t *coord_set);
+int query_file_for_coordinate(const char *filename, const coord_t *target_coord,
+                             file_stream_t *result_stream, config_t *config);
 
 // Record processing
 int parse_modkit_record(char *line, modkit_record_t *record);

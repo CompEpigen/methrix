@@ -4,13 +4,15 @@
 #' 
 #' @param files Character vector of ModKit bedMethyl file paths (.bed.gz with .tbi)
 #' @param target_mod Target modification code: "m" (5mC), "h" (5hmC), "a" (6mA), "c" (5fC), "g" (5caC). Default "m".
-#' @param bin_size Bin size for parallel processing in bases. Default 1000000.
+#' @param bin_size Bin size for fixed genomic binning in bases. Default 50000000 (50MB).
 #' @param quality_filter Maximum failure rate (0-1) per site. Default 0.1.
 #' @param min_coverage Minimum coverage required per site. Default 1.
 #' @param combine_strands Combine CpG strands for cytosine modifications? Default FALSE.
 #' @param ref_fasta Optional reference FASTA file path (with .fai index) for context annotation.
 #'   When provided, adds 'ref_base' and 'context' columns to rowData with reference base
-#'   and sequence context (CG/CHG/CHH) information.
+#'   and sequence context (CG/CHG/CHH) information. Required for use_fixed_bins=TRUE.
+#' @param use_fixed_bins Use fixed genomic bins instead of data-driven bins? Default TRUE.
+#'   When TRUE, requires ref_fasta to determine chromosome lengths.
 #' @param n_cores Number of cores for parallel processing. Default 1.
 #' @param h5 Store matrices as HDF5Arrays? Default FALSE.
 #' @param h5_dir Directory for HDF5 storage. Default NULL.
@@ -47,11 +49,12 @@
 #' @export
 read_modkit <- function(files,
                         target_mod = "m",
-                        bin_size = 1000000L,
+                        bin_size = 50000000L,
                         quality_filter = 0.1,
                         min_coverage = 1L,
                         combine_strands = FALSE,
                         ref_fasta = NULL,
+                        use_fixed_bins = TRUE,
                         n_cores = 1L,
                         h5 = FALSE,
                         h5_dir = NULL,
@@ -140,6 +143,11 @@ read_modkit <- function(files,
     if (n_cores < 1) stop("n_cores must be >= 1")
   }
   
+  # Validate fixed binning requirements
+  if (use_fixed_bins && is.null(ref_fasta)) {
+    stop("use_fixed_bins=TRUE requires ref_fasta to determine chromosome lengths")
+  }
+
   # Validate reference FASTA if provided
   if (!is.null(ref_fasta)) {
     if (!is.character(ref_fasta) || length(ref_fasta) != 1) {
@@ -150,7 +158,7 @@ read_modkit <- function(files,
     }
     fai_file <- paste0(ref_fasta, ".fai")
     if (!file.exists(fai_file)) {
-      stop("Reference FASTA index not found: ", fai_file, 
+      stop("Reference FASTA index not found: ", fai_file,
            ". Run: samtools faidx ", ref_fasta)
     }
   }
@@ -188,15 +196,16 @@ read_modkit <- function(files,
   # Call C function
   start_time <- Sys.time()
   
-  c_result <- .Call("read_modkit_c", 
-                    files, 
-                    target_mod, 
+  c_result <- .Call("read_modkit_c",
+                    files,
+                    target_mod,
                     bin_size,
-                    n_cores, 
-                    quality_filter, 
+                    n_cores,
+                    quality_filter,
                     min_coverage,
-                    combine_strands, 
-                    ref_fasta, 
+                    combine_strands,
+                    ref_fasta,
+                    use_fixed_bins,
                     verbose, PACKAGE = "methrix")
   
   processing_time <- Sys.time() - start_time

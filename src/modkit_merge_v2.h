@@ -122,6 +122,16 @@ int extract_context_for_sites(coordinate_set_t *coord_set,
 // R interface for standalone context extraction
 SEXP add_context_c(SEXP chr_vec, SEXP pos_vec, SEXP strand_vec, SEXP ref_fasta, SEXP verbose);
 
+// R interface for streaming HDF5 support
+SEXP read_modkit_v2_init_chunks_c(SEXP files, SEXP chrom_sizes_file, SEXP target_mod,
+                                   SEXP interval_size, SEXP min_coverage,
+                                   SEXP quality_filter, SEXP combine_strands, SEXP ref_fasta,
+                                   SEXP verbose);
+SEXP read_modkit_v2_process_chunk_c(SEXP coord_ptr, SEXP chunks_ptr, SEXP chunk_id,
+                                     SEXP files, SEXP target_mod, SEXP min_coverage,
+                                     SEXP quality_filter, SEXP combine_strands, SEXP verbose);
+SEXP read_modkit_v2_cleanup_c(SEXP coord_ptr, SEXP chunks_ptr);
+
 // ============================================================================
 // PHASE 2: CHUNKED PROCESSING
 // ============================================================================
