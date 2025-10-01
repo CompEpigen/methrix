@@ -1,7 +1,6 @@
-#' Read ModKit bedMethyl files (V2 - High Performance Implementation)
+#' Process and aggregate ModKit bedMethyl files 
 #'
-#' @description NEW: Reimplemented version using hash-based aggregation for
-#' 10-20x performance improvement over the original implementation.
+#' @description Hash-based aggregation for tabix indexed bedMethyl files
 #'
 #' @param files Character vector of ModKit bedMethyl file paths (.bed.gz with .tbi)
 #' @param chrom_sizes Path to chromosome sizes file (TSV: chrom<TAB>length). Can be .fai file. REQUIRED.
@@ -32,42 +31,32 @@
 #'
 #' @return A methrix object containing the merged methylation data
 #'
-#' @details This is a reimplemented version of read_modkit() that uses:
-#' - Interval-based streaming architecture (default for all cases)
-#' - Hash-based coordinate discovery per interval (no global state)
-#' - Chromosomes filtered to common set across all files
+#' @details The function uses interval-based streaming and merging of tabix indexed modkit output files
 #' - Genome divided into fixed-size intervals (default 10MB)
 #' - Each interval processed independently: discover → aggregate → output
-#'
-#' Memory characteristics:
-#' - h5=FALSE: Accumulates intervals in memory, minimal overhead (~550 MB for 100M sites)
-#' - h5=TRUE: True streaming with only one interval in RAM at a time
-#'
-#' The interval-based approach eliminates the need to store all coordinates globally,
-#' providing bounded memory usage regardless of dataset size.
 #'
 #' @examples
 #' \dontrun{
 #' # Basic 5mC analysis (chromosome sizes file required)
-#' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes", target_mod = "m")
+#' meth <- read_modkit(modkit_files, chrom_sizes = "hg38.chrom.sizes", target_mod = "m")
 #'
 #' # With context extraction
-#' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes",
+#' meth <- read_modkit(modkit_files, chrom_sizes = "hg38.chrom.sizes",
 #'                        ref_fasta = "hg38.fa", target_mod = "m")
 #'
 #' # Large dataset with HDF5 backend (memory efficient)
-#' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes",
+#' meth <- read_modkit(modkit_files, chrom_sizes = "hg38.chrom.sizes",
 #'                        h5 = TRUE, h5_dir = "./h5_data")
 #'
 #' # With custom interval size for memory control
-#' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes", interval_size = 5000000)
+#' meth <- read_modkit(modkit_files, chrom_sizes = "hg38.chrom.sizes", interval_size = 5000000)
 #'
 #' # Process only chr1 and chr2
-#' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes",
+#' meth <- read_modkit(modkit_files, chrom_sizes = "hg38.chrom.sizes",
 #'                        chromosomes = c("chr1", "chr2"))
 #'
-#' # Process specific promoter regions (BED file)
-#' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes",
+#' # Process specific genomic regions (BED file)
+#' meth <- read_modkit(modkit_files, chrom_sizes = "hg38.chrom.sizes",
 #'                        regions = "promoters.bed")
 #'
 #' # Process custom regions (data.frame)
@@ -76,12 +65,12 @@
 #'   start = c(1000000, 5000000, 2000000),
 #'   end = c(2000000, 6000000, 3000000)
 #' )
-#' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes",
+#' meth <- read_modkit(modkit_files, chrom_sizes = "hg38.chrom.sizes",
 #'                        regions = my_regions)
 #' }
 #'
 #' @export
-read_modkit_v2 <- function(files,
+read_modkit <- function(files,
                           chrom_sizes,
                           target_mod = "m",
                           interval_size = 10000000L,

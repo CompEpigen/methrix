@@ -46,8 +46,7 @@
 #' meth <- read_modkit(modkit_files, auto_index = FALSE)
 #' }
 #' 
-#' @export
-read_modkit <- function(files,
+read_modkit_legacy <- function(files,
                         target_mod = "m",
                         bin_size = 50000000L,
                         quality_filter = 0.1,

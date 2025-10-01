@@ -15,6 +15,8 @@ doc
 .rhistory
 .rapp.history
 .o
+src/*.o
+src/*.so
 .sl
 .so
 .dylib
@@ -38,3 +40,4 @@ unsrturl.bst
 .seed
 .settings
 .tm_properties
+test*
