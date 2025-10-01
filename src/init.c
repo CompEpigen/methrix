@@ -10,6 +10,8 @@ extern SEXP add_context_c(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP read_modkit_v2_init_chunks_c(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP read_modkit_v2_process_chunk_c(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP read_modkit_v2_cleanup_c(SEXP, SEXP);
+extern SEXP read_modkit_v2_process_interval_c(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP read_modkit_v2_create_intervals_c(SEXP, SEXP, SEXP, SEXP);
 
 // Define the C methods that can be called from R
 static const R_CallMethodDef CallEntries[] = {
@@ -19,6 +21,8 @@ static const R_CallMethodDef CallEntries[] = {
   {"read_modkit_v2_init_chunks_c", (DL_FUNC) &read_modkit_v2_init_chunks_c, 9},
   {"read_modkit_v2_process_chunk_c", (DL_FUNC) &read_modkit_v2_process_chunk_c, 9},
   {"read_modkit_v2_cleanup_c", (DL_FUNC) &read_modkit_v2_cleanup_c, 2},
+  {"read_modkit_v2_process_interval_c", (DL_FUNC) &read_modkit_v2_process_interval_c, 9},
+  {"read_modkit_v2_create_intervals_c", (DL_FUNC) &read_modkit_v2_create_intervals_c, 4},
   {NULL, NULL, 0}
 };
 

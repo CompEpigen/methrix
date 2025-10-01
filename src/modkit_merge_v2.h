@@ -109,6 +109,31 @@ void free_coordinate_set(coordinate_set_t *coord_set);
 
 int compare_sites(const site_key_t *a, const site_key_t *b);
 
+// Hash table structures (used by both discovery.c and streaming.c)
+// Forward declare the key type
+typedef struct {
+    int32_t pos;
+    char strand;
+} site_hash_key_t;
+
+typedef struct hash_site_entry {
+    site_hash_key_t key;
+    site_key_t site;
+    struct hash_site_entry *next;
+} hash_site_entry_t;
+
+typedef struct site_hash_table {
+    hash_site_entry_t **buckets;
+    int size;
+    size_t n_entries;
+} site_hash_table_t;
+
+#define DISCOVERY_HASH_SIZE 2097152
+
+site_hash_table_t* create_site_hash_table(int size);
+void free_site_hash_table(site_hash_table_t *ht);
+int insert_unique_site(site_hash_table_t *ht, const site_key_t *site);
+
 // Function prototypes for context extraction (after coordinate_set_t definition)
 int init_reference_v2(const char *ref_fasta_path);
 void cleanup_reference_v2();
@@ -122,7 +147,7 @@ int extract_context_for_sites(coordinate_set_t *coord_set,
 // R interface for standalone context extraction
 SEXP add_context_c(SEXP chr_vec, SEXP pos_vec, SEXP strand_vec, SEXP ref_fasta, SEXP verbose);
 
-// R interface for streaming HDF5 support
+// R interface for streaming HDF5 support (old chunk-based)
 SEXP read_modkit_v2_init_chunks_c(SEXP files, SEXP chrom_sizes_file, SEXP target_mod,
                                    SEXP interval_size, SEXP min_coverage,
                                    SEXP quality_filter, SEXP combine_strands, SEXP ref_fasta,
@@ -131,6 +156,11 @@ SEXP read_modkit_v2_process_chunk_c(SEXP coord_ptr, SEXP chunks_ptr, SEXP chunk_
                                      SEXP files, SEXP target_mod, SEXP min_coverage,
                                      SEXP quality_filter, SEXP combine_strands, SEXP verbose);
 SEXP read_modkit_v2_cleanup_c(SEXP coord_ptr, SEXP chunks_ptr);
+
+// R interface for true streaming (interval-based discovery)
+SEXP read_modkit_v2_process_interval_c(SEXP chr, SEXP interval_start, SEXP interval_end,
+                                        SEXP files, SEXP target_mod, SEXP min_coverage,
+                                        SEXP quality_filter, SEXP combine_strands, SEXP verbose);
 
 // ============================================================================
 // PHASE 2: CHUNKED PROCESSING

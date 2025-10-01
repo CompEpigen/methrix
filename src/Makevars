@@ -15,5 +15,5 @@ SOURCES = modkit_r_interface.c modkit_merge_core.c init.c \
           modkit_merge_v2_discovery.c modkit_merge_v2_util.c \
           modkit_merge_v2_chunk.c modkit_merge_v2_process.c \
           modkit_merge_v2_r_interface.c modkit_merge_v2_chrom_sizes.c \
-          modkit_merge_v2_context.c
+          modkit_merge_v2_context.c modkit_merge_v2_streaming.c
 OBJECTS = $(SOURCES:.c=.o)

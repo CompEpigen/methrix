@@ -18,27 +18,10 @@ static char* my_strdup(const char *s) {
 // Key: (position, strand) - NOT including mod_code
 // This guarantees automatic deduplication of sites
 // ============================================================================
+// Note: hash_site_entry_t, site_hash_table_t, and site_hash_key_t
+// are all defined in modkit_merge_v2.h
 
-#define DISCOVERY_HASH_SIZE 2097152  // 2M buckets for discovery
-
-typedef struct {
-    int32_t pos;
-    char strand;
-} site_hash_key_t;
-
-typedef struct hash_site_entry {
-    site_hash_key_t key;
-    site_key_t site;  // Full site info (includes chr, mod_code)
-    struct hash_site_entry *next;
-} hash_site_entry_t;
-
-typedef struct {
-    hash_site_entry_t **buckets;
-    int size;
-    size_t n_entries;
-} site_hash_table_t;
-
-static site_hash_table_t* create_site_hash_table(int size) {
+site_hash_table_t* create_site_hash_table(int size) {
     site_hash_table_t *ht = (site_hash_table_t*)malloc(sizeof(site_hash_table_t));
     if (!ht) return NULL;
 
@@ -53,7 +36,7 @@ static site_hash_table_t* create_site_hash_table(int size) {
     return ht;
 }
 
-static void free_site_hash_table(site_hash_table_t *ht) {
+void free_site_hash_table(site_hash_table_t *ht) {
     if (!ht) return;
 
     for (int i = 0; i < ht->size; i++) {
@@ -82,7 +65,7 @@ static inline uint32_t hash_site_key(site_hash_key_t *key, int table_size) {
 }
 
 // Insert or skip if exists (returns 1 if new, 0 if duplicate)
-static int insert_unique_site(site_hash_table_t *ht, const site_key_t *site) {
+int insert_unique_site(site_hash_table_t *ht, const site_key_t *site) {
     site_hash_key_t key;
     key.pos = site->pos;
     key.strand = site->strand;
