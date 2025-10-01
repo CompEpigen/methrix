@@ -7,12 +7,23 @@
 #' @param chrom_sizes Path to chromosome sizes file (TSV: chrom<TAB>length). Can be .fai file. REQUIRED.
 #' @param target_mod Target modification code: "m" (5mC), "h" (5hmC), "a" (6mA), etc. Default "m".
 #' @param interval_size Genomic interval size (bp) per chunk. Default 10000000 (10MB).
+#'   **Ignored when 'regions' is specified** - user regions are processed as-is.
 #' @param min_coverage Minimum coverage required per site. Default 1.
 #' @param quality_filter Maximum failure rate (0-1) per site. Default 0.1.
 #' @param combine_strands Combine CpG strands for cytosine modifications? Default FALSE.
 #' @param ref_fasta Optional reference FASTA file path (with .fai index) for context annotation.
 #'   When provided, adds 'ref_base' and 'context' columns to rowData with reference base
 #'   and sequence context (CG/CHG/CHH) information.
+#' @param chromosomes Character vector of chromosome names to process (e.g., c("chr1", "chr2")).
+#'   Only these chromosomes will be divided into intervals and processed.
+#'   Mutually exclusive with 'regions'. Default NULL (process all chromosomes).
+#' @param regions Genomic regions to process. Mutually exclusive with 'chromosomes'.
+#'   When provided, these regions are processed directly without dividing into intervals.
+#'   Can be:
+#'   - **BED file path** (character): Tab-delimited file with chr, start, end (0-based, half-open)
+#'   - **data.frame**: Must have columns chr, start, end (0-based, half-open)
+#'   Regions on chromosomes not present in input files will be skipped with a warning.
+#'   Default NULL (process all chromosomes).
 #' @param h5 Store matrices as HDF5Arrays? Default FALSE.
 #' @param h5_dir Directory for HDF5 storage. Default NULL.
 #' @param h5temp Temporary directory for HDF5 files during processing. Default NULL (uses tempdir()).
@@ -50,6 +61,23 @@
 #'
 #' # With custom interval size for memory control
 #' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes", interval_size = 5000000)
+#'
+#' # Process only chr1 and chr2
+#' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes",
+#'                        chromosomes = c("chr1", "chr2"))
+#'
+#' # Process specific promoter regions (BED file)
+#' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes",
+#'                        regions = "promoters.bed")
+#'
+#' # Process custom regions (data.frame)
+#' my_regions <- data.frame(
+#'   chr = c("chr1", "chr1", "chr2"),
+#'   start = c(1000000, 5000000, 2000000),
+#'   end = c(2000000, 6000000, 3000000)
+#' )
+#' meth <- read_modkit_v2(modkit_files, chrom_sizes = "hg38.chrom.sizes",
+#'                        regions = my_regions)
 #' }
 #'
 #' @export
@@ -61,6 +89,8 @@ read_modkit_v2 <- function(files,
                           quality_filter = 0.1,
                           combine_strands = FALSE,
                           ref_fasta = NULL,
+                          chromosomes = NULL,
+                          regions = NULL,
                           h5 = FALSE,
                           h5_dir = NULL,
                           h5temp = NULL,
@@ -131,6 +161,60 @@ read_modkit_v2 <- function(files,
          paste(valid_mods, collapse = ", "))
   }
 
+  # Validate chromosomes and regions (mutually exclusive)
+  if (!is.null(chromosomes) && !is.null(regions)) {
+    stop("Parameters 'chromosomes' and 'regions' are mutually exclusive. ",
+         "Provide only one.")
+  }
+
+  # Validate chromosomes parameter
+  if (!is.null(chromosomes)) {
+    if (!is.character(chromosomes) || length(chromosomes) == 0) {
+      stop("'chromosomes' must be a non-empty character vector")
+    }
+  }
+
+  # Validate regions parameter
+  if (!is.null(regions)) {
+    if (is.character(regions)) {
+      # BED file path
+      if (length(regions) != 1) {
+        stop("'regions' as file path must be a single string")
+      }
+      if (!file.exists(regions)) {
+        stop("BED file not found: ", regions)
+      }
+    } else if (is.data.frame(regions)) {
+      # data.frame
+      if (ncol(regions) < 3) {
+        stop("'regions' data.frame must have at least 3 columns (chr, start, end)")
+      }
+      # Ensure proper column names
+      if (!all(c("chr", "start", "end") %in% colnames(regions))) {
+        # Try to use first 3 columns
+        if (ncol(regions) >= 3) {
+          colnames(regions)[1:3] <- c("chr", "start", "end")
+          message("Using first 3 columns as chr, start, end")
+        } else {
+          stop("'regions' must have columns named 'chr', 'start', 'end'")
+        }
+      }
+      # Validate types
+      if (!is.character(regions$chr) && !is.factor(regions$chr)) {
+        stop("'regions$chr' must be character or factor")
+      }
+      if (!is.numeric(regions$start) || !is.numeric(regions$end)) {
+        stop("'regions$start' and 'regions$end' must be numeric")
+      }
+      # Convert to character if factor
+      if (is.factor(regions$chr)) {
+        regions$chr <- as.character(regions$chr)
+      }
+    } else {
+      stop("'regions' must be a BED file path (character) or a data.frame")
+    }
+  }
+
   # Setup sample metadata
   if (is.null(coldata)) {
     sample_names <- extract_sample_names(files)
@@ -149,13 +233,77 @@ read_modkit_v2 <- function(files,
   start_time <- Sys.time()
   start_mem <- as.numeric(object.size(ls(all.names = TRUE))) / 1024^2
 
-  # Step 1: Generate genomic intervals in C (efficient, quiet)
-  intervals_df <- .Call("read_modkit_v2_create_intervals_c",
-                       chrom_sizes,
-                       files,
-                       as.integer(interval_size),
-                       as.logical(FALSE),  # Always quiet for interval creation
-                       PACKAGE = "methrix")
+  # Step 1: Generate or parse intervals based on input
+  if (!is.null(regions)) {
+    # ============================================================
+    # REGIONS MODE: Parse user regions and use directly
+    # ============================================================
+
+    if (verbose) {
+      msg <- if (is.character(regions)) {
+        sprintf("Reading genomic regions from BED file: %s", regions)
+      } else {
+        sprintf("Using %d user-specified genomic regions", nrow(regions))
+      }
+      message(msg)
+    }
+
+    # Parse BED file if needed
+    if (is.character(regions)) {
+      regions <- parse_bed_file(regions)
+    }
+
+    # Convert regions to intervals_df format
+    # Note: regions are 0-based half-open, same as our internal format
+    intervals_df <- data.frame(
+      chr = as.character(regions$chr),
+      start = as.integer(regions$start),
+      end = as.integer(regions$end),
+      stringsAsFactors = FALSE
+    )
+
+    # Validate chromosomes exist in input files
+    intervals_df <- validate_regions_chromosomes(
+      intervals_df,
+      files,
+      chrom_sizes,  # Still used for chromosome length validation
+      verbose
+    )
+
+    if (verbose) {
+      message("Processing ", nrow(intervals_df), " genomic regions")
+    }
+
+  } else {
+    # ============================================================
+    # STANDARD MODE: Generate intervals from chromosome sizes
+    # ============================================================
+
+    # Call C function to divide chromosomes into intervals
+    intervals_df <- .Call("read_modkit_v2_create_intervals_c",
+                         chrom_sizes,
+                         files,
+                         as.integer(interval_size),
+                         as.logical(FALSE),  # Always quiet for interval creation
+                         PACKAGE = "methrix")
+
+    # Filter by chromosomes if specified
+    if (!is.null(chromosomes)) {
+      n_before <- nrow(intervals_df)
+      intervals_df <- intervals_df[intervals_df$chr %in% chromosomes, ]
+
+      if (nrow(intervals_df) == 0) {
+        stop("No intervals found for chromosomes: ",
+             paste(chromosomes, collapse = ", "))
+      }
+
+      if (verbose) {
+        message("Filtered to ", length(chromosomes), " chromosome(s): ",
+                paste(chromosomes, collapse = ", "),
+                " (", n_before, " → ", nrow(intervals_df), " intervals)")
+      }
+    }
+  }
 
   n_intervals <- nrow(intervals_df)
   n_chromosomes <- length(unique(intervals_df$chr))
@@ -173,9 +321,7 @@ read_modkit_v2 <- function(files,
       h5_dir = h5_dir,
       h5temp = h5temp,
       coldata = coldata,
-      verbose = verbose,
-      n_chromosomes = n_chromosomes,
-      interval_size = interval_size
+      verbose = verbose
     )
   } else {
     # IN-MEMORY ACCUMULATION: Collect all intervals then build matrices
@@ -188,9 +334,7 @@ read_modkit_v2 <- function(files,
       combine_strands = combine_strands,
       ref_fasta = ref_fasta,
       coldata = coldata,
-      verbose = verbose,
-      n_chromosomes = n_chromosomes,
-      interval_size = interval_size
+      verbose = verbose
     )
   }
 
@@ -388,11 +532,11 @@ convert_c_result_to_methrix_v2 <- function(c_result, coldata, target_mod,
 # Helper function: Process intervals to in-memory matrices
 process_intervals_to_memory <- function(intervals_df, files, target_mod,
                                        min_coverage, quality_filter, combine_strands,
-                                       ref_fasta, coldata, verbose,
-                                       n_chromosomes, interval_size) {
+                                       ref_fasta, coldata, verbose) {
 
   n_samples <- length(files)
   n_intervals <- nrow(intervals_df)
+  n_chromosomes <- length(unique(intervals_df$chr))
   all_results <- list()
 
   # Track start time for progress bar
@@ -400,8 +544,7 @@ process_intervals_to_memory <- function(intervals_df, files, target_mod,
 
   # Single-line progress bar
   if (verbose) {
-    cat(sprintf("Interval size: %s bp, processing %d bins from %d chromosome%s\n",
-                format(interval_size, big.mark = ","),
+    cat(sprintf("Processing %d bins from %d chromosome%s\n",
                 n_intervals,
                 n_chromosomes,
                 ifelse(n_chromosomes > 1, "s", "")))
@@ -671,4 +814,166 @@ process_intervals_to_h5 <- function(intervals_df, files, target_mod,
                                                 h5 = TRUE, h5_dir, h5temp, ref_fasta, verbose)
 
   return(methrix_obj)
+}
+
+# ==============================================================================
+# HELPER FUNCTIONS FOR CHROMOSOMES AND REGIONS FILTERING
+# ==============================================================================
+
+#' Parse BED file into data.frame
+#' @param bed_path Path to BED file
+#' @return data.frame with chr, start, end columns (0-based)
+#' @keywords internal
+parse_bed_file <- function(bed_path) {
+  # Use data.table::fread for speed
+  bed_dt <- data.table::fread(
+    bed_path,
+    sep = "\t",
+    header = FALSE,
+    select = 1:3,  # Only first 3 columns
+    col.names = c("chr", "start", "end"),
+    colClasses = c("character", "integer", "integer"),
+    showProgress = FALSE
+  )
+
+  # Validate
+  if (nrow(bed_dt) == 0) {
+    stop("BED file is empty: ", bed_path)
+  }
+
+  if (any(is.na(bed_dt$chr)) || any(is.na(bed_dt$start)) || any(is.na(bed_dt$end))) {
+    stop("BED file contains NA values")
+  }
+
+  if (any(bed_dt$start < 0) || any(bed_dt$end < 0)) {
+    stop("BED file contains negative coordinates")
+  }
+
+  if (any(bed_dt$end <= bed_dt$start)) {
+    stop("BED file contains invalid intervals (end <= start)")
+  }
+
+  return(as.data.frame(bed_dt))
+}
+
+#' Get list of chromosomes present in tabix-indexed files
+#' @param files Character vector of file paths
+#' @param verbose Print messages
+#' @return Character vector of chromosome names
+#' @keywords internal
+get_tabix_chromosomes <- function(files, verbose = FALSE) {
+
+  all_chroms <- character(0)
+
+  for (f in files) {
+    tryCatch({
+      # Open tabix file and get sequence names
+      tabix_file <- Rsamtools::TabixFile(f)
+      seqnames <- Rsamtools::seqnamesTabix(tabix_file)
+      all_chroms <- unique(c(all_chroms, seqnames))
+    }, error = function(e) {
+      warning("Cannot read tabix index for ", f, ": ", e$message)
+    })
+  }
+
+  if (length(all_chroms) == 0) {
+    stop("No chromosomes found in any input files")
+  }
+
+  if (verbose) {
+    message("Found ", length(all_chroms), " chromosome(s) in input files")
+  }
+
+  return(all_chroms)
+}
+
+#' Read chromosome sizes file (R implementation)
+#' @param chrom_sizes_path Path to chrom.sizes file
+#' @return data.frame with chr, length columns
+#' @keywords internal
+read_chrom_sizes_r <- function(chrom_sizes_path) {
+
+  sizes <- data.table::fread(
+    chrom_sizes_path,
+    sep = "\t",
+    header = FALSE,
+    select = 1:2,
+    col.names = c("chr", "length"),
+    colClasses = c("character", "integer"),
+    showProgress = FALSE
+  )
+
+  if (nrow(sizes) == 0) {
+    stop("Chromosome sizes file is empty: ", chrom_sizes_path)
+  }
+
+  return(as.data.frame(sizes))
+}
+
+#' Validate that regions reference chromosomes present in input files
+#' @param intervals_df data.frame with chr, start, end
+#' @param files Input bedMethyl files
+#' @param chrom_sizes_path Path to chromosome sizes file
+#' @param verbose Verbose output
+#' @return Filtered intervals_df with only valid chromosomes
+#' @keywords internal
+validate_regions_chromosomes <- function(intervals_df, files, chrom_sizes_path,
+                                        verbose = FALSE) {
+
+  # Get unique chromosomes from regions
+  region_chroms <- unique(intervals_df$chr)
+
+  if (verbose) {
+    message("  Regions reference ", length(region_chroms),
+            " unique chromosome(s)")
+  }
+
+  # Get chromosomes available in input files (scan tabix)
+  available_chroms <- get_tabix_chromosomes(files, verbose = FALSE)
+
+  # Find intersection
+  valid_chroms <- intersect(region_chroms, available_chroms)
+  invalid_chroms <- setdiff(region_chroms, available_chroms)
+
+  if (length(invalid_chroms) > 0) {
+    warning("Skipping ", length(invalid_chroms), " chromosome(s) not found in input files: ",
+            paste(head(invalid_chroms, 3), collapse = ", "),
+            if (length(invalid_chroms) > 3) "..." else "")
+  }
+
+  if (length(valid_chroms) == 0) {
+    stop("No chromosomes in regions match input files")
+  }
+
+  # Filter intervals to valid chromosomes only
+  filtered <- intervals_df[intervals_df$chr %in% valid_chroms, ]
+
+  # Validate coordinates against chromosome sizes
+  chrom_sizes <- read_chrom_sizes_r(chrom_sizes_path)
+
+  for (chr in valid_chroms) {
+    chr_length <- chrom_sizes$length[chrom_sizes$chr == chr]
+    if (length(chr_length) == 0) {
+      warning("Chromosome '", chr, "' not found in sizes file, ",
+              "cannot validate coordinates")
+      next
+    }
+
+    chr_regions <- filtered[filtered$chr == chr, ]
+    out_of_bounds <- chr_regions$end > chr_length[1]
+
+    if (any(out_of_bounds)) {
+      warning("Chromosome '", chr, "': ", sum(out_of_bounds),
+              " region(s) extend beyond chromosome length (", chr_length[1], " bp), ",
+              "truncating")
+      filtered$end[filtered$chr == chr & filtered$end > chr_length[1]] <- chr_length[1]
+    }
+  }
+
+  if (verbose) {
+    message("  Processing ", nrow(filtered), " regions across ",
+            length(valid_chroms), " chromosome(s)")
+  }
+
+  return(filtered)
 }
