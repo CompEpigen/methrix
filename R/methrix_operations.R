@@ -871,3 +871,85 @@ convert_methrix <- function(m = NULL) {
         desc = S4Vectors::metadata(m)$descriptive_stats)
     return(m)
 }
+
+#--------------------------------------------------------------------------------------------------------------------------
+#' Calculates hydroxymethylation from BS and oxBS data
+#' @details Takes a \code{\link{methrix}} object and returns with the same object with delayed array assay slots
+#' @param m An object of class \code{\link{methrix}}
+#' @return An object of class \code{\link{methrix}}
+calculate_proportions<- function (m){
+  
+  # check if input data set is ok
+  # for each "Sample_ID" there must be a oxBS and BS data set, defined in "Sequencing_type"
+  anno <- data.frame(colData(m))
+  anno <- as.data.frame(lapply(anno, factor))
+  for(i in levels(anno$Sample_ID)){
+    anno_sub <- anno[anno$Sample_ID==i,]
+    print(i)
+    if (nrow(anno_sub)!=2 | sum(is.element(c("oxBS", "BS"), anno_sub$Sequencing_type))!=2 )
+    {    stop("oxBS or BS sample is missing or in excess for a sample type.",
+              call. = T)
+    }
+  } 
+  
+  # extract data for MLML2R
+  methylation <- get_matrix(m, type = 'M')
+  covarage <- get_matrix(m, type = 'C')
+  
+  
+  id_BS <- which(colData(m)$Sequencing_type=="BS")
+  id_oxBS <- which(colData(m)$Sequencing_type=="oxBS")
+  
+  #match samples of BS and oxBS to same order
+  id_oxBS <- id_oxBS[match(colData(m)$Sample_ID[id_BS], colData(m)$Sample_ID[id_oxBS])]
+  
+  colData(m)$Sample_ID[id_BS]==colData(m)$Sample_ID[id_oxBS]
+  
+  
+  #total count
+  TotalBS <- covarage[,id_BS]
+  TotalOxBS <- covarage[,id_oxBS]
+  
+  #methylation count
+  C_BS <- data.frame(methylation[,id_BS])*data.frame(covarage[,id_BS])
+  C_OxBS<- data.frame(methylation[,id_oxBS])*data.frame(covarage[,id_oxBS])
+  
+  #unmethylation count
+  T_BS<- data.frame(TotalBS) - data.frame(C_BS)
+  T_OxBS<- data.frame(TotalOxBS) - data.frame(C_OxBS)
+  
+  Tm = as.matrix(C_BS)
+  Um = as.matrix(T_BS)
+  Lm = as.matrix(T_OxBS)
+  Mm = as.matrix(C_OxBS)
+  
+  results_exact <- MLML2R::MLML(T.matrix = Tm, 
+                                U.matrix = Um, 
+                                L.matrix = Lm, 
+                                M.matrix = Mm)
+  
+  
+  #create new methrix object
+  
+  # get the lowest covarage among both sequencing types
+  
+  min_cov <- rlist::list.cbind(lapply(1:length(id_BS), function(x) rowMins(covarage[,c(id_BS[x],id_oxBS[x])])))
+  
+  #prepare methrix dataset for mC, hmC and C data
+  m_MLML2R <- m[,c(id_BS,id_BS,id_BS,id_BS)]
+  colData(m_MLML2R)$Sequencing_type <- NULL
+  colData(m_MLML2R)$Mark <-c(rep("mC",length(id_BS)),rep("hmC",length(id_BS)),rep("C",length(id_BS)),rep("mChmC",length(id_BS))) 
+  mChmC<- as.matrix(results_exact$mC)+as.matrix(results_exact$hmC)
+  assays(m_MLML2R)$beta <- cbind(results_exact$mC,results_exact$hmC,results_exact$C,mChmC)
+  min_cov_mat <- cbind(min_cov,min_cov,min_cov,min_cov)
+  colnames(min_cov_mat) <- colnames(assays(m_MLML2R)$cov)
+  assays(m_MLML2R)$cov  <-  min_cov_mat  
+                                      
+  #change names in methrix object
+  names <- gsub("bs", "", colData(m_MLML2R)$Sample_Name)
+  m_MLML2R <-replace_names(m_MLML2R,paste0(names, colData(m_MLML2R)$Mark))
+  
+  return(m_MLML2R)
+  
+}
+
