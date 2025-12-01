@@ -89,7 +89,7 @@ parse_source_idx = function(chr = NULL, start = NULL, end = NULL, strand = NULL,
       return(list(col_idx = c(chr = chr, start = start, end = end,
                               strand = strand, beta = beta, M = n_meth,
                               U = n_unmeth,  cov = cov),
-                  fix_missing = c(fix_missing, "beta := M/(M+U"), select = FALSE))
+                  fix_missing = c(fix_missing, "beta := M/(M+U)"), select = FALSE))
     } else if (!is.null(n_meth)) {
       # M available
       message("--Estimating beta values from M and coverage")
