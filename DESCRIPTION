@@ -13,8 +13,8 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
 Depends: R (>= 3.6), SummarizedExperiment
-Imports: data.table (>= 1.12.4), rtracklayer, DelayedArray, HDF5Array, BSgenome, DelayedMatrixStats, parallel, methods, ggplot2, S4Vectors, matrixStats, graphics, stats, utils, GenomicRanges, IRanges
-RoxygenNote: 7.1.1
+Imports: data.table (>= 1.12.4), rtracklayer, DelayedArray, Biobase, HDF5Array, BSgenome, DSS, DelayedMatrixStats, parallel, methods, ggplot2, S4Vectors, matrixStats, graphics, stats, utils, GenomicRanges, IRanges, GenomeInfoDb
+RoxygenNote: 7.3.3
 Suggests: 
     knitr,
     rmarkdown,

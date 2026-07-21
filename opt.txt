@@ -1,0 +1,3 @@
+use assay(meth, withDimnames = FALSE) to keep HDF5 format - better optimized
+change compression to something smaller. 
+use as array instead of as matrix
